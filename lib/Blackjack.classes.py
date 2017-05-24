@@ -132,15 +132,17 @@ class Player(object):
             player blackjack)
         print_split: This method does the same thing as __str__ except that it prints only the data
             for the split hand
-        add_card_to_hand: takes a card tuple as an argument and adds it to the hand and updates the
-            soft and hard scores for Player.hand. If the both scores exceed 21, return False.
-            Otherwise, return True.
-        add_card_to_split: performs the same operation on the split hand if one exists
+        score_hand: takes a hand and returns the soft and hard scores for the hand as a tuple
+            (soft, hard)
+        add_card_to_hand: akes a card, adds it to the hand, calls score_hand to get the new hard 
+            and soft scores, and returns 'blackjack', 'bust', or 'playable'
+        add_card_to_split: takes a card, adds it to the split hand, calls score_hand to get a 
+            new hard and soft scores for it, and returns 'bust' or 'playable'
         blackjack: takes the player's regular bet, mulitplies it by the Blackjack multiplier
             (supplied via argument), and clears the regular hand attributes
-        win: adds the player's bet to the bank and clears the regular hand attributes
+        win: adds the player's bet to their bank and clears the regular hand attributes
         split_win: add the player's split bet to the bank and clears the split hand attributes
-        loss: subtracts the player's bet from the bank and clears the regular hand
+        reg_loss: subtracts the player's bet from the bank and clears the regular hand
             attributes. Returns False if the player's bank is now empty, ending their game.
         split_loss: subtracts the player's split bet from the bank and clears the split hand
             attributes. Returns False if the player's bank is now empty, ending their game.
@@ -148,6 +150,7 @@ class Player(object):
         split_tie: clears the split hand and bet without deduction from the bank
         split_pair: moves one card over to the split_hand, prompts for a initial
             split_bet, and sets the split_flag to True. Adjusts the scores accordingly.
+        split_check: checks for a pair in the initial deal. Returns True if so, False otherwise.
         end_round: verifies that all hands are empty, the split_flag has been reset, and all bets
             have been reset to zero (including insurance)
         update_bet: this method makes sure that the player has the money to cover the new amount
@@ -159,8 +162,13 @@ class Player(object):
         update_ins: this method makes sure that the player has the money to cover the new amount
             of their insurance bet and all other bets. If so, it return 'success'. If not, it
             returns an error code.  The argument is the amount to increase it.
-        
-      
+        total_bets: the calculates the total of all bets currently accepted for the player, 
+            including an insurance bet.
+        double_down: checks to see if the hand has 2 cards. if so, it offers an update to the 
+            bet of up to double the original amount. A 0 amount will be considered an change of 
+            heart. it loops until a valid amount is entered. it calls the appropriate bet method
+            for the type of hand.
+
     """
     values = {'A': 1, '2' : 2, '3' : 3, '4' : 4, '5' : 5, '6' : 6, \
               '7' : 7, '8' : 8, '9' : 9, '10' : 10, 'J' : 10, 'Q' : 10,\
