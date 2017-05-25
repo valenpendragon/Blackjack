@@ -24,12 +24,11 @@ class Dealer(Player):
     Methods:
         __init__:
         __str__:
-        __del__:
         dealer_print:
         add_card_to_hand:
         
     Inherited Methods:
-        __len__, score_hand
+        __len__, __del__, score_hand
 
     """
     name = 'Dealer'
@@ -67,20 +66,14 @@ class Dealer(Player):
         if len(self) >= 1:
             print("Facedown", end='')
         if len(self) >= 2:
-            (rank,suit) = visible_card
-            print("{0}-{1}".format(rank, suit), end='')
+            (rank,suit) = self.visible_card[0]
+            print("  {0}-{1}".format(rank, suit), end='')
         if self.visible_soft_score == self.visible_hard_score:
             print("\n\tDealer has {0} showing".format(self.visible_hard_score))
         else:
-            print("\n\tDealer has a hard{0} or a soft{1} showing".format(self.visible_hard_score, self.visible_soft_score))
+            print("\n\tDealer has a hard {0} or a soft {1} showing".format(self.visible_hard_score, self.visible_soft_score))
         return "Dealer complete"
     
-    def __del__(self):
-        '''
-        This method deletes a Dealer object.
-        '''
-        print("Dealer removed from the game.")
-        return
    
     def dealer_print(self):
         '''
@@ -128,18 +121,32 @@ class Dealer(Player):
         (self.soft_hand_score, self.hard_hand_score) = self.score_hand(self.hand)
         # If this is the second card dealt to the Dealer, add it to the visible card
         # and score it.
-        if len(self.hand) == 2:
+        if len(self) == 2:
             self.visible_card.append(card)
             (self.visible_soft_score, self.visible_hard_score) = self.score_hand(self.visible_card)
             # For a visible Ace, face card, or 10, the blackjack flag needs to be set to
             # True so that insurance bets can be placed on it.
             (rank, suit) = card
-            if (Player.values[rank] == 1) or (Player.values[rank] == 10):
-                self.blackjack_flag == True
+            if (Dealer.values[rank] == 1) or (Dealer.values[rank] == 10):
+                self.blackjack_flag = True
         if self.hard_hand_score > 21:
             return 'bust'
         elif (self.hard_hand_score == 11) and (self.soft_hand_score == 21) and (len(self) == 2):
             return 'blackjack'
         else:
             return 'playable'
+
+    def end_round(self):
+        '''
+        This method resets all data, except Dealer.name, and Dealer.bank. This method takes no
+        arguments and returns no values. It may not be needed in the game.
+        '''
+        self.hand = []
+        self.soft_hand_score = 0
+        self.hard_hand_score = 0
+        self.blackjack_flag = False
+        self.visible_card = []
+        self.visible_soft_score = 0
+        self.visible_hard_score = 0
+        return
 

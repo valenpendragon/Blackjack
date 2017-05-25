@@ -120,6 +120,7 @@ class Player(object):
         self.bet = 0
         self.split_bet = 0
         self.insurance = 0
+        return
     
     def __str__(self):
         '''
@@ -152,7 +153,8 @@ class Player(object):
         This method removes a player from the game. After deleting it, it prints a message
         and returns True.
         '''
-        print("Player has been removed from the game.")
+        name = self.name
+        print("{0} has been removed from the game.".format(name))
         return True
     
     def __len__(self):
