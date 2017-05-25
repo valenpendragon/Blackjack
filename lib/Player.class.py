@@ -53,20 +53,25 @@ class Player(object):
         add_card_to_split: takes a card, adds it to the split hand, calls score_hand to get a 
             new hard and soft scores for it, and returns 'bust' or 'playable'
         blackjack: takes the player's regular bet, mulitplies it by the Blackjack multiplier
-            (supplied via argument), and clears the regular hand attributes
-        win: adds the player's bet to their bank and clears the regular hand attributes
-        split_win: add the player's split bet to the bank and clears the split hand attributes
-        reg_loss: subtracts the player's bet from the bank and clears the regular hand
-            attributes. Returns False if the player's bank is now empty, ending their game.
-        split_loss: subtracts the player's split bet from the bank and clears the split hand
-            attributes. Returns False if the player's bank is now empty, ending their game.
-        tie: clears the regular hand and bet without deduction from the bank
-        split_tie: clears the split hand and bet without deduction from the bank
+            (supplied via argument)
+        win: adds the player's bet to their bank
+        split_win: add the player's split bet to the bank
+        reg_loss: subtracts the player's bet from the bank. Returns False if the player's bank
+            is now empty, ending their game.
+        split_loss: subtracts the player's split bet from the bank. Returns False if the 
+            player's bank is now empty, ending their game.
+        tie: clears bet without deduction from the bank. This is needed for Dealer methods.
+        split_tie: clears the bet on the split hand without deduction from the bank. This is
+            needed for Dealer methods.
+        ins: tracks a side bet taken on the dealer getting blackjack. It takes a boolean for
+            the Dealer's blackjack. It returns True for a positive bank, False if the Player's
+            bank is zero or negative.
         split_pair: moves one card over to the split_hand, prompts for a initial
             split_bet, and sets the split_flag to True. Adjusts the scores accordingly.
         split_check: checks for a pair in the initial deal. Returns True if so, False otherwise.
         end_round: verifies that all hands are empty, the split_flag has been reset, and all bets
-            have been reset to zero (including insurance)
+            have been reset to zero (including insurance). This method is used to clean up after
+            the Dealer's turn.
         update_bet: this method makes sure that the player has the money to cover the new amount
             of their regular bet and all other bets. If so, it returns 'success'. If not, it 
             returns an error code. The argument is the amount to increase the bet.
@@ -267,7 +272,7 @@ class Player(object):
         
     def blackjack(self, multiplier):
         '''
-        This method cleans up after a player achieved a blackjack (natural 21 on the first
+        This method handles the player's winnings for a blackjack (natural 21 on the first
         two cards dealt). Casinos always has a better payout ratio for a player winning a
         blackjack (assuming the Dealer doesn't tie with the player).
         
@@ -278,23 +283,17 @@ class Player(object):
         '''
         winnings = int(multiplier * self.bet)
         self.bank += winnings
-        self.bet = 0
-        self.hand = []
-        self.soft_hand_score = self.hard_hand_score = 0
         return
     
     def win(self):
         '''
-        This method cleans up after a player wins with their regular hand. The split_hand
+        This method handles the player's winngings wins with their regular hand. The split_hand
         has a separate method for this purpose.
         
         This method does not accept arguments nor return values.
         '''
         # There is no multiplier for a regular win.
         self.bank += self.bet
-        self.bet = 0
-        self.hand = []
-        self.soft_hand_score = self.hard_hand_score = 0
         return
     
     def split_win(self):
@@ -304,16 +303,14 @@ class Player(object):
         
         This method does not accept arguments nor return values.
         '''
+        # There is no multiplier for a regular win with a split hand either.
         self.bank += self.split_bet
-        self.split_bet = 0
-        self.split_hand = []
-        self.soft_split_score = self.hard_split_score = 0
         return
     
     def reg_loss(self):
         '''
-        This method cleans up a regular hand after the player loses, either to a bust or a lower
-        score during the round than the dealer. It also deducts the bet from the player's bank.
+        This method deducts player's losses from bets on their regular hand, either to a bust
+        or a lower hand score during the round than the dealer.
         
         This method takes no arguments. It returns True while the players has a positive
         balance in the bank. A zero or negative balance returns False.
@@ -322,9 +319,6 @@ class Player(object):
         certain that the player had enough in their bank to cover bets made.
         '''
         self.bank -= self.bet
-        self.bet = 0
-        self.hand = []
-        self.soft_hand_score = self.hard_hand_score = 0
         if self.bank <= 0:
             return False
         else:
@@ -332,9 +326,8 @@ class Player(object):
        
     def split_loss(self):
         '''
-        This method cleans up a split hand after the player loses, either to a bust or a lower
-        score during the round than the dealer. It also deducts the bet on the split hand from
-        the player's bank.
+        This method deducts the player's losses on the split hand, either to a bust or a lower
+        score during the round than the dealer.
         
         This method takes no arguments. It returns True while the players has a positive
         balance in the bank. A zero or negative balance returns False.
@@ -343,9 +336,6 @@ class Player(object):
         certain that the player had enough in their bank to cover bets made.
         '''
         self.bank -= self.split_bet
-        self.split_bet = 0
-        self.split_hand = []
-        self.soft_split_score = self.hard_split_score = 0
         if self.bank <= 0:
             return False
         else:
@@ -353,33 +343,29 @@ class Player(object):
     
     def tie(self):
         '''
-        This method clears the regular bet and hand if the hand ties with the Dealer. Ties do
-        not normally result in casino wins.
+        This method clears the regular bet if the hand ties with the Dealer. Ties do not
+        normally result in casino wins.
         
         This method accepts no arguments and returns no values. The reason for the latter is that
         there is no deduction from the bank, nor gain in a tie.
         '''
         self.bet = 0
-        self.hand = []
-        self.soft_hand_score = self.hard_hand_score = 0
         return
     
     def split_tie(self):
         '''
-        This method clears the regular bet and hand if the hand ties with the Dealer. Ties do
-        not normally result in casino wins.
+        This method clears the bet on the split hand if it ties with the Dealer. Ties do not
+        normally result in casino wins.
         
         This method accepts no arguments and returns no values. The reason for the latter is that
         there is no deduction from the bank, nor gain in a tie.
         '''
         self.split_bet = 0
-        self.split_hand = []
-        self.soft_split_score = self.hard_split_score = 0
         return
     
     def ins(self, dealer_blackjack):
         '''
-        This method hands the bets taken on the Dealer getting a blackjack. This bet only happens
+        This method handles bets taken on the Dealer getting a blackjack. This bet only happens
         when the Dealer's face up card is an Ace, 10, or face card. Other methods or functions will
         handle creating this bet when the conditions for it are met.
         
@@ -398,7 +384,7 @@ class Player(object):
         else:
             # The Dealer did not get blackjack. The insurance bet is deducted from the player's bank.
             self.bank -= self.insurance
-        self.insurance = 0
+
         # In case the bet was deducted from the bank, we need to check it.
         if self.bank <= 0:
             return False
@@ -408,7 +394,8 @@ class Player(object):
     def end_round(self):
         '''
         This method resets all data, except Player.name, and Player.bank. This method takes no
-        arguments and returns no values. It also may not be needed for the game.
+        arguments and returns no values. It is used at the end of a round, after the Dealer's
+        turn.
         '''
         self.hand = []
         self.soft_hand_score = 0
@@ -627,7 +614,7 @@ class Player(object):
             answer = raw_input("Would like to double down now? y/n")
             if answer[0].lower() == 'y':
                 if split == True:
-                    print("The bet on your split hand was (0). You may increase the bet up to that amount.".format(self.split_bet))
+                    print("The bet on your split hand was {0}. You may increase the bet up to that amount.".format(self.split_bet))
                     while True:
                         try:
                             new_bet = raw_input("Enter an amount between 0 and {0}. 0 indicates you changed your mind.".format(self.split_bet))
@@ -640,7 +627,7 @@ class Player(object):
                                 continue
                         break
                 else:
-                    print("The bet on your original hand was (0). You may increase the bet up to that amount.".format(self.bet))
+                    print("The bet on your original hand was {0}. You may increase the bet up to that amount.".format(self.bet))
                     while True:
                         try:
                             new_bet = raw_input("Enter an amount between 0 and {0}. 0 indicates you changed your mind.".format(self.bet))

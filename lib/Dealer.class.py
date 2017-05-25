@@ -16,18 +16,33 @@ class Dealer(Player):
         hard_hand_score: integer value of the "hard" score of the player's hand
         visible_card: single tuple showing hand[0]
         visible_score: integer score of the visible card
-        blackjack_flag: True if the dealer's visible card is an Ace or a 10 value card, False otherwise
+        blackjack_flag: True if the dealer's visible card is an Ace or a 10 value card,
+            False otherwise
     
-    Inherited Attributes:
+    Inherited Attributes (from Player class):
         hand, soft_hand_score, hard_hand_score
     
     Methods:
-        __init__:
-        __str__:
-        dealer_print:
-        add_card_to_hand:
+        __init__: initializes the attributes specific to dealer objects
+        __str__: Prints Dealer (self.name), dealer's visible_card, and the 
+            score for the visible card. Used during player turns.
+        dealer_print: prints the actual hand and score in a format similar
+            to the print(Player) function. Used during dealer's turn.
+        add_card_to_hand: adds a card to the dealer's hand, updates 
+            visible_card (a hand) and its scores on second deal, updates
+            the actual hand scores,  sets the blackjack_flag for the right
+            ranks of visible_card, and returns 'playable', 'blackjack', 
+            or 'bust' when finished. Like the Player version, it uses the
+            inherited score_hand() method for scoring visible and actual hands.
+        end_round: resets to start hand data and flags
+            dealer_bust: This method accepts accepts an integer of the total bets
+            of players not eliminated during the player turns in this round. The
+            method deducts this total bet from the dealer's bank.
+        dealer_bust: accepts an integer of the total bets of players not eliminated during
+            the player turns in this round. The method deducts this total bet from the dealer's
+            bank. If the losses break the bank, it returns False. Otherwise, it returns True.
         
-    Inherited Methods:
+    Inherited Methods (from Player class):
         __len__, __del__, score_hand
 
     """
@@ -150,3 +165,17 @@ class Dealer(Player):
         self.visible_hard_score = 0
         return
 
+    def dealer_bust(self, remaining_bets):
+        '''
+        This method accepts accepts an integer of the total bets of players not eliminated during
+        the player turns in this round. The method deducts this total bet from the dealer's bank.
+        If the losses break the bank, it returns False. Otherwise, it returns True.
+        '''
+        losses = remaining_bets
+        self.bank -= losses
+        if self.bank <= 0:
+            print("The Dealer's bank has been broken. The player with highest bank wins the game.")
+            return False
+        else:
+            print("The Dealer remains solvent. The game may continue.")
+            return True
