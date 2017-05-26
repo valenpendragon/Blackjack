@@ -3,7 +3,7 @@ import random
 
 class CardShoe(object):
     '''
-    This abstract base class is used to simulate a six deck shoe.
+    This class is used to simulate a six deck shoe.
         
     Class Order Attributes:
         suits: a list of the suits used in normal playing card decks
