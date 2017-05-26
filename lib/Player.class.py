@@ -32,9 +32,7 @@ class Player(object):
         bank: integer number of dollars the player currently has in chips
         bet: current amount bet on the outcome of the hand vs dealer's hand
         split_bet: tracks any bets applied to a card split hand
-        insurance: tracks the amount of any side bets taken on the dealer getting blackjack. It
-            takes a boolean for the Dealer's blackjack. It returns True for a positive bank,
-            False if the Player's bank is zero or negative.
+        insurance: tracks the amount of any side bets taken on the dealer getting blackjack
     
     Methods:
         __init__: Creates the player object, initializing all of the attributes. The bank has a
@@ -87,6 +85,8 @@ class Player(object):
             bet of up to double the original amount. A 0 amount will be considered an change of 
             heart. it loops until a valid amount is entered. it calls the appropriate bet method
             for the type of hand.
+        diagnostic_print: This method prints out all of the attributes and object stored in this
+            object. Normally, this is used for code diagnostics only.
         
       
     """
@@ -642,4 +642,26 @@ class Player(object):
             else:
                 print("The bet will remain unchanged.")
             print(self)
+        return
+    
+    def diagnostic_print(self):
+        '''
+        This method is used to print out all object attributes in a readable format. It is 
+        used to help debug issues with game code, not for looking under the hood.
+        '''
+        print("Class Order Attributes:")
+        print("Values Dictionary: ", Player.values)
+        print("Player Attributes: ")
+        print("Name: ", self.name)
+        print("Hand: ", self.hand)
+        print("Soft Score: ", self.soft_hand_score)
+        print("Hard Score: ", self.hard_hand_score)
+        print("Split Flag: ", self.split_flag)
+        print("Split Hand: ", self.split_hand)
+        print("Soft Score for Split Hand: ", self.soft_split_score)
+        print("Hard Score for Split Hand: ", self.hard_split_score)
+        print("Remaining Bank: ", self.bank)
+        print("Bet on Hand: ", self.bet)
+        print("Bet on Split Hand: ", self.split_bet)
+        print("Insurance Bet: ", self.insurance)
         return

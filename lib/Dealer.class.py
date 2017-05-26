@@ -12,10 +12,12 @@ class Dealer(Player):
         
     Attributes:
         hand: tracks the card tuples (rank, suit) of the cards in the Dealer's hand
+        bank: tracks dealers bank (integer)
         soft_hand_score: integer value of the current "soft" score of the Dealer's hand
         hard_hand_score: integer value of the "hard" score of the player's hand
         visible_card: single tuple showing hand[0]
-        visible_score: integer score of the visible card
+        visible_soft_score: integer soft score of the visible card
+        visible_hard_score: integer hard score of the visible card (only differs on Aces)
         blackjack_flag: True if the dealer's visible card is an Ace or a 10 value card,
             False otherwise
     
@@ -38,9 +40,12 @@ class Dealer(Player):
             dealer_bust: This method accepts accepts an integer of the total bets
             of players not eliminated during the player turns in this round. The
             method deducts this total bet from the dealer's bank.
-        dealer_bust: accepts an integer of the total bets of players not eliminated during
-            the player turns in this round. The method deducts this total bet from the dealer's
-            bank. If the losses break the bank, it returns False. Otherwise, it returns True.
+        dealer_losses: The parameter is total of all bets that the dealer lost 
+            this round, including insurance and player blackjacks. If the losses
+            break the bank, it returns False. Otherwise, it returns True.
+        diagnostic_print: This method prints out all attributes of the Dealer object,
+            including class order attributes. It is intended to help debug coding
+            errors.
         
     Inherited Methods (from Player class):
         __len__, __del__, score_hand
@@ -52,10 +57,12 @@ class Dealer(Player):
         '''
         This method creates the following attributes for Dealers:
             hand: creates an empty list
+            bank: set to 100,000
             soft_hand_score: set to 0
             hard_hand_score: set to 0
             visible_card: empty list
-            visible_score: set to 0
+            visible_soft_score: set to 0
+            visible_hard_scort: set to 0
             blackjack_flag: set to False
         '''
         self.hand = []
@@ -89,7 +96,6 @@ class Dealer(Player):
             print("\n\tDealer has a hard {0} or a soft {1} showing".format(self.visible_hard_score, self.visible_soft_score))
         return "Dealer complete"
     
-   
     def dealer_print(self):
         '''
         This method is used during the dealer's turn to print out the full hand and
@@ -150,7 +156,7 @@ class Dealer(Player):
             return 'blackjack'
         else:
             return 'playable'
-
+        
     def end_round(self):
         '''
         This method resets all data, except Dealer.name, and Dealer.bank. This method takes no
@@ -165,11 +171,11 @@ class Dealer(Player):
         self.visible_hard_score = 0
         return
 
-    def dealer_bust(self, remaining_bets):
+    def dealer_losses(self, remaining_bets):
         '''
-        This method accepts accepts an integer of the total bets of players not eliminated during
-        the player turns in this round. The method deducts this total bet from the dealer's bank.
-        If the losses break the bank, it returns False. Otherwise, it returns True.
+        This method accepts an integer of the total of all player winnings this round.
+        The method deducts this total bet from the dealer's bank. If the losses break the
+        bank, it returns False. Otherwise, it returns True.
         '''
         losses = remaining_bets
         self.bank -= losses
@@ -179,3 +185,31 @@ class Dealer(Player):
         else:
             print("The Dealer remains solvent. The game may continue.")
             return True
+    
+    def dealer_wins(self, player_bets):
+        '''
+        This method accepts an integer of the total of all player losses for this round.
+        This method adds the wins to the dealer's bank. There is no return value.
+        '''
+        wins = player_bets
+        self.bank += wins
+        return
+
+    def diagnostic_print(self):
+        '''
+        This method prints out all of the Dealer object attributes to help debud code. It is 
+        not intended for use outside of debugging programs.
+        '''
+        print("Class Order Attribute: ")
+        print("Name: ", Dealer.name)
+        print("Values Dictionary: ", Dealer.values)
+        print("Dealer Object Attributes:")
+        print("Dealer's Hand: ", self.hand)
+        print("Soft Score: ", self.soft_hand_score)
+        print("Hard Score: ", self.hard_hand_score)
+        print("Visible Card: ", self.visible_card)
+        print("Visible Soft Score: ", self.visible_soft_score)
+        print("Visible Hard Score: ", self.visible_hard_score)
+        print("Blackjack Flag: ", self.blackjack_flag)
+        print("Dealer's Remaining Bank: ", self.bank)
+        return

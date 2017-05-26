@@ -25,6 +25,8 @@ class CardShoe(object):
             deletes the CardShoe object
         remove_top: removes the top card (index 0) from the shuffled deck
             and returns the tuple of the card (rank, suit)
+        diagnostic_print: prints out the entire CardShoe object, including
+            all class order attributes, and current attributes
         
     '''
     suits = ['S', 'D', 'H', 'C']
@@ -81,3 +83,16 @@ class CardShoe(object):
         top_card = self.shuffled_deck[0]
         self.shuffled_deck.pop(0)
         return top_card
+
+    def diagnostic_print(self):
+        '''
+        This method allows the programmer to print out all of the attributes, including
+        class order attributes, for the defined object to help debug code. It is not 
+        normally used with running program.
+        '''
+        print("Class Order Attributes:")
+        print("Ranks: ", self.ranks)
+        print("Suits: ", self.suits)
+        print("Number of cards in Shoe: ", self.length)
+        print("Shuffled_Shoe: ", self.shuffled_deck)
+        return
