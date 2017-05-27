@@ -133,25 +133,26 @@ class Player(object):
         the split_flag is True, it adds the data for a split hand as well.
         '''
         print("Player:\t", self.name)
-        print("Chips:\t${0}.00".format(self.bank))
-        print("\n\tCurrent Hand: ", end='')
-        # This suppresses the linefeed and flushes the buffer to make the ouput
-        # look like a single line of code.
-                                                      
-        for rank, suit in self.hand:
-            print("{0}-{1}  ".format(rank,suit), end='')
-        print("\n\tSoft score for this hand: ", self.soft_hand_score)
-        print("\tHard score for this hand: ", self.hard_hand_score)
-        print("\n\tBet on this hand: $", self.bet)
-        if self.split_flag == True:
-            print("\n\tSplit Hand: ", end='')
-            for rank, suit in self.split_hand:
+        print("Chips:\t${0}".format(self.bank))
+        
+        if self.hard_hand_score != 0:       
+            print("\n\tCurrent Hand: ", end='')
+            # This suppresses the linefeed and flushes the buffer to make the ouput
+            # look like a single line of code.                                                      
+            for rank, suit in self.hand:
                 print("{0}-{1}  ".format(rank,suit), end='')
-            print("\n\tSoft score for this hand: ", self.soft_split_score)
-            print("\tHard score for this hand: ", self.hard_split_score)
-            print("\n\tBet on this hand: $", self.split_bet)
-        print("\nInsurance against Dealer Blackjack: $", self.insurance)
-        return "Data on "+ self.name + " is complete"
+            print("\n\tSoft score for this hand: ", self.soft_hand_score)
+            print("\tHard score for this hand: ", self.hard_hand_score)
+            print("\n\tBet on this hand: $", self.bet)
+            if (self.split_flag == True) and (self.hard_split_score != 0):
+                print("\n\tSplit Hand: ", end='')
+                for rank, suit in self.split_hand:
+                    print("{0}-{1}  ".format(rank,suit), end='')
+                print("\n\tSoft score for this hand: ", self.soft_split_score)
+                print("\tHard score for this hand: ", self.hard_split_score)
+                print("\n\tBet on this hand: $", self.split_bet)
+            print("\nInsurance against Dealer Blackjack: $", self.insurance)
+        return "Player " + self.name
     
     def __del__(self):
         '''
@@ -276,6 +277,9 @@ class Player(object):
         two cards dealt). Casinos always has a better payout ratio for a player winning a
         blackjack (assuming the Dealer doesn't tie with the player).
         
+        This method erases the original bet and clears the hand since this result is handled
+        immediately after the second card deal takes place.
+        
         This method does not return a value. The multiplier needs to be a decimal or an
         integer, not a fraction.
         
@@ -283,6 +287,9 @@ class Player(object):
         '''
         winnings = int(multiplier * self.bet)
         self.bank += winnings
+        self.hand = []
+        self.soft_hand_score = self.hard_hand_score = 0
+        sefl.bet = 0
         return
     
     def win(self):
@@ -571,7 +578,7 @@ class Player(object):
             print("{0}'s total bets will exceed the bank of {1}".format(self.name, self.bank))
             return 'bust'
         self.insurance += ins_amt
-        print("{0} has been accepted as an acceptable insurance bet.".format(self.insurance))
+        print("{0} has been accepted as an insurance bet.".format(self.insurance))
         return 'success'
     
     def split_check(self):

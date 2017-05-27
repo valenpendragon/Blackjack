@@ -68,7 +68,7 @@ class CardShoe(object):
     def __str__(self):
         # This prints out a statement indicating that the deck has been
         # initialized and the current entries remaining in it.
-        return "A shuffled shoe containing "+ str(len(self.shuffled_deck)) + " cards."
+        return "Deck: A shuffled shoe containing "+ str(len(self.shuffled_deck)) + " cards."
     
     def __del__(self):
         print("The current deck shoe has been removed from the game.")

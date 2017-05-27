@@ -25,7 +25,9 @@ class Dealer(Player):
         hand, soft_hand_score, hard_hand_score
     
     Methods:
-        __init__: initializes the attributes specific to dealer objects
+        __init__: initializes the attributes specific to dealer objects. Will 
+            accept an integer to set dealer's starting bank to a value other
+            than 100,000 default.
         __str__: Prints Dealer (self.name), dealer's visible_card, and the 
             score for the visible card. Used during player turns.
         dealer_print: prints the actual hand and score in a format similar
@@ -53,20 +55,22 @@ class Dealer(Player):
     """
     name = 'Dealer'
     
-    def __init__(self):
+    def __init__(self, bank=100000):
         '''
         This method creates the following attributes for Dealers:
             hand: creates an empty list
-            bank: set to 100,000
+            bank: set to 100,000 (by default, but can be changed via an argument)
             soft_hand_score: set to 0
             hard_hand_score: set to 0
             visible_card: empty list
             visible_soft_score: set to 0
             visible_hard_scort: set to 0
             blackjack_flag: set to False
+        
+        INPUT: integer dealer starting bank, defaults to 100,000
         '''
         self.hand = []
-        self.bank = 100000
+        self.bank = bank
         self.soft_hand_score = self.hard_hand_score = 0
         self.visible_card = []
         self.visible_soft_score = self.visible_hard_score = 0
@@ -81,20 +85,21 @@ class Dealer(Player):
         Dealer.dealer_print() prints out the full Dealer data during the dealer's turn.
         '''
         print("Dealer")
-        print("Dealer's Bank:\t${0}.00".format(self.bank))
-        print("\n\tDealer shows: ", end='')
-        # This suppresses the line feed.
+        print("Dealer's Bank:\t${0}".format(self.bank))
         
-        if len(self) >= 1:
-            print("Facedown", end='')
-        if len(self) >= 2:
-            (rank,suit) = self.visible_card[0]
-            print("  {0}-{1}".format(rank, suit), end='')
-        if self.visible_soft_score == self.visible_hard_score:
-            print("\n\tDealer has {0} showing".format(self.visible_hard_score))
-        else:
-            print("\n\tDealer has a hard {0} or a soft {1} showing".format(self.visible_hard_score, self.visible_soft_score))
-        return "Dealer complete"
+        if self.hard_hand_score != 0:
+            print("\n\tDealer shows: ", end='')
+            # This suppresses the line feed.
+            if len(self) >= 1:
+                print("Facedown", end='')
+            if len(self) >= 2:
+                (rank,suit) = self.visible_card[0]
+                print("  {0}-{1}".format(rank, suit), end='')
+            if self.visible_soft_score == self.visible_hard_score:
+                print("\n\tDealer has {0} showing".format(self.visible_hard_score))
+            else:
+                print("\n\tDealer has a hard {0} or a soft {1} showing".format(self.visible_hard_score, self.visible_soft_score))
+        return "Dealer"
     
     def dealer_print(self):
         '''
@@ -102,7 +107,7 @@ class Dealer(Player):
         hand scores.
         '''
         print("Player:\t", self.name)
-        print("Bank:\t${0}.00".format(self.bank))
+        print("Bank:\t${0}".format(self.bank))
         print("\n\tCurrent Hand: ", end='')
         # This suppresses the linefeed and flushes the buffer to make the ouput
         # look like a single line of code.
@@ -194,7 +199,7 @@ class Dealer(Player):
         wins = player_bets
         self.bank += wins
         return
-
+    
     def diagnostic_print(self):
         '''
         This method prints out all of the Dealer object attributes to help debud code. It is 
