@@ -289,7 +289,7 @@ class Player(object):
         self.bank += winnings
         self.hand = []
         self.soft_hand_score = self.hard_hand_score = 0
-        sefl.bet = 0
+        self.bet = 0
         return
     
     def win(self):
@@ -438,7 +438,7 @@ class Player(object):
         try:
             amt_to_increase = int(new_increase)
         except TypeError:
-            print("The values is not a number")
+            print("The value suppied is not a number")
             return 'TypeError'
         except:
             print("An unknown error has occurred")
@@ -496,7 +496,7 @@ class Player(object):
         try:
             amt_to_increase = int(new_increase)
         except TypeError:
-            print("The values is not a number")
+            print("The value supplied is not a number")
             return 'TypeError'
         except:
             return 'Unknown'
