@@ -326,6 +326,7 @@ class Player(object):
         certain that the player had enough in their bank to cover bets made.
         '''
         self.bank -= self.bet
+        self.hand = []
         if self.bank <= 0:
             return False
         else:
@@ -343,6 +344,7 @@ class Player(object):
         certain that the player had enough in their bank to cover bets made.
         '''
         self.bank -= self.split_bet
+        self.split_hand = []
         if self.bank <= 0:
             return False
         else:
