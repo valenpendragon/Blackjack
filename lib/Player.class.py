@@ -438,7 +438,7 @@ class Player(object):
         try:
             amt_to_increase = int(new_increase)
         except TypeError:
-            print("The value suppied is not a number")
+            print("The value supplied is not a number")
             return 'TypeError'
         except:
             print("An unknown error has occurred")

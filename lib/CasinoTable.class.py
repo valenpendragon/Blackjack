@@ -137,7 +137,7 @@ later in the round. Once a player replies 'stand', that hand will receive no fur
 cards. If the player has a split hand, the process repeats for their second hand.\n
 Once all players have either busted or stopped with a playable hand, the dealer's
 turn begins. First, the dealer reveals the facedown or 'hold' card. If the dealer has
-a blackjack, all hands remaining lose, and any players with insurance bets win those
+a blackjack, all remaining hands lose, and any players with insurance bets win those
 bets. If the dealer does not have a blackjack, the dealer must take 'hits' (dealt
 cards) until their hard score reaches at least 17 or busts. If the dealer has a soft
 score between 17 and 21 and a hard score under 17, the dealer will take additional
@@ -168,15 +168,13 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
             card = self.deck.remove_top()
             result = self.players[i].add_card_to_hand(card)
             if result == 'blackjack':
-                print("Congratulations Player {0}, you have a Blackjack!!!")
-                winnings = int(self.players[i].bet * blackjack_multiplier)
+                print("Congratulations Player {0}, you have a Blackjack!!!".format(self.players[i].name))
+                winnings = int(self.players[i].bet * self.blackjack_multiplier[1])
                 print("You have won $", winnings)
                 self.players[i].blackjack(self.blackjack_multiplier[1])
                 self.players[0].dealer_losses(winnings)
         print("Dealing a card to ", self.players[0].name)
         card = self.deck.remove_top()
-        # Used to test blackjack_flag
-        # card = ('10', 'H')
         self.players[0].add_card_to_hand(card)
         if self.players[0].blackjack_flag == True:
             print(self)
@@ -200,4 +198,77 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
                                 print("Bet has been recorded. Good luck.")
                                 break
         print(self)
+        return
+
+    def initial_bets(self, min_bet = 10, max_bet = 200):
+        '''
+        The method calls for the initial bets from each player before dealing the first two
+        card to each player as the round starts.
+        
+        INPUT: integer min_bet and max_bet. These arguments have defaults in case the
+            method call does not supply them.
+            
+        This method returns no values.
+        '''
+        print("Please place your initial bet. This will serve as a maximum raise amount after")
+        print("the cards have been dealt.")
+        for i in xrange(1, self.table_index):
+            # The CasinoTable.end_round() method checks to see if any player's bank busted
+            # or if they have insufficient funds to meet the table minimum. They should be
+            # eliminated already.
+            while True:
+                print("The table minimum is ${0} and maximum is ${1}.".format(min_bet, max_bet))
+                bet = raw_input("Player {0}, you have {1} remaining. What would you like to bet? ".format(self.players[i].name, self.players[i].bank))
+                # Call the update_bet method for the player in question. It has all kinds of
+                # error trapping functionality.
+                result = self.players[i].update_bet(bet, min_bet, max_bet)
+                if result == 'success':
+                    break
+                else:
+                    print("Please try again.")
+                    continue
+        print("All starting bets are in.")
+        return
+    
+    def pairs_check(self, min_bet = 10, max_bet = 200):
+        '''
+        This method runs a check of all players with playable hands to see if anyone has a pair. It
+        calls Player.split_check() to verify it. If a player does have a pair, it offers to split the hand.
+        If the player agrees, it uses Player.split_pair to create the split_hand and set the split_flag.
+        It then ask for a bet on the new hand, then deals a second card to each hand. It skips any player
+        with a blank hand (because a blank hand indicates a blackjack).
+        
+        This method also needs arguments for min_bet and max_bet.
+        '''
+        for i in xrange(1, self.table_index):
+            result = self.players[i].split_check()
+            if result == True:
+                answer = raw_input("Player {0}, you have a pair showing. Would you like to split your hand? (y/n)".format(self.players[i].name))
+                if (answer[0].lower() == 'y'):
+                    print("Splitting your hand per your request.")
+                    self.players[i].split_pair()
+                    print("Here is the result of the split.")
+                    self.players[i].print_split()
+                    print("Before I can deal you another card for each hand, you need to place a separate bet on your split hand.")
+                    while True:
+                        print("The same rules apply to this hand. The table minimum is ${0} and maximum is ${1}.".format(min_bet, max_bet))
+                        bet = raw_input("Player {0}, you have {1} remaining. What would you like to bet? ".format(self.players[i].name, self.players[i].bank))
+                        # Call the update_split_bet method for the player in question. It has all kinds of
+                        # error trapping functionality.
+                        result = self.players[i].update_split_bet(bet, min_bet, max_bet)
+                        if result == 'success':
+                            break
+                        else:
+                            print("Please try again.")
+                            continue
+                    print("Thank you for your bet. Dealing cards to each hand.")
+                    card = self.deck.remove_top()
+                    # All hands should be playable since they only have two cards. So, the results
+                    # do not need to be tracked here. The hit/stand part of the player turn will 
+                    # catch all of that.
+                    self.players[i].add_card_to_hand(card)
+                    card = self.deck.remove_top()
+                    self.players[i].add_card_to_split(card)
+                    print("Here are your new hands and their scores.")
+                    print(self.players[i])
         return
