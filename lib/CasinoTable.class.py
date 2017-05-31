@@ -33,6 +33,22 @@ class CasinoTable(object):
         deal_round: Deals a round of cards to each player, printing out the table when 
             completed. It checks for player blackjacks and pays them out. it also checks
             the dealer's blackjack_flag and offers insurance bets.
+        initial_bets: Before any cards are dealt, this method ask for initial bets for each
+            player for the round. It uses Player.update_bet for error checking and has
+            defaults for min_bet and max_bet which a derived class for a specific casino
+            can override.
+        pairs_check: Runs through the players looking for pairs by calling Player.split_check.
+            It offers splits and additional cards to those players who wish to split their 
+            hands. It will take a split_bet as well, using Player.update_split_bet. 
+            Like initial_bets, it has defaults for min_bet and max_bet that a derived class
+            for a specifiic casino could override.
+        double_down: This method offers players the option to increase their bets on their 
+            hands if they have playable hands and did not have blackjack already. 
+            Player.double_down(card_hand, flag) does the error checking on the amount. The 
+            min is zero (taken as second thoughts), the max is the original bet, doubling it.
+            The Player methods verify that hands still have two cards and the bet amounts are
+            correct.
+        
     """
     def __init__(self, starting_bank = 10000):
         '''
@@ -272,3 +288,31 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
                     print("Here are your new hands and their scores.")
                     print(self.players[i])
         return
+    
+    def double_down(self):
+        '''
+        This method runs around the table, calling Player.double_down() to check that they have two cards
+        in the hand and to ask if they want to double down on their current bet on that hand. The reason
+        it checks to see if they have 2 cards in that hand is that a blackjack would have already been
+        resolved by this point and the hand reset to an empty list.
+        
+        The Player class method is as follows: Player.double_down(card_hand, flag).
+        
+        The card_hand is either the Player.hand or Player.split_hand attribute that needs to be examined.
+        The second argument is a boolean telling the method if the hand is the regular or split hand.
+        True = split hand, False = regular hand. The updated bets are handled by Player.double_down and
+        the Player.update_bet and Player.update_split, which handles betting errors.
+        
+        After all player's bets have been updated, it prints the CasinoTable again.
+        '''
+        for i in xrange(1, self.table_index):
+            # This checks the regular hand and offers a double down bet.
+            self.players[i].double_down(self.players[i].hand, False)
+            if self.players[i].split_flag == True:
+                # There is a split hand that must be checked and a double down bet offered.
+                self.players[i].double_down(self.players[i].split_hand, True)
+        # Now that all bets have been updated, reprint the table. The print(Player) method skips
+        # the hands and bets of any player with an already empty hand.
+        print(self)
+        return
+    
