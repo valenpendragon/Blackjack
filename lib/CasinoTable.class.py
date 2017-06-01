@@ -257,36 +257,40 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
         This method also needs arguments for min_bet and max_bet.
         '''
         for i in xrange(1, self.table_index):
-            result = self.players[i].split_check()
-            if result == True:
-                answer = raw_input("Player {0}, you have a pair showing. Would you like to split your hand? (y/n)".format(self.players[i].name))
-                if (answer[0].lower() == 'y'):
-                    print("Splitting your hand per your request.")
-                    self.players[i].split_pair()
-                    print("Here is the result of the split.")
-                    self.players[i].print_split()
-                    print("Before I can deal you another card for each hand, you need to place a separate bet on your split hand.")
-                    while True:
-                        print("The same rules apply to this hand. The table minimum is ${0} and maximum is ${1}.".format(min_bet, max_bet))
-                        bet = raw_input("Player {0}, you have {1} remaining. What would you like to bet? ".format(self.players[i].name, self.players[i].bank))
-                        # Call the update_split_bet method for the player in question. It has all kinds of
-                        # error trapping functionality.
-                        result = self.players[i].update_split_bet(bet, min_bet, max_bet)
-                        if result == 'success':
-                            break
-                        else:
-                            print("Please try again.")
-                            continue
-                    print("Thank you for your bet. Dealing cards to each hand.")
-                    card = self.deck.remove_top()
-                    # All hands should be playable since they only have two cards. So, the results
-                    # do not need to be tracked here. The hit/stand part of the player turn will 
-                    # catch all of that.
-                    self.players[i].add_card_to_hand(card)
-                    card = self.deck.remove_top()
-                    self.players[i].add_card_to_split(card)
-                    print("Here are your new hands and their scores.")
-                    print(self.players[i])
+            # This conditional covers the  possibility of a player blackjack. Blackjack methods
+            # clear up the player's hand as a signal to other methods that nothing needs to be
+            # done with that player.
+            if len(self.players[i]) != 0:
+                result = self.players[i].split_check()
+                if result == True:
+                    answer = raw_input("Player {0}, you have a pair showing. Would you like to split your hand? (y/n)".format(self.players[i].name))
+                    if (answer[0].lower() == 'y'):
+                        print("Splitting your hand per your request.")
+                        self.players[i].split_pair()
+                        print("Here is the result of the split.")
+                        self.players[i].print_split()
+                        print("Before I can deal you another card for each hand, you need to place a separate bet on your split hand.")
+                        while True:
+                            print("The same rules apply to this hand. The table minimum is ${0} and maximum is ${1}.".format(min_bet, max_bet))
+                            bet = raw_input("Player {0}, you have {1} remaining. What would you like to bet? ".format(self.players[i].name, self.players[i].bank))
+                            # Call the update_split_bet method for the player in question. It has all kinds of
+                            # error trapping functionality.
+                            result = self.players[i].update_split_bet(bet, min_bet, max_bet)
+                            if result == 'success':
+                                break
+                            else:
+                                print("Please try again.")
+                                continue
+                        print("Thank you for your bet. Dealing cards to each hand.")
+                        card = self.deck.remove_top()
+                        # All hands should be playable since they only have two cards. So, the results
+                        # do not need to be tracked here. The hit/stand part of the player turn will 
+                        # catch all of that.
+                        self.players[i].add_card_to_hand(card)
+                        card = self.deck.remove_top()
+                        self.players[i].add_card_to_split(card)
+                        print("Here are your new hands and their scores.")
+                        print(self.players[i])
         return
     
     def double_down(self):
@@ -315,4 +319,122 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
         # the hands and bets of any player with an already empty hand.
         print(self)
         return
+    
+    def hit_or_stand(self):
+        '''
+        This method is used to beging the player turn. During the player turn, the method asks each player
+        who has a playable hand if they want an additional card. A "hit" response gets a dealt card. It
+        does this by taking the top card and calling Player.add_card_to_hand or, for the split hand,
+        add_card_to_split. These methods rescore the hand and return False if the player busts. If the
+        hand is playable, it will return True to hit_or_stand, which will ask the player if they want yet
+        another card.This continues until either the player busts or the player replies "stand".
+        
+        If the player busts, hit_or_stand calls Player.reg_loss or Player.split_loss to wrap up the lost
+        bets. Player winnings will be handled by CasinoTable.dealer_turn().
+        
+        The player must reply either "hit" or "stand". All other responses will be ignored and will loop
+        back to get one of the two acceptable responses. Once a player stands, their part of the player
+        turn is over.
+        
+        Breaking the bank does not mean the end of the player's game at this point, since they could
+        win an insurance bet or a split hand. It will remove them if they do not have a split hand or
+        and insurance bet, however.
+        
+        OUTPUT: string indicating the status of the game at the end of the players turn
+            'none' = all players were eliminated in this round
+            're-deal' = no players hands remain after blackjack and players turns have ended
+            'playable' = at least one hand remains to challenege the Dealer
+        '''
+        # This will increment as playable hands survive the players turn.
+        playable_hands = 0
+        for i in xrange(1, self.table_index):
+            # First, we need to check the hand. An non-empty hand will be playable after being dealt two
+            # cards. Empty hands already collected their blackjack winnings. A blackjack has no split
+            # hand either.
+            if len(self.players[i]) != 0:
+                while True:
+                    print(self.players[i])
+                    answer = raw_input("Player {0}, would like another card for your original hand? (hit/stand): ".format(self.players[i].name))
+                    if (answer.lower() != 'hit') and (answer.lower() != 'stand'):
+                        print("Please respond with 'hit' or 'stand.")
+                        continue
+                    elif answer.lower() == 'hit':
+                        card = self.deck.remove_top()
+                        rank, suit = card
+                        print("New card is {0}-{1}".format(rank, suit))
+                        result = self.players[i].add_card_to_hand(card)
+                        if (result == 'bust'):
+                            print(self.players[i])
+                            loss_result = self.players[i].reg_loss()
+                            self.players[0].dealer_wins(self.players[i].bet)
+                            if loss_result == False:
+                                if (self.players[i].split_flag == False) and (self.players[i].insurance == 0):
+                                    # The player's bank is zero or negative from the first hand. If they
+                                    # have no split hand nor an insurance bet, they are eliminated at
+                                    # this point.
+                                    print("Player {0} has broken their bank and been eliminated from the game.".format(self.players[i].name))
+                                    del(self.players[i])
+                                    self.table_index -= 1
+                                else: 
+                                    print("Player {0} busted, but may survive the round on a split hand or insurance bet.".format(self.players[i].name))
+                                    break
+                            else:
+                                print("Player {0} busted, but still has ${1} remaining.".format(self.players[i].name, self.players[i].bank))
+                                break
+                        else:
+                            # The hand is playable. Loop back and ask them if they want to hit or stand.
+                            continue
+                    else: # answer.lower() == 'stand'
+                        playable_hands += 1
+                        print("Player {0} stands. Good luck in the Dealer's turn.".format(self.players[i].name))
+                        break
+            # Now, we need to deal with a split hand, if it exists.
+            if self.players[i].split_flag == True:
+                print("Entering split hand algorithm.")
+                while True:
+                    print(self.players[i])
+                    answer = raw_input("Player {0}, would like another card for your split hand? (hit/stand): ".format(self.players[i].name))
+                    if (answer.lower() != 'hit') and (answer.lower() != 'stand'):
+                        print("Please respond with 'hit' or 'stand.")
+                        continue
+                    elif answer.lower() == 'hit':
+                        card = self.deck.remove_top()
+                        rank, suit = card
+                        print("New card is {0}-{1}".format(rank, suit))
+                        result = self.players[i].add_card_to_split(card)
+                        if (result == 'bust'):
+                            print(self.players[i])
+                            loss_result = self.players[i].split_loss()
+                            self.players[0].dealer_wins(self.players[i].split_bet)
+                            if loss_result == False:
+                                if (self.players[i].insurance == 0):
+                                    # The player's bank is zero or negative from losses this turn. If they
+                                    # have no insurance bet, they are eliminated at this point.
+                                    print("Player {0} has broken their bank and been eliminated from the game.".format(self.players[i].name))
+                                    del(self.players[i])
+                                    self.table_index -= 1
+                                else: 
+                                    print("Player {0} busted, but may survive the round on an insurance bet.".format(self.players[i].name))
+                                    break
+                            else:
+                                print("Player {0} busted, but still has ${1} remaining.".format(self.players[i].name, self.players[i].bank))
+                                break
+                        else:
+                            # The hand is playable. Loop back and ask them if they want to hit or stand.
+                            continue
+                    else: # answer.lower() == 'stand'
+                        playable_hands += 1
+                        print("Player {0} stands. Good luck in the Dealer's turn.".format(self.players[i].name))
+                        break
+        # This ends the players turn.
+        print("The player turn is complete. The table stands at:")
+        print(self)
+        if self.table_index ==0:
+            print("No players remain in the game. The house wins.")
+            return 'none'
+        if playable_hands == 0:
+            # No playable hands remain.
+            return 're-deal'
+        else:
+            return 'playable'
     

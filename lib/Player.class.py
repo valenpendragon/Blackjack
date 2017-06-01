@@ -135,7 +135,7 @@ class Player(object):
         print("Player:\t", self.name)
         print("Chips:\t${0}".format(self.bank))
         
-        if self.hard_hand_score != 0:       
+        if len(self.hand) != 0:       
             print("\n\tCurrent Hand: ", end='')
             # This suppresses the linefeed and flushes the buffer to make the ouput
             # look like a single line of code.                                                      
@@ -144,15 +144,15 @@ class Player(object):
             print("\n\tSoft score for this hand: ", self.soft_hand_score)
             print("\tHard score for this hand: ", self.hard_hand_score)
             print("\n\tBet on this hand: $", self.bet)
-            if (self.split_flag == True) and (self.hard_split_score != 0):
-                print("\n\tSplit Hand: ", end='')
-                for rank, suit in self.split_hand:
-                    print("{0}-{1}  ".format(rank,suit), end='')
-                print("\n\tSoft score for this hand: ", self.soft_split_score)
-                print("\tHard score for this hand: ", self.hard_split_score)
-                print("\n\tBet on this hand: $", self.split_bet)
-            print("\nInsurance against Dealer Blackjack: $", self.insurance)
-        return "Player " + self.name
+        if (self.split_flag == True) and (len(self.split_hand) != 0):
+            print("\n\tSplit Hand: ", end='')
+            for rank, suit in self.split_hand:
+                print("{0}-{1}  ".format(rank,suit), end='')
+            print("\n\tSoft score for this hand: ", self.soft_split_score)
+            print("\tHard score for this hand: ", self.hard_split_score)
+            print("\n\tBet on this hand: $", self.split_bet)
+        print("\nInsurance against Dealer Blackjack: $", self.insurance)
+        return "Player " + self.name + '\n'
     
     def __del__(self):
         '''
