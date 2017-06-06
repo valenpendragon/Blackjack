@@ -42,9 +42,11 @@ class Dealer(Player):
             dealer_bust: This method accepts accepts an integer of the total bets
             of players not eliminated during the player turns in this round. The
             method deducts this total bet from the dealer's bank.
-        dealer_losses: The parameter is total of all bets that the dealer lost 
+        dealer_lost: The parameter is total of all bets that the dealer lost 
             this round, including insurance and player blackjacks. If the losses
             break the bank, it returns False. Otherwise, it returns True.
+        dealer_wins: The parameter is the total of all bets the dealer won this round,
+            including insurance bets. It is added to the dealer's bank.
         diagnostic_print: This method prints out all attributes of the Dealer object,
             including class order attributes. It is intended to help debug coding
             errors.
@@ -176,7 +178,7 @@ class Dealer(Player):
         self.visible_hard_score = 0
         return
 
-    def dealer_losses(self, remaining_bets):
+    def dealer_lost(self, remaining_bets):
         '''
         This method accepts an integer of the total of all player winnings this round.
         The method deducts this total bet from the dealer's bank. If the losses break the
@@ -191,7 +193,7 @@ class Dealer(Player):
             print("The Dealer remains solvent. The game may continue.")
             return True
     
-    def dealer_wins(self, player_bets):
+    def dealer_won(self, player_bets):
         '''
         This method accepts an integer of the total of all player losses for this round.
         This method adds the wins to the dealer's bank. There is no return value.

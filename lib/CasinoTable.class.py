@@ -24,12 +24,15 @@ class CasinoTable(object):
             players[1+]: Player objects up to the max number the table allows (table_size)
     
     Methods:
-        __init__: Creats a table, initializing the attributes It will generate a CardShoe,
+        __init__: Creats a table, initializing the attributes. It will generate a CardShoe,
             a Dealer, and prompt for players up to table_size. It accepts an integer for
-            dealer's starting bank, but has a default of 100,000 (10,000 during testing).
+            dealer's starting bank, but has a default of 100,000. Starting bank can be
+            overridden in a derived class.
         __str__: Prints out the table for the players to see. Normally, used after a full
             deal has been done.
         diagnostic_print: prints out all attributes to assist with code debugging
+        rules: this announces the general rules of play, including using 'Break the bank'
+            to defeat the house
         deal_round: Deals a round of cards to each player, printing out the table when 
             completed. It checks for player blackjacks and pays them out. it also checks
             the dealer's blackjack_flag and offers insurance bets.
@@ -48,22 +51,46 @@ class CasinoTable(object):
             min is zero (taken as second thoughts), the max is the original bet, doubling it.
             The Player methods verify that hands still have two cards and the bet amounts are
             correct.
+        hit_or_stand: this method asks the players if they want a hit or stand. it handles
+            any busts that happen to players using the Player.reg_loss or Player.split_loss.
+            Dropped the player deletion from this method, due to issues incrementing through
+            the player list. This method returns codes 'none' or 'playable'.
+        dealer_autowin: When the Dealer doesn't need to play its hand, this method performs
+            the hold card reveal for the dealer.
+        dealer_turn: this method plays the dealer's hand according to the rules:
+            ○ dealer stands on a hard 17+
+            ○ dealer stands on any 21 (blackjack or otherwise)
+            ○ dealer must take a card on a soft 16 or less
+            ○ dealer must stand on a hard 16 or less with a soft score that beats at least
+                one players playable hand and is greater than 16.
+            ○ dealer must take a card on a hard 16- with a soft score that does not beat any
+                playable player hands.
+            then, it determines all remaining wins and losses, using max_min_score and Player
+            and Dealer class win/lose/tie methods to handle the changes to banks.
+        max_min_score: this method pulls out the max and min hand scores after eliminating
+            hands that busted or blackjacked. It returns a tuple (max,min).
+        end_round: calls the end_round() methods in Dealer and Player classes to clear the
+            bets, hands, and so on. It will also ask if the players want a new CardShoe and
+            calls replace_cardshoe to get one. Dealer replace card shoes at 100 cards or less.
+            If any players have a bank less than the min_bet for the table, they will be
+            eliminated (including any who busted their bank).
+        replace_cardshoe: deletes the CardShoe object called deck and initializes a new deck
         
     """
-    def __init__(self, starting_bank = 10000):
+    def __init__(self, starting_bank = 100000):
         '''
         This method creates several objects and attributes.
         
         For initial testing:
             blackjack multiplier will be set to ('3:2', 1.50)
             starting bank will be 10,000
-            table_size will be 1. It will be increased to 3, then to 5.
+            table_size will be 3 for testing and 5 for normal play.
             
         '''
         self.blackjack_multiplier = ('3:2', 1.50)
         print("This table has a blackjack payout of ", self.blackjack_multiplier[0])
         self.starting_bank = starting_bank
-        self.table_size = 2
+        self.table_size = 3
         print("This table allows {0} player(s).".format(self.table_size))
         self.table_index = self.table_size + 1
         self.players = []
@@ -182,15 +209,24 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
         for i in xrange(1, self.table_index):
             print("Dealing a card to ", self.players[i].name)
             card = self.deck.remove_top()
+            # These blocks were used to test the player blackjack payout or splitting hands.
+            # if len(self.players[i]) == 0 and i == 2:
+            #     card = ('A', 'S')
+            # elif len(self.players[i]) == 1 and i == 2:
+            #     card = ('10', 'D')
+            # if len(self.players[i]) == 1 and i == 1:
+            #    card = self.players[i].hand[0]
             result = self.players[i].add_card_to_hand(card)
             if result == 'blackjack':
                 print("Congratulations Player {0}, you have a Blackjack!!!".format(self.players[i].name))
                 winnings = int(self.players[i].bet * self.blackjack_multiplier[1])
                 print("You have won $", winnings)
                 self.players[i].blackjack(self.blackjack_multiplier[1])
-                self.players[0].dealer_losses(winnings)
+                self.players[0].dealer_lost(winnings)
         print("Dealing a card to ", self.players[0].name)
         card = self.deck.remove_top()
+        # Used to test blackjack_flag
+        # card = ('10', 'H')
         self.players[0].add_card_to_hand(card)
         if self.players[0].blackjack_flag == True:
             print(self)
@@ -215,7 +251,7 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
                                 break
         print(self)
         return
-
+    
     def initial_bets(self, min_bet = 10, max_bet = 200):
         '''
         The method calls for the initial bets from each player before dealing the first two
@@ -341,8 +377,7 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
         and insurance bet, however.
         
         OUTPUT: string indicating the status of the game at the end of the players turn
-            'none' = all players were eliminated in this round
-            're-deal' = no players hands remain after blackjack and players turns have ended
+            'none' = all players were eliminated in this round or all hands were e
             'playable' = at least one hand remains to challenege the Dealer
         '''
         # This will increment as playable hands survive the players turn.
@@ -366,15 +401,15 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
                         if (result == 'bust'):
                             print(self.players[i])
                             loss_result = self.players[i].reg_loss()
-                            self.players[0].dealer_wins(self.players[i].bet)
+                            self.players[0].dealer_won(self.players[i].bet)
                             if loss_result == False:
                                 if (self.players[i].split_flag == False) and (self.players[i].insurance == 0):
                                     # The player's bank is zero or negative from the first hand. If they
                                     # have no split hand nor an insurance bet, they are eliminated at
                                     # this point.
-                                    print("Player {0} has broken their bank and been eliminated from the game.".format(self.players[i].name))
-                                    del(self.players[i])
-                                    self.table_index -= 1
+                                    print("Player {0} has broken their bank and will be eliminated from the game".format(self.players[i].name))
+                                    print("at the end of the round.")
+                                    break
                                 else: 
                                     print("Player {0} busted, but may survive the round on a split hand or insurance bet.".format(self.players[i].name))
                                     break
@@ -405,14 +440,13 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
                         if (result == 'bust'):
                             print(self.players[i])
                             loss_result = self.players[i].split_loss()
-                            self.players[0].dealer_wins(self.players[i].split_bet)
+                            self.players[0].dealer_won(self.players[i].split_bet)
                             if loss_result == False:
                                 if (self.players[i].insurance == 0):
                                     # The player's bank is zero or negative from losses this turn. If they
                                     # have no insurance bet, they are eliminated at this point.
                                     print("Player {0} has broken their bank and been eliminated from the game.".format(self.players[i].name))
-                                    del(self.players[i])
-                                    self.table_index -= 1
+                                    break
                                 else: 
                                     print("Player {0} busted, but may survive the round on an insurance bet.".format(self.players[i].name))
                                     break
@@ -426,15 +460,352 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
                         playable_hands += 1
                         print("Player {0} stands. Good luck in the Dealer's turn.".format(self.players[i].name))
                         break
+            i += 1
         # This ends the players turn.
         print("The player turn is complete. The table stands at:")
         print(self)
-        if self.table_index ==0:
+        if self.table_index == 0:
             print("No players remain in the game. The house wins.")
             return 'none'
         if playable_hands == 0:
             # No playable hands remain.
-            return 're-deal'
+            return 'none'
         else:
             return 'playable'
     
+    def dealer_autowin(self):
+        '''
+        This method is used when CasinoTable.hit_or_stand() returns "redeal". In that case, the dealer has 
+        already resolved blackjack wins and all subsequent busts that eliminated the remaining hands in the
+        round. It simply prints out the dealer's actual hand.
+        
+        This method retuns no values.
+        '''
+        self.players[0].dealer_print()
+        print("The Dealer does not need to play its hand since all player hands have been resolved.")
+        return
+    
+    def max_min_score(self):
+        '''
+        This method extracts the minimum and maximum scores for player's hands from the remaining hands. It
+        ignores any removed hands. It looks at the soft_hand_score, which is the highest playable score a
+        hand of Blackjack can have.
+        
+        If self.table_index < 2, no human players remain in the game. It will return (0,0) as an error.
+        
+        It returns a tuple in the form (max, min).
+        '''
+        max_score = min_score = 0
+        if self.table_index < 2 :
+            # No human players remain in the game.
+            return (max_score, min_score)
+        # At least one human player remains in the game. We need the scores off of one of their hands.
+        
+        # print("Max: {0}.   Min: {1}".format(max_score, min_score))
+        for i in xrange(1, self.table_index):
+            # print(self.players[i])
+            if (len(self.players[i]) != 0):
+                if self.players[i].soft_hand_score > max_score:
+                    max_score = self.players[i].soft_hand_score
+                # The next if statement should ensure that min_score is also non-zero if a hand still exists.
+                if (min_score == 0) and (self.players[i].soft_hand_score != 0):
+                    min_score = self.players[i].soft_hand_score
+                if (0 < self.players[i].soft_hand_score < min_score):
+                    min_score = self.players[i].soft_hand_score
+            # print("Max: {0}.   Min: {1}".format(max_score, min_score))
+            if (len(self.players[i].split_hand) != 0):
+                if self.players[i].soft_split_score > max_score:
+                    max_score = self.players[i].soft_split_score
+                # The next if statement should ensure that min_score is also non-zero if a hand still exists.
+                if (min_score == 0) and (self.players[i].soft_split_score != 0):
+                    min_score = self.players[i].soft_split_score
+                if (0 < self.players[i].soft_split_score < min_score):
+                    min_score = self.players[i].soft_split_score                
+            # print("Max: {0}.   Min: {1}".format(max_score, min_score))
+        return (max_score, min_score)       
+    
+    def dealer_turn(self):
+        '''
+        This method performs the dealer turn. It is used when CasinoTable.hit_or_stand() method returns
+        "playable", indicating at least one playable hand remains, besides the dealer. It uses the 
+        method Dealer.dealer_print() instead of Dealer.__str__() so that the hold card stays revealed.
+        
+        The standard casino rules for the Dealer's turn are as follows:
+            ○ dealer stands on a hard 17+ 
+            ○ dealer stands on any 21 (blackjack or otherwise)
+            ○ dealer must take a card on a soft 16-
+            ○ dealer must stand on a hard 16- with a soft score that beats at least one players playable hand AND
+                is greater than 16.
+            ○ dealer must take a card on a hard 16- with a soft score that does not beat any playable player hands
+        
+        If the Dealer has blackjack, the insurance bets will be paid out, if any. The remaining players
+        lose automatically. If a tie occurs, even on a non-blackjack 21, no remaining players, including
+        the Dealer, lose their bets. If the Dealer's hand score is higher than a player's, dealer wins.
+        If any player has a higher hand score than the Dealer's, that player wins.
+        
+        Variables:
+            dealer_blackjack = boolean True for a blackjack, False otherwise
+            dealer_stand = boolean True once the dealer must stand, False otherwise
+            dealer_bust  = boolean True once the dealer busts, False otherwise
+            dealer_winnings = aggregate of the dealer's wins applied near the end of the dealer's turn, separate
+                from blackjack wins/losses and player busts
+            dealer_losses   = aggregate of the dealer's wins applied near the end of the dealer's turn, separate
+                from blackjack wins/losses and dealer busts
+            min_score = minimum still playable score, extracted while skippng empty hands
+            max_score = maximum still playable score, extracted while skippng empty hands
+            hand_results = list of string tuples of the form (name, index, outcome, hand_type), where name is
+                the player's name, index is their index in the players list, outcome is a string with values:
+                'lose' = player's hand lost against the dealer's hand
+                'win'  = player's hand won against the dealer's hand
+                'tie'  = player's hand tied the dealer's hand
+            and hand_type is a string as follows:
+                'reg'  = player's hand initial hand in the round
+                'split'= player's split hand
+        '''
+        dealer_blackjack = False
+        dealer_stand = False
+        dealer_bust = False
+        hand_results = []
+        dealer_winnings = 0
+        dealer_losses = 0
+        print("Turning over Dealer's hold card.")
+        self.players[0].dealer_print()
+        
+        # First, we need to check for a Dealer Blackjack.
+        if (len(self.players) == 2) and (self.players[0].soft_hand_score == 21) and (self.players[0].hard_hand_score == 11):
+            dealer_blackjack = True
+            # Setting the dealer_stand boolean to True stops the Dealer from playing 
+            # their hand.
+            dealer_stand = True
+            print("Dealer has a blackjack. All remaning hands lose, regardless of score.")
+            for i in xrange(1, self.table_index):
+                # Skip resolved hands and non-existent hands.
+                if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
+                    continue
+                if len(self.players[i]) != 0:
+                    # Mark hand as lost.
+                    hand_results.append((self.players[i].name, i, 'lose', 'reg'))
+                if len(self.players[i].split_hand) != 0:
+                    # Mark hand as lost.
+                    hand_results.append((self.players[i].name, i, 'lose', 'split'))
+        # Dealer has a normal playable hand. Wins beat the Dealer's final score.
+        # Ties are a draw, and players lose if they score less than the Dealer.
+        # print("Hand results (blackjack): ", hand_results)
+        max_score, min_score = self.max_min_score()
+        while (dealer_stand == False):
+            self.players[0].dealer_print()
+            if self.players[0].hard_hand_score > 21:
+                # Dealer busts.
+                print("Dealer busted with a hard score of {0}".format(self.players[0].hard_hand_score))
+                dealer_bust = True
+                dealer_stand = True
+                for i in xrange(1, self.table_index):
+                    # Skip resolved hands and non-existent hands.
+                    if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
+                        continue
+                    if len(self.players[i]) != 0:
+                        # Mark hand as winnner.
+                        hand_results.append((self.players[i].name, i, 'win', 'reg'))
+                    if len(self.players[i].split_hand) != 0:
+                        # Mark hand as winner.
+                        hand_results.append((self.players[i].name, i, 'win', 'split'))                
+                continue
+            if self.players[0].hard_hand_score > 16:
+                # Dealer must stand on a hard 17 or higher.
+                print("Dealer's hard score is {0}, which is greater than 17. Dealer stands.".format(self.players[0].hard_hand_score))
+                dealer_stand = True
+                continue
+            if (self.players[0].hard_hand_score <= 16) and (self.players[0].soft_hand_score > min_score) \
+                and (self.players[0].soft_hand_score > 16):
+                # Dealer must stand on a soft hand score that beats at least one player and has a score
+                # above 16.
+                dealer_stand = True
+                continue
+            # Dealer takes a card.
+            card = self.deck.remove_top()
+            rank, suit = card
+            print("Dealer draws {0}-{1}.".format(rank, suit))
+            self.players[0].add_card_to_hand(card)
+        # print("Hand results (dealer turn): ", hand_results)
+        print("Dealer's turn is complete. Determining any remaining wins and losses.")
+        # Now, we have to finish out the hand results. This can be skipped if dealer_blackjack = True
+        # or dealer_bust = True. The win/lose/tie data has already been created for both conditions.
+        # Remember also that soft scores are always the highest playable score that a hand can have,
+        # regardless of the cards dealt.
+        if (dealer_blackjack == False) and (dealer_bust == False):
+            for i in xrange(1, self.table_index):
+                # Again, skip resolved and non-existent hands.
+                if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
+                    continue
+                if (len(self.players[i]) != 0):
+                    if (self.players[i].soft_hand_score < self.players[0].soft_hand_score):
+                        # Player loses to a higher score.
+                        hand_results.append((self.players[i].name, i, 'lose', 'reg'))
+                    elif (self.players[i].soft_hand_score == self.players[0].soft_hand_score):
+                        # Tie result. No one loses their bets.
+                        hand_results.append((self.players[i].name, i, 'tie', 'reg'))
+                    else:
+                        # Player wins.
+                        hand_results.append((self.players[i].name, i, 'win', 'reg'))
+                if len(self.players[i].split_hand) != 0:
+                    if (self.players[i].soft_split_score < self.players[0].soft_hand_score):
+                        # Player loses split hand to a higher score.
+                        hand_results.append((self.players[i].name, i, 'lose', 'split'))
+                    elif (self.players[i].soft_split_score == self.players[0].soft_hand_score):
+                        # Tie result. No one loses their bets.
+                        hand_results.append((self.players[i].name, i, 'tie', 'split'))
+                    else:
+                        # Player wins.
+                        hand_results.append((self.players[i].name, i, 'win', 'split'))        
+        # print("Hand results (dealer scoring): ", hand_results)
+        
+        # Now to notify the player and total up the wins and losses, starting with the insurance bets.
+        # The Player.ins(boolean) method handles this loss by sending the dealer_blackjack flag. It
+        # automatically returns the right results. True means the player is still in the game, False,
+        # they broke their bank and will be eliminated in the end_round.
+        if self.players[0].blackjack_flag == True:
+            for i in xrange(1, self.table_index):
+                if dealer_blackjack == False:
+                    dealer_winnings += self.players[i].insurance
+                    print("Player {0}: You have lost your insurance bet of {1}.".format(self.players[i].name, self.players[i].insurance))
+                else:
+                    dealer_losses += self.players[i].insurance
+                    print("Player {0}: You have won your insurance bet of {1}.".format(self.players[i].name, self.players[i].insurance))
+                ins_result = self.players[i].ins(dealer_blackjack)
+                if ins_result == False:
+                    print("Player {0} has broken his bank and will be eliminated at the end of the round.".format(self.players[i].name))
+            print("Insurance bets are complete.")
+        else:
+            print("There were no insurance bets this round.")
+        
+        for i in xrange(0, len(hand_results)):
+            # Each entry in hand_results is a tuple of the form (name, index in players list, outcome, type of hand).
+            # The list is ordered and built in the order the players are "seated" at the casino table. The boolean
+            # flag for players breaking their bank has to be reset for each hand.
+            player_loss = True
+            name, num, outcome, hand_type = hand_results[i]
+            if (hand_type == 'reg'):
+                if (outcome == 'win'):
+                    print("Dealer lost to Player {0} with a score of {1} to {2}.".format(name, self.players[0].soft_hand_score, self.players[num].soft_hand_score))
+                    dealer_losses += self.players[num].bet
+                    self.players[num].win()
+                elif (outcome == 'tie'):
+                    print("Dealer and Player {0} tied this hand. No losses either way.".format(name))
+                    self.players[num].tie()
+                else: # Player lost this round.
+                    print("Player {0} lost to Dealer with a score of {1} to {2}.".format(name, self.players[num].soft_hand_score, self.players[0].soft_hand_score))
+                    dealer_winnings += self.players[num].bet
+                    player_loss = self.players[num].reg_loss()
+            else: # hand_type == 'split'
+                if (outcome == 'win'):
+                    print("Dealer lost to Player {0}'s split hand with a score of {1} to {2}.".format(name, self.players[0].soft_hand_score, self.players[num].soft_split_score))
+                    dealer_losses += self.players[num].split_bet
+                    self.players[num].split_win()
+                elif (outcome == 'tie'):
+                    print("Dealer and Player {0}'s split hand this round. No losses either way.".format(name))
+                    self.players[num].split_tie()
+                else: # Player's split hand lost this round.
+                    print("Player {0}'s split hand lost to Dealer with a score of {1} to {2}.".format(name, self.players[num].soft_split_score, self.players[0].soft_hand_score))
+                    dealer_winnings += self.players[num].split_bet
+                    player_loss = self.players[num].split_loss()
+            if player_loss == False:
+                print("Player {0} has broken their bank and will be eliminated at the end of the round.".format(name))
+            else:
+                print("Player {0} still has ${1} remaining in the bank after this hand.".format(name, self.players[num].bank))
+        
+        # Now, we apply the wins and losses to the bank to see if the bank remains in the game.
+        self.players[0].dealer_won(dealer_winnings)
+        dealer_result = self.players[0].dealer_lost(dealer_losses)
+        if dealer_result == False:
+            # The Dealer broke their bank.
+            print("The Dealer has broke their bank. The game will end at the end of this round.")
+        return
+    
+    def end_round(self, min_bet = 10):
+        '''
+        This method cleans up at the end of a round of play. Any players, dealer included, who broke their
+        banks during play are eliminated. It calls Dealer.end_round() and Player.end_round() to clear hands
+        hand scores, and flags. It also offers the option to replace the CardShoe, an action recommended
+        once the shoe gets down to less half the original cards (156). This method automatically replaces
+        the CardShoe once deck drops to 100 cards or less.
+        
+        It accepts an integer min_bet that will eliminate a player because their bank cannot sustain the
+        next round of betting.
+        
+        This method returns True if the dealer is eliminated or all players have been eliminated. Both
+        conditions end the game. It uses the end_game boolean to signal that.
+        '''
+        end_game = False
+        for i in xrange(0, self.table_index):
+            self.players[i].end_round()
+            
+        if self.players[0].bank <= min_bet:
+            del(self.players[0])
+            print("The Dealer has been eliminated from the game. The player with the highest bank wins.")
+            name = self.players[0].name
+            high_bank = self.players[0].bank
+            for i in xrange(1, self.table_index - 1):
+                if high_bank < self.players[i].bank:
+                    name = self.players[i].name
+                    high_bank = self.players[i].bank
+            print("The winner is Player {0} with a bank of {1}. All players beat the bank, but you won the game.".format(name, high_bank))
+            end_game = True
+        else:
+            print("The Dealer remains solvent. Eliminating other players who have broken their banks.")
+            i = 1
+            while True:
+                if self.players[i].bank <= min_bet:
+                    print("Eliminating Player {0} because their bank is unable to make the minimum bet.".format(self.players[i].name))
+                    del(self.players[i])
+                    self.table_index -= 1
+                else:
+                    print("Player {0} is still solvent with ${1} remaining in their bank.".format(self.players[i].name, self.players[i].bank))
+                    i += 1
+                if i == self.table_index:
+                    # The index has reached the end of the players list.
+                    break
+                else:
+                    continue
+        
+        if (len(self.players) == 1) and (self.players[0].name.lower() == 'dealer'):
+            print("All human players have been eliminated. The game is over and the House won.")
+            end_game = True
+        if end_game ==False:
+            # We need to test if the deck has too few cards remaining. It should be replaced once it down
+            # to less than 100 cards since this is a text game with a running tally of cards played.
+            if len(self.deck) <= 100:
+                print("The card shoe has too few cards for the games to remain random. Replacing the shoe.")
+                self.replace_cardshoe()
+                print("New card shoe is ready.")
+                print(self.deck)
+            else:
+                print("You may request a new card shoe between rounds. It is recommended once a card shoe drops below 150 cards.")
+                print(self.deck)
+                while True:
+                    try:
+                        answer = raw_input("Would you like to replace the Card Shoe? (y/n)")
+                    except:
+                        print("Please try again.")
+                        continue
+                    if (answer[0].lower() != 'y') and (answer[0].lower() != 'n'):
+                        print("Please try again.")
+                        continue
+                    else:
+                        break
+                if answer[0].lower() == 'y':
+                    self.replace_cardshoe()
+                    print("New card shoe is ready.")
+                else:
+                    print("The deck shoe will not be replaced.")
+        # This prints out who is left and how much money they have left. All hands and bets have been reset.
+        print(self)
+        return end_game            
+        
+    def replace_cardshoe(self):
+        '''
+        This method deletes the current shoe and initializes a new one. This is recommended once a shoe
+        drops to 50% (156) of the original cards. It returns no values.
+        '''
+        del(self.deck)
+        self.deck = CardShoe()
+        return
