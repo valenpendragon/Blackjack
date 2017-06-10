@@ -254,3 +254,7 @@ Migrated CasinoTable.start_round() to class library code.
 Built and tested the first prototype of the actual game. it still needs to be exported to a separate file.
 Fixed a typo in CasinoTable.rules() method, in the printed text.
 
+6/9/17 11:50pm Pushed to origin
+
+Added this change log to the files included with this program.
+
