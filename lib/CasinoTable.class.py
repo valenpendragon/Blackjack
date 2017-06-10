@@ -75,6 +75,8 @@ class CasinoTable(object):
             If any players have a bank less than the min_bet for the table, they will be
             eliminated (including any who busted their bank).
         replace_cardshoe: deletes the CardShoe object called deck and initializes a new deck
+        start_round: Asks if any players wish to quit before anteing up. Returns True if at
+            least one player remains, False otherwise.
         
     """
     def __init__(self, starting_bank = 100000):
@@ -187,7 +189,7 @@ score between 17 and 21 and a hard score under 17, the dealer will take addition
 cards until their hard score exceeds 17 or their soft score beats at least one
 remaining player's score. Any time the dealer busts, all players with playable hands
 win their bets automatically.\n
-If all pleyers busted in their turn, the dealer is required only to reveal their
+If all players busted in their turn, the dealer is required only to reveal their
 hold card, as the dealer wins is automatically. All insurance bets will still payout
 on a dealer blackjack.\n
 Players at the table may leave after a round and they get a score at the end which is
@@ -809,3 +811,46 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
         del(self.deck)
         self.deck = CardShoe()
         return
+
+    def start_round(self):
+        '''
+        This method begins a new round. The previous round (or __init__) already cleared some attributes and updated
+        others. So, that does not need to be done. Instead, this round determines which players wish to remain in 
+        the game.
+        
+        Theoretically, this method could be used to add new players at available stations as well.
+        
+        This method accepts no values. It returns True if enough players remain to continue playing. It returns
+        False if not.
+        '''
+        print("Now, each player needs to decide if they want to stay or cash out.")
+        for i in xrange(1, self.table_index):
+            failsafe = 0
+            while True:
+                # The following statements ensure that this does not become a continuous loop should input errors
+                # persist.
+                failsafe += 1
+                if failsafe > self.table_size :
+                    break
+                try:
+                    answer = raw_input("Player {0}, would you like to stay in the game? (y/n)".format(self.players[i].name))
+                except:
+                    print("An error occurred. Please try again.")
+                    continue
+                else:
+                    if (answer[0].lower() != 'y') and (answer[0].lower() != 'n'):
+                        print("Invalid response. Please try again.")
+                        continue
+                    elif answer[0].lower() == 'n':
+                        print("It was a pleasure. Please stop by the bank windows to cash out.")
+                        del(self.players[i])
+                        self.table_index -= 1
+                    else:
+                        print("Thank you.")
+                    break
+        if self.table_index <= 1:
+            print("That ends the game. Thank you for playing.")
+            return False
+        else:
+            print("Preparing to deal the next round.")
+            return True
