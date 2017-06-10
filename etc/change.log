@@ -1,0 +1,256 @@
+5/15/17
+
+Added __init__ to Player class with full user initialization. 
+
+5/16/17 6:40 am
+
+Added a __del__ function to CardShoe class to announce that the current deck shoe had been removed from the game for the players.
+Built __str__ function in Player class to print Player , bank, bets, regular hand and insurance. If the split_flag is True, it will print that data as well.
+
+5/16/17 6:46am
+
+Corrected an output error in __str__ for split hands.
+
+5/16/17 7:20am  Pushed to origin
+
+Added comments on methods __del__ and __len__ to Player class comment block.
+Added method info to Player.__str__ () method.
+Created Player.__del__() method.
+Created Player.__len__() method to print out the len of the player's main hand.
+Created Player.print_split() method to focus Player info output on just the split hand, bank, and bets.
+
+5/16/17 7:25am  Pushed to origin
+
+Created a GPL for LICENSE.md. Created a rudimentary 'alpha warning' README.md.
+
+5/16/17 4:00pm Pushed to origin
+
+Moved the descriptions of the round and game methods to the end of the comments list.
+Moved the values dictionary to Player class. It is actually not being used at all in the CardShoe.
+Created Player.add_card_to_hand() method.
+
+5/17/17 7:15am
+
+Created Player.add_card_to_split() method.
+
+5/17/17 7:36am
+
+Building Player.player_blackjack, Player.player_win, and Player.player_split_win.
+Fixed some spelling errors in attribute comment block.
+New methods still need testing.
+
+5/17/17 1:40pm Pushed to origin
+
+Tested and validated the Player.blackjack() Player.win, and Player.split_win methods.
+Removed the word player_ from the Player win methods and comment block.
+Removed player_ from the losses and ties names in the comment block.
+In comment block, changed name of player_split to split_pair.
+
+5/17/17 2:11 pm
+
+Clarified the input and output comments for Player win methods.
+Created and tested method Player.reg_loss and Player.split_loss.
+Added mention of the meaning of True or False for loss methods in the main comment block for the Class.
+
+5/17/17 3:07pm Pushed to origin
+
+Clarified the comments in the Class comment block for the Player tie methods.
+Created and tested the Player.tie and Player.split_tie methods.
+Added Player.ins() method which handles the bets on Dealer blackjack. Updated comment block on this method as well.
+
+5/17/17 5:10pm 
+
+Cleaned up some typos in the comment block for Player.ins() method.
+Created Player.end_round() method to clear bets and hands at the end of a round. (This method may not be needed.)
+Created Player.update_bet() method for increasing bets.
+Added comments for this method and two other similar ones that will be based on it.
+
+5/19/17 10:30 pm
+
+Additional testing of Player.update_bet.
+Created Player.update_split_bet and performed basic testing.
+
+5/22/17 11:59pm Pushed to origin
+
+Created method Player_total_bets() and replaced the original code with this call in Player.update_bet and Player.update_split_bet.
+Created method Player.update_ins() that applies the player's insurance bet.
+Discovered an error confusing soft and hard scores. Fixed it with a scoring method, Player.score_hand(card_hand). This method works and will be incorporated into add_card methods.
+
+5/23/17 10:30pm Pushed to origin
+
+Fixed methods Player.add_card_to_hand() and Player.add_card_to_split() using score_hand to handle hard and soft scores (which had been reversed in the original code).
+
+5/23/17 11:52pm Pushed to origin
+
+Finished and tested methods Player.split_check() and Player.split_pair. Finshed and tested Player.double_down(). Player class completed and added to Blackjack.classes.py.
+
+5/24/17 12:10am Pushed to origin
+
+Updated comment section to reflect all of the changes made to the methods in the Player class.
+
+5/24/17 1:30am
+
+Created Dealer derived class and Dealer.__init__(), Dealer.__str__(), and Dealer.__del__() methods. 
+No testing has been done yet.
+
+5/25/17 9:50am Pushed to origin
+
+Fixed problem with Dealer.__str__() showing the wrong visible_card. 
+Added soft and hard visible scores, and updated special methods accordingly. 
+Added Dealer.add_card_to_hand() method. 
+No testing as yet. 
+Tweaked comments in some Player class methods. 
+Removed Blackjack.classes.py and broke classes up into individual classes.
+
+5/25/17 11:10am Pushed to origin
+
+After testing Dealer.__del__() method, it worked to allow it to be fully inherited instead of overridden.
+Corrected Player.__del__() method to print player's name. It works with both classes.
+Correcting syntax errors and output format problems in Dealer methods.
+Put a missing return into Player._init__() method.
+
+5/25/17 6:36pm
+
+Fixed a typo in Player.double_down().
+Migrated notes on the working methods to the main comment block for the class.
+Created and tested Dealer.dealer_bust() method.
+Removed data cleanup from the following Player methods (since end_round() methods will handle it): blackjack(), win(), split_win(), reg_loss(), split_loss(), tie(), split_tie(), and ins().
+Added a comment to Player.split_win().
+Added a description of Player.ins() to the class comment block.
+Fixed comments for Player.end_round() to clarify that it will be needed at end of round after all.
+Cleaned up the comment block for Dealer class.
+
+5/25/17 7:10pm
+
+Changed Dealer.dealer_bust() to Dealer.dealer_losses(), moving the totaling process to CasinoTable class.
+
+5/26/17 12:26am Pushed to origin
+
+Built and tested Dealer.dealer_wins() method.
+Corrected typos in comment block for Dealer.dealer_losses().
+Fixed some errors in comment block for Player and Dealer class.
+Fixed errors in the comment block for Dealer.__init__() method.
+Created and tested CardShoe.diagnostic_print() method, Player.diagnostic_print(), and Dealer.diagnostic_print()
+Finished and tested all current methods for Dealer and Player classes.
+
+5/26/17 12:34am
+
+Cleared all testing code out of Blackjack jupyter notebook in preparation for building the new CasinoTable class.
+
+5/26/17 2:03am
+
+Started building the CasinoTable class. Basic attributes are created and table list (player list with dealer table[0]).
+Started the class comment block for CasinoTable class, and built skeleton methods CasinoTable.__init__() and Casino_Table.diagnostic_print().
+Corrected error in comment block for CardShoe class indicating that it was an abstract base class. That was an old comment.
+Changed Dealer.__init__() to accept an integer starting bank, but will default to 100,000 if left out. Altered comment blocks accordingly.
+
+5/27/17 3:00am Pushed to origin
+
+Changed the name of the CasinoTable attribute table list to players and table_length to table_index to make their purpose clearer.
+Clarified the comments in the comment block for CasinoTable.diagnostic_print().
+Created the CasinoTable.rules() method that prints out the rules of this game and the actual casino blackjack rules that is it based on.
+
+5/27/17 7:00am Pushed to origin
+
+Created CasinoTable.__str__() method.
+Fixed an printout error in CasinoTable.__init__().
+Removed decimal points in the print outs for players in Player and Dealer classes. Modified it to ignore hands, bets and scores when hard scores are 0. Modified their return strings to print just the player's name.
+Cleaned up the CardShoe.__str__() output string.
+Created CasinoTable.deal_round() method and tested it.
+Cleaned up an output string from Player.update_ins().
+Restored clearing of bets when a Player blackjack win occurs to avoid having it impact later rounds (Player.blackjack() method).
+Created CasinoTable.class.py to begin recording the changes in an importable class file.
+
+5/28/17 5:32am 
+
+Added CasinoTable.initial_bets() method and tested it.
+Fully tested CasinoTable.deal_round() blackjack win code.
+Fixed logical and cosmetic errors in Player.blackjack() method and Player.update_bet() and update_split_bet() methods.
+Fixed bad wording in the rules() method.
+Created and fully tested CasinoTable.pairs_check() for handling pairs and fixed any minor problems with Player.split_check and Player.split_pair.
+
+5/31/17 8:00am Pushed to origin
+
+Pushed all modifications made to Player and CasinoTable classes to the separate class libraries, with the exception of code used to test features in the methods (which will be cleared out of the jupyter notebook versions once a full version is down).
+
+5/31/17 8:40am Pushed to origin
+
+Created and tested CasinoTable.double_down() method.
+Updated comment block for CasinoTable class with comments for methods initial_bets, pairs_check, and double_down.
+Changes have been added to the separate CasinoTable class library.
+
+5/31/17 2:36pm
+
+Created the CasinoTable.hit_or_stand() method and the functionality for the regular hand. A placeholder exists for split hand functionality to be added next.
+Added back in functionality to remove hands that lost during the player turn to Player.reg_loss and Player.split_loss to eliminate hands as a way to determine if the Dealer has to play its turn.
+Update lib class files with changes to jupyter notebook versions.
+
+6/1/17 5:45pm Pushed to origin
+
+Corrected a problem in which  CasinoTable.pairs_check() method did not account for a player blackjack properly.
+Corrected typos and errors in CasinoTable.hit_or_stand() method that was breaking the method.
+Added functionality to add players losses to Dealer's benk in CasinoTable.hit_or_stand() for players who bust.
+Rearranged print outs in CasinoTable.hit_or_stand() to make them more user friendly.
+Added split hand functionality to CasionTable.hit_or_stand() method.
+Fixed a printout problem in print(Player) method that was printing out empty hands.
+Added a card call out for deals in CasinoTable.hit_or_stand() method.
+Pushed corrections and additions to class libraries.
+
+6/2/17 10:53am
+
+Tested synchronization between development platforms after catastrophic failure forced a rebuild of one system in the group.
+
+6/4/17 7:03am
+
+Removed actual player deletion from CasinoTable.hit_or_stand due to problems reindexing the player list. It still warns the players that a player with a busted bank will be eliminated via CasinoTable.end_round() method.
+Fixed a logic problem in the CasinoTable_hit_or_stand() method resulting from eliminating player removal in this method.
+Created and tested CasinoTable.dealer_autowin() method.
+Started work on CasinoTable.max_min_score() and CasinoTable.dealer_turn(), but they are far from complete.
+No updates have been propagated to standalone class libraries.
+
+6/4/17 12:00pm
+
+Finished building CasinoTable.max_min_score().
+Raised CasinoTable.table_size, the number of human players, to 3 in CasinoTable.__init_() for more complete testing.
+Built out the hand scoring process for CasinoTable.dealer_turn() method, but it is still incomplete.
+
+6/4/17 4:30pm Pushed to origin
+
+Added insurance bet payouts to CasinoTable.dealer_turn() method.
+Added several flags and win/loss aggregators to the same method.
+Added an index number to hand_results list to make it easier to apply the wins/ties/losses at the end of the dealer's turn.
+Renamed Dealer.dealer_wins() method Dealer.dealer_won() and Dealer.dealer_losses() Dealer.dealer_lost() to avoid conflicts with local aggregators in CasinoTable.dealer_turn().
+Added overview comment on Dealer.dealer_won() to comment block for Dealer class.
+Created place holder for CasinoTable.end_round().
+Created and tested CasinoTable.replace_cardshoe().
+Changes to primary libraries still need to be migrated to the standalone libraries.
+
+6/4/17 8:42pm
+
+Created CasinoTable.end_round() but it has not been tested yet.
+
+
+6/6/17 2:40pm Pushed to origin
+
+Fixed a problem with the loss printout not showing the Dealer score in CasinoTable.end_round() method.
+Fixed a problem with insurance bets printing a result when the conditions for an insurance bet were not met.
+Fixed a problem with the printout of the Dealer's scores in CasinoTable.dealer_turn() method.
+Added the option to replace the CardShoe object deck to CasinoTable.end_round().
+Moved a printout in CasinoTable.dealer_turn() to the end of CasinoTable.end_round().
+Eliminated the 'redeal' option from CasinoTable.hit_or_stand() since it no longer eliminates players. Now, it returns 'none'  for both no players remaining and no playable hands remaining.
+Updated the comment block for CasinoTable class with the new methods that have been tested.
+The game is now playable using a simple code loop in jupyter notebook.
+Updated class library code with the jupyter notebook versions.
+Made the bank default 100,000 in CasinoTable.__init__() method. Also updated the comments for table_size.
+
+6/8/17 6:00pm
+
+Added CasinoTable.start_round() to the CasinoTable class. It has not been tested yet.
+
+6/9/17 11:40pm Pushed to origin
+
+Debugged CasinoTable.start_rount().
+Migrated CasinoTable.start_round() to class library code.
+Built and tested the first prototype of the actual game. it still needs to be exported to a separate file.
+Fixed a typo in CasinoTable.rules() method, in the printed text.
+
