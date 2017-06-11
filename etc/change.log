@@ -258,3 +258,7 @@ Fixed a typo in CasinoTable.rules() method, in the printed text.
 
 Added this change log to the files included with this program.
 
+6/10/17 22:40 Pushed to origin
+
+Renamed all class libraries in Project/lib to names importable by Python.
+
