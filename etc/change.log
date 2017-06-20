@@ -262,3 +262,6 @@ Added this change log to the files included with this program.
 
 Renamed all class libraries in Project/lib to names importable by Python.
 
+6/20/17 7:26am Pushed to origin
+
+Created an __init__.py for the Class libraries for the time being. It ensures that the proper Classes are imported when lib is added.
