@@ -265,3 +265,20 @@ Renamed all class libraries in Project/lib to names importable by Python.
 6/20/17 7:26am Pushed to origin
 
 Created an __init__.py for the Class libraries for the time being. It ensures that the proper Classes are imported when lib is added.
+
+9/9/17 04:15
+
+Added card images which have not programmed yet.
+
+9/9/17 05:45
+
+Rearranged file structure to setup app, graphics, and lib directories.
+
+9/9/17 05:55 Pushed to origin
+
+Finished rearranging directories in preparation for conversion to pygame.
+Note: Virtualized the environment so that I could install PyGame.
+
+9/9/17 06:05 Pushed to origin
+
+Forgot to update the change.log for the previous changes.
