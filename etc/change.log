@@ -290,3 +290,7 @@ Finished exporting the card images to PNG files.
 9/12/17 04:05 Pushed to origin
 
 Concluded that I did not need the app organization for this application, as I was not going to use Flask with it. Removed app and moved all python files back main/lib and png graphics to main/graphics. Moved __init__.py to main as well, but it still needs work.
+
+9/12/17 04:46 Pushed to origin
+
+Created new branches bugmaintenance for bug fixes and pygame for the GUI creation.
