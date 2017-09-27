@@ -1,8 +1,7 @@
 from __future__ import print_function
 import random
 from CardShoe import CardShoe
-from Player import Player
-from Dealer import Dealer
+from Player import Player, Dealer
 from CasinoTable import CasinoTable
 
 __doc__ = """
