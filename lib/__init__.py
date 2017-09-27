@@ -1,6 +1,6 @@
 from __future__ import print_function
 import random
-from lib import CardShoe, Player, Dealer, CasinoTable
+from BlackjackClasses import CardShoe, Player, Dealer, CasinoTable
 __doc__ = """
 This is the library subpackage for Blackjack. The libraries include the following classes:
 
