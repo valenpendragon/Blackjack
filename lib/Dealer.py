@@ -1,3 +1,4 @@
+from __future__ import print_function
 class Dealer(Player):
     """
     This is a derived class from base clase Player. The purpose of this class is to create a special type
