@@ -1,0 +1,71 @@
+The first myth to 'dash' is that ties do not automatically give the house
+a win. A blackjack is a 21 accomplished with the first two cards dealt to any
+player. A blackjack for a player is an automatic win with an extra table multiplier,
+even if the dealer also has a blackjack.
+
+A blackjack for the dealer is an automatic win against any player without
+a blackjack. However, if the dealer has an ace, a 10, or a face card showing,
+players will be given the opportunity to place an 'insurance' bet that the
+dealer has a blackjack. So, players can still 'win' against a dealer blackjack.
+
+If a player other than the dealer has a pair, they will be offered the option
+to split the pair into two hands. The second hand is called a 'split hand'.
+With a split, blackjack is no longer possible, but you can still beat the dealer
+twice potentially.
+
+In a tie score with the dealer, the hand is considerd a draw. Neither the
+dealer nor the tying player loses the bet.
+
+All cards are drawn from a six deck shoe. This is literally a random
+rearrangement of six fifty-two card decks. Two cards are dealt to each player,
+including the dealer. The dealer's first card is dealt facedown, but all others
+are dealt face up. They are also given a score as cards are added to the hands.
+
+Scoring is the face value of the card with these exceptions: Face cards are 10 
+points and Aces can be 1 or 11. The soft score checks to see if a playable hand
+can be made with at least one ace scored as 11. The hard score treats any ace as
+a 1. So, a blackjack has a soft score of 21 and a hard score of 11. Its
+significance is that it occurred with the first two cards to the player. With
+hands that have no aces, both scores will be equal.
+
+Betting and the round takes place as as follows:
+
+Before any cards are dealt, an initial bet is made by each player.
+It must be at least the table minimum and not greater than the table maximum.
+After two cards have been dealt, players have the option of doubling down if they
+do not have a blackjack already (see previous rules about automatic wins). Doubling
+down means that the player may bet up to their original bet  (doubling the bet) even
+if the amount of the new bet goes over the table limit. A zero bet at this point is
+taken as the player changing their minds about doubling down. If a player has a pair
+and opts to split their hand, a new bet must be made on the 'split' hand subject to
+the same rules. Two cards, one for each hand, are dealt, and the player may double 
+down on either hand if they wish. A split only happens once per player per round.
+
+Once two cards have been dealt and initial blackjacks and splits are taken care
+of, each player is asked if they want a 'hit' or 'stand'. Each time a player replies
+'hit', they will be dealt another card and their new hand rescored. So long as their
+'hard' score remains 21 or less, their hand is considered playable. If their hard
+score ever exceeds 21, they bust and lose automatically, even if the dealer busts
+later in the round. Once a player replies 'stand', that hand will receive no further
+cards. If the player has a split hand, the process repeats for their second hand.
+
+Once all players have either busted or stopped with a playable hand, the dealer's
+turn begins. First, the dealer reveals the facedown or 'hold' card. If the dealer has
+a blackjack, all remaining hands lose, and any players with insurance bets win those
+bets. If the dealer does not have a blackjack, the dealer must take 'hits' (dealt
+cards) until their hard score reaches at least 17 or busts. If the dealer has a soft
+score between 17 and 21 and a hard score under 17, the dealer will take additional
+cards until their hard score exceeds 17 or their soft score beats at least one
+remaining player's score. Any time the dealer busts, all players with playable hands
+win their bets automatically.
+
+If all players busted in their turn, the dealer is required only to reveal their
+hold card, as the dealer wins automatically. All insurance bets will still payout on
+a dealer blackjack.
+
+Players at the table may leave after a round and they get a score at the end which is
+equal to their remaining bank.
+
+Now, this is a video game. To make it a little more interesting, players may stay in
+the game until the dealer's bank is broken. Then, the player with the highest bank
+wins, but, in reality, all of the players at the table just 'Beat the Bank'.
