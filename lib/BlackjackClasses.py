@@ -9,12 +9,11 @@ class CardShoe(object):
         
     Class Order Attributes:
         suits: a list of the suits used in normal playing card decks
-            S (spades), D (diamonds), H (hearts), and C (clubs). ['S', 'D',
-            'H', 'C']
+            S (spades), D (diamonds), H (hearts), and C (clubs). Tuple
+            are used because these values are constants.
         ranks: a list of the ranks of playing cards in ascending order Ace 
             through King, represented by A, 1, 2, 3,...., 9, 10, J, Q, K.
-            ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 
-            'Q', 'K']
+            Tuples are used here for the same reason.
     
     Attributes
         shuffled_deck : a randomly shuffled shoe created from decks.
@@ -31,8 +30,8 @@ class CardShoe(object):
             all class order attributes, and current attributes
         
     '''
-    suits = ['S', 'D', 'H', 'C']
-    ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+    suits = ('S', 'D', 'H', 'C')
+    ranks = ('A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K')
     
     def __init__(self):
         # decks is created as a set of indexes used to create a shuffled
@@ -1142,7 +1141,7 @@ class CasinoTable(object):
         file, BlackJack-Rules.txt is the etc directory under the main directory.
         '''
         if os.path.exists('./etc/BlackJack-Rules.txt'):
-            f = open('/etc/BlackJack-Rules.txt', 'r')
+            f = open('./etc/BlackJack-Rules.txt', 'r')
             contents = f.read()
             f.close()
             print(contents)
