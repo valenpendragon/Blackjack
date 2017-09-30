@@ -310,3 +310,6 @@ Merged all Class libraries into a common file BlackjackClasses.py for now and up
 Fixed a bug in CasinoTable rules() method. Now it prints the rules from a file in etc.
 Tested and verified that libraries are fully importable from an interactive prompt.
 Added missing entries in master change log (this file).
+
+Missed in last push (updated immediately after):
+Converted card lists for suit and rank to tuples to make them constants.
