@@ -294,3 +294,22 @@ Concluded that I did not need the app organization for this application, as I wa
 9/12/17 04:46 Pushed to origin
 
 Created new branches bugmaintenance for bug fixes and pygame for the GUI creation.
+Note: There are now 3 branches. So, checkouts and commits must be done with care, especially when sending them to GitHub
+
+9/27/17 00:16 Several changes while debugging imports
+
+Moved __init__.py to the lib directory and attempted a fix to the complaint regarding print_functions.
+Removed the files generated from the Jupyter Notebooks. Fixing problems importing the libraries in lib.
+Added Dealer.py to Player.py library to ensure inheritance when imported.
+Revised __init__.py for libraries to indicate where Dealer is imported from.
+Moved rules text from rules() method to a text file in etc.
+Merged all Class libraries into a common file BlackjackClasses.py for now and updated __init__.py accordingly.
+
+9/30/14 04:02
+
+Fixed a bug in CasinoTable rules() method. Now it prints the rules from a file in etc.
+Tested and verified that libraries are fully importable from an interactive prompt.
+Added missing entries in master change log (this file).
+
+Missed in last push (updated immediately after):
+Converted card lists for suit and rank to tuples to make them constants.

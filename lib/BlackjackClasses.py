@@ -1,9 +1,6 @@
-
-# coding: utf-8
-
-# In[1]:
-
+from __future__ import print_function
 import random
+import os.path
 # from abc import ABCMeta, abstractmethod
 
 class CardShoe(object):
@@ -12,12 +9,11 @@ class CardShoe(object):
         
     Class Order Attributes:
         suits: a list of the suits used in normal playing card decks
-            S (spades), D (diamonds), H (hearts), and C (clubs). ['S', 'D',
-            'H', 'C']
+            S (spades), D (diamonds), H (hearts), and C (clubs). Tuple
+            are used because these values are constants.
         ranks: a list of the ranks of playing cards in ascending order Ace 
             through King, represented by A, 1, 2, 3,...., 9, 10, J, Q, K.
-            ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 
-            'Q', 'K']
+            Tuples are used here for the same reason.
     
     Attributes
         shuffled_deck : a randomly shuffled shoe created from decks.
@@ -34,8 +30,8 @@ class CardShoe(object):
             all class order attributes, and current attributes
         
     '''
-    suits = ['S', 'D', 'H', 'C']
-    ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+    suits = ('S', 'D', 'H', 'C')
+    ranks = ('A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K')
     
     def __init__(self):
         # decks is created as a set of indexes used to create a shuffled
@@ -88,7 +84,7 @@ class CardShoe(object):
         top_card = self.shuffled_deck[0]
         self.shuffled_deck.pop(0)
         return top_card
-    
+
     def diagnostic_print(self):
         '''
         This method allows the programmer to print out all of the attributes, including
@@ -102,10 +98,6 @@ class CardShoe(object):
         print("Shuffled_Shoe: ", self.shuffled_deck)
         return
 
-
-# In[2]:
-
-from __future__ import print_function
 
 class Player(object):
     """
@@ -197,7 +189,9 @@ class Player(object):
         
       
     """
-    values = {'A': 1, '2' : 2, '3' : 3, '4' : 4, '5' : 5, '6' : 6,               '7' : 7, '8' : 8, '9' : 9, '10' : 10, 'J' : 10, 'Q' : 10,              'K' : 10 }
+    values = {'A': 1, '2' : 2, '3' : 3, '4' : 4, '5' : 5, '6' : 6, \
+              '7' : 7, '8' : 8, '9' : 9, '10' : 10, 'J' : 10, 'Q' : 10,\
+              'K' : 10 }
     
     
     def __init__(self, name, bank=1000):
@@ -781,8 +775,6 @@ class Player(object):
         return
 
 
-# In[3]:
-
 class Dealer(Player):
     """
     This is a derived class from base clase Player. The purpose of this class is to create a special type
@@ -1007,8 +999,6 @@ class Dealer(Player):
         return
 
 
-# In[4]:
-
 class CasinoTable(object):
     """
     This class simulates an actual casino table.
@@ -1069,12 +1059,12 @@ class CasinoTable(object):
         dealer_autowin: When the Dealer doesn't need to play its hand, this method performs
             the hold card reveal for the dealer.
         dealer_turn: this method plays the dealer's hand according to the rules:
-            ○ dealer stands on a hard 17+
-            ○ dealer stands on any 21 (blackjack or otherwise)
-            ○ dealer must take a card on a soft 16 or less
-            ○ dealer must stand on a hard 16 or less with a soft score that beats at least
+            * dealer stands on a hard 17+
+            * dealer stands on any 21 (blackjack or otherwise)
+            * dealer must take a card on a soft 16 or less
+            * dealer must stand on a hard 16 or less with a soft score that beats at least
                 one players playable hand and is greater than 16.
-            ○ dealer must take a card on a hard 16- with a soft score that does not beat any
+            * dealer must take a card on a hard 16- with a soft score that does not beat any
                 playable player hands.
             then, it determines all remaining wins and losses, using max_min_score and Player
             and Dealer class win/lose/tie methods to handle the changes to banks.
@@ -1147,67 +1137,16 @@ class CasinoTable(object):
     def rules(self):
         '''
         This prints out a quick list of the rules, including table rules, for the current
-        game. Most people do not know that full rules of Blackjack.
+        game. Most people do not know that full rules of Blackjack. Make sure that the 
+        file, BlackJack-Rules.txt is the etc directory under the main directory.
         '''
-        print("The rules of Casino Blackjack (infodump but important one):")
-        print("""The first myth to 'dash' is that ties do not automatically give the house
-a win. A blackjack is a 21 accomplished with the first two cards dealt to any
-player. A blackjack for a player is an automatic win with an extra table multiplier,
-even if the dealer has one.\n
-A blackjack for the dealer is an automatic win against any player without
-a blackjack. However, if the dealer has an ace, a 10, or a face card showing,
-players will be given the opportunity to place an 'insurance' bet that the
-dealer has a blackjack. So, players can still 'win' against a dealer blackjack.
-If a player other than the dealer has a pair, they will be offered the option
-to split the pair into two hands. The second hand is called a 'split hand'.
-With a split, blackjack is no longer possible, but you can still beat the dealer
-twice potentially.\n
-In a tie score with the dealer, the hand is considerd a draw. Neither the
-dealer nor the tying player loses the bet.\n
-All cards are drawn from a six deck shoe. This is literally a random
-rearrangement of six fifty-two card decks. Two cards are dealt to each player,
-including the dealer. The dealer's first card is dealt facedown, but all others
-are dealt face up. They are also given a score as cards are added to the hands.\n
-Scoring is the face value of the card. Face cards are worth 10 points. Aces
-can be 1 or 11. The soft score checks to see if a playable hand can be made with
-at least one ace scored as 11. The hard score treats any ace as a 1. Blackjack
-has a soft score of 21 and a hard score of 11 with the first two dealt cards.
-With hands that have no aces, both scores will be equal.\n
-Betting and the round takes place as as follows:
-\tBefore any cards are dealt, an initial bet is made by each player.
-It must be at least the table minimum and not greater than the table maximum.
-After two cards have been dealt, players have the option of doubling down if they
-do not have a blackjack already (see previous rules about automatic wins). Doubling
-down means that the player may bet up to their original bet, doubling the bet, even
-if the amount of the new bet goes over the table limit. A zero bet at this point is
-taken as the player changing their minds about doubling down. If a player has a pair
-and opts to split their hand, a new bet must be made on the new hand subject to the
-same rules. Two cards, one for each hand, are dealt, and the player may double down
-on either hand if they wish.\n
-Once two cards have been dealt and initial blackjacks and splits are taken care
-of, each player in turn is asked if they want a 'hit' or 'stand'. Each time a player
-replies 'hit', they will be dealt another card and their new hand rescored. So long
-as their 'hard' score remains 21 or less, their hand is considered playable. If their
-hard score exceeds 21, they bust and lose automatically, even if the dealer busts
-later in the round. Once a player replies 'stand', that hand will receive no further
-cards. If the player has a split hand, the process repeats for their second hand.\n
-Once all players have either busted or stopped with a playable hand, the dealer's
-turn begins. First, the dealer reveals the facedown or 'hold' card. If the dealer has
-a blackjack, all remaining hands lose, and any players with insurance bets win those
-bets. If the dealer does not have a blackjack, the dealer must take 'hits' (dealt
-cards) until their hard score reaches at least 17 or busts. If the dealer has a soft
-score between 17 and 21 and a hard score under 17, the dealer will take additional
-cards until their hard score exceeds 17 or their soft score beats at least one
-remaining player's score. Any time the dealer busts, all players with playable hands
-win their bets automatically.\n
-If all players busted in their turn, the dealer is required only to reveal their
-hold card, as the dealer wins is automatically. All insurance bets will still payout
-on a dealer blackjack.\n
-Players at the table may leave after a round and they get a score at the end which is
-equal to their remaining bank.\n
-Now, this is a video game. To make it a little more interesting, players may stay in
-the game until the dealer's bank is broken. Then, the player with the highest bank
-wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
+        if os.path.exists('./etc/BlackJack-Rules.txt'):
+            f = open('./etc/BlackJack-Rules.txt', 'r')
+            contents = f.read()
+            f.close()
+            print(contents)
+        else:
+            print('File, BlackJack-Rules.txt, was not found. Check installation of Blackjack.')
         return
 
     def deal_round(self):
@@ -1544,12 +1483,12 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
         method Dealer.dealer_print() instead of Dealer.__str__() so that the hold card stays revealed.
         
         The standard casino rules for the Dealer's turn are as follows:
-            ○ dealer stands on a hard 17+ 
-            ○ dealer stands on any 21 (blackjack or otherwise)
-            ○ dealer must take a card on a soft 16-
-            ○ dealer must stand on a hard 16- with a soft score that beats at least one players playable hand AND
+            * dealer stands on a hard 17+ 
+            * dealer stands on any 21 (blackjack or otherwise)
+            * dealer must take a card on a soft 16-
+            * dealer must stand on a hard 16- with a soft score that beats at least one players playable hand AND
                 is greater than 16.
-            ○ dealer must take a card on a hard 16- with a soft score that does not beat any playable player hands
+            * dealer must take a card on a hard 16- with a soft score that does not beat any playable player hands
         
         If the Dealer has blackjack, the insurance bets will be paid out, if any. The remaining players
         lose automatically. If a tie occurs, even on a non-blackjack 21, no remaining players, including
@@ -1628,7 +1567,8 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
                 print("Dealer's hard score is {0}, which is greater than 17. Dealer stands.".format(self.players[0].hard_hand_score))
                 dealer_stand = True
                 continue
-            if (self.players[0].hard_hand_score <= 16) and (self.players[0].soft_hand_score > min_score)                 and (self.players[0].soft_hand_score > 16):
+            if (self.players[0].hard_hand_score <= 16) and (self.players[0].soft_hand_score > min_score) \
+                and (self.players[0].soft_hand_score > 16):
                 # Dealer must stand on a soft hand score that beats at least one player and has a score
                 # above 16.
                 dealer_stand = True
@@ -1821,7 +1761,7 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
         del(self.deck)
         self.deck = CardShoe()
         return
-    
+
     def start_round(self):
         '''
         This method begins a new round. The previous round (or __init__) already cleared some attributes and updated
@@ -1864,64 +1804,3 @@ wins, but, in reality, all of the players at the table just 'Beat the Bank'.""")
         else:
             print("Preparing to deal the next round.")
             return True
-
-
-# In[5]:
-
-# First, create the casino table. This leaves open the ability to make several types of derived classes.
-x = CasinoTable()
-
-# Set the round counter. On round 1, it will give out the rules. On subsequent rounds, it will offer 
-# players the option to drop out.
-round_ctr = 0
-
-while True:
-    round_ctr += 1
-    if round_ctr == 1:
-        # On the first round, print the rules of casino blackjack.
-        x.rules()
-    else:
-        # After round 1, ask if players want to quit.
-        result = x.start_round()
-        if result == False:
-            break
-    print(x)
-    x.initial_bets()
-    x.deal_round()
-    x.deal_round()
-    x.pairs_check()
-    x.double_down()
-    # x.diagnostic_print()
-    result = x.hit_or_stand()
-    if result == 'none':
-        x.dealer_autowin()
-    else:
-        x.dealer_turn()
-    result = x.end_round()
-    if result == True:
-        break
-    else:
-        continue
-print("Thank you for playing. I hope you enjoyed your time at this table.")
-del(x)
-
-
-# In[6]:
-
-# x.replace_cardshoe()
-# print(x)
-
-
-# In[7]:
-
-# x.players[1].diagnostic_print()
-# x.players[2].diagnostic_print()
-# x.players[0].diagnostic_print()
-# x.diagnostic_print()
-# print(x)
-
-
-# In[8]:
-
-# del(x)
-
