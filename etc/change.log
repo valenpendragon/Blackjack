@@ -334,3 +334,10 @@ The layout of the data is:
 'regular bet'     : bet amount on regular hand or None
 'split hand bet'  : bet amount on split hand or None
 'insurance bet'   : bet amount on dealer blackjack or None
+
+10/17/17 07:15
+
+Player: __del__: returns a string indicating that a player has been removed from the game, instead of a boolean.
+Player: print_split: now calls __str__ and returns the same result.
+Player: more fixes to comments in almost all methods to make them clearer.
+Player: add_card_to_hand: Improved the readability of the code.

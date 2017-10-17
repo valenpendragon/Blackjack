@@ -366,37 +366,27 @@ class Player(object):
     
     def __del__(self):
         '''
-        This method removes a player from the game. After deleting it, it prints a message
-        and returns True.
+        This method removes a player from the game. After deleting the player,
+        it returns a string indicating that the player object has been deleted.
         '''
         name = self.name
-        print("{0} has been removed from the game.".format(name))
-        return True
+        return "{0} has been removed from the game.".format(name)
     
     def __len__(self):
         '''
-        This method prints out the length of the player's regular hand. This is used to help
-        determine a possible blackjack.
+        This method prints out the length of the player's regular hand. This
+        is used to help determine a possible blackjack.
         '''
         return len(self.hand)
     
     def print_split(self):
         '''
-        This method prints the player data in a format similar to __str__, but it leaves out
-        the regular hand. It accepts no arguments.
+        This method replicates __str___() method. It originally printed only
+        the split hand data, but that need changed with the switch to a pygame
+        interface.
         '''
-        if self.split_flag == False:
-            print("Player {0} does not have a split hand.".format(self.name))
-            return False
-        print("Player:\t", self.name)
-        print("Chips:\t${0}.00".format(self.bank))
-        print("\n\tSplit Hand: ", end='')
-        for rank, suit in self.split_hand:
-            print("{0}-{1}  ".format(rank,suit), end='')
-        print("\n\tSoft score for this hand: ", self.soft_split_score)
-        print("\tHard score for this hand: ", self.hard_split_score)
-        print("\n\tBet on this hand: $", self.split_bet)
-        return
+        playerData = self.__str__()
+        return playerData
     
     def total_bets(self):
         '''
@@ -407,28 +397,42 @@ class Player(object):
     
     def score_hand(self, card_hand):
         '''
-        This method accepts a card hand and returns the hard and soft scores for the hand.
-        This is in the form of a tuple (soft, hard).
+        This method accepts a card hand and returns the hard and soft scores
+        for the hand. This is in the form of a tuple (soft, hard).
+        Normally, soft and hard scores are equal, but Aces have two possible
+        scores. The hard score always treats Aces as 1 point card. That means
+        that soft scores >= hard scores.
+        Note: This method makes no attempt to determine if a hand is still
+        playable. It only checks to see if Aces allow for more than one playable
+        score. If so, it will try to find the highest playable score. Keep in
+        mind that blackjacks have a soft score of 21 and a hard score of 11.
         '''
+        # We need to track Aces and both scores. They start out equal.
         soft_score = hard_score = 0
         aces = 0
         for (rank, suit) in card_hand:
             card_score = Player.values[rank]
-            # The soft score will always be lower score because values treats Aces as a 1
-            # point card. We increment both in case an each score in case an Ace occurred 
-            # earlier in the hand. The values dictionary considers A = 1 score.
+            # We increment both scores by the value in values, which treats
+            # Aces as a 1 point card. If no aces are present, the scores will
+            # remain equal.
             soft_score += card_score
             hard_score += card_score
             if rank == 'A':
                 # Increment the number of aces.
                 aces += 1
-        # Now, the hard_score is the minimum value that the hand can have. They will be
-        # equal if there are no aces in the hand. They also have no meaning if the
-        # hard_score exceeds 21 already. In both cases, they will be equal. For each Ace,
-        # we add 10 to the soft_score, and check to see if it busts. If not, we increase
-        # the soft_score. 
+        
+        # The hard_score is the minimum value that the hand can have, but it
+        # may not be the only playable value. If there is at least one Ace, we
+        # we have to determine if scoring one or more Aces as 11 will result in
+        # a playable score. The only case we care about is a playable hard score
+        # with at least one Ace.
         if hard_score < 21 and aces != 0:
             for i in xrange(1, aces + 1):
+                # This for loop takes the soft score and adds 10 to it, tests
+                # it to see if it is still playable. If so, it changes the soft
+                # score to match it. It does this until all Aces are exhausted.
+                # The largest playable score will be containted in soft_score
+                # after it completes its run.
                 test_score = soft_score + 10
                 if test_score <= 21:
                     soft_score = test_score
@@ -438,37 +442,45 @@ class Player(object):
     
     def add_card_to_hand(self, card):
         '''
-        This method accepts a card tuple (rank, suit) as argument. It places this card into
-        the Player.hand list. It calls the internal method score_hand to rescore the hard
-        and soft scores of the hand. The hard score for a hand will be equal to the soft
-        score if there are no aces in the hand. The soft_score can be greater than the hard
-        score if scoring any ace in the hand as an 11 would result in a playable hand. In
-        fact, blackjack (a natural 21) has a hard score of 11, while the soft score is 21.
+        This method accepts a card tuple (rank, suit) as argument. It places
+        this card into the Player.hand list. It calls the internal method
+        score_hand to rescore the hard and soft scores of the hand. The hard
+        score for a hand will be equal to the soft score if there are no aces
+        in the hand. The soft_score can be greater than the hard score if
+        scoring any ace in the hand as an 11 would result in a playable hand.
+        In fact, blackjack (a natural 21) has a hard score of 11, while the
+        soft score is 21 with the first two cards that were dealt.
         INPUT: card, a tuple of (rank, suit)
         OUTPUT: This function returns the following:
-            'blackjack'  = the soft score is 21, the hard score is 11, and the len(hand)
-                           is 2 (meaning the starting deal was a blackjack)
+            'blackjack'  = the soft score is 21, the hard score is 11, and the
+                           len(hand) is 2 (meaning the starting deal was a
+                           blackjack).
             'bust'       = the hard_score is greater than 21
-            'playable'   = at least one score is less than or equal to 21. If one is 21,
-                           the hand is "longer" than 2 cards
+            'playable'   = at least one score is less than or equal to 21.
+                           If one is 21, the hand is "longer" than 2 cards,
+                           making it ineligible for blackjack.
         '''
         self.hand.append(card)
         (self.soft_hand_score, self.hard_hand_score) = self.score_hand(self.hand)
         if self.hard_hand_score > 21:
             return 'bust'
-        elif (self.hard_hand_score == 11) and (self.soft_hand_score == 21) and (len(self) == 2):
+        elif (self.hard_hand_score == 11) and \
+             (self.soft_hand_score == 21) and \
+             (len(self) == 2):
             return 'blackjack'
         else:
             return 'playable'
     
     def add_card_to_split(self, card):
         '''
-        This method accepts a card tuple (rank, suit) as argument. It places this card into
-        the Player.hand list. It calls the internal method score_hand to rescore the hard
-        and soft scores of the hand. The hard score for a hand will be equal to the soft
-        score if there are no aces in the hand. The soft_score can be greater than the hard
-        score if scoring any ace in the hand as an 11 would result in a playable hand. This
-        hand cannot have a blackjack result.
+        This method accepts a card tuple (rank, suit) as argument. It places
+        this card into the Player.split_hand list. It calls the internal
+        method score_hand to rescore the hard and soft scores of the split
+        hand. The hard score for a hand will be equal to the soft score if
+        there are no aces in the hand. The soft_score can be greater than the
+        hard score if scoring any ace in the hand as an 11 would result in
+        a playable hand. This hand cannot have a blackjack result because it
+        it created from the second card dealt.
         INPUT: card, a tuple of (rank, suit)
         OUTPUT: This function returns the following:
             'bust'       = the hard_score is greater than 21
@@ -483,17 +495,21 @@ class Player(object):
         
     def blackjack(self, multiplier):
         '''
-        This method handles the player's winnings for a blackjack (natural 21 on the first
-        two cards dealt). Casinos always has a better payout ratio for a player winning a
-        blackjack (assuming the Dealer doesn't tie with the player).
+        This method handles the player's winnings for a blackjack (natural 21
+        on the first two cards dealt). Casinos always have a better payout
+        ratio for a player winning a blackjack.
+        Note: This is an automatic player win, regardless of whether or not
+        Dealer has a blackjack as well.
         
-        This method erases the original bet and clears the hand since this result is handled
-        immediately after the second card deal takes place.
+        This method erases the original bet and clears the hand since this
+        part of the round takes place immediately after the second card was
+        dealt and before the Player Turn begins.
         
-        This method does not return a value. The multiplier needs to be a decimal or an
-        integer, not a fraction.
+        This method does not return a value. The multiplier needs to be a
+        decimal or an integer, not a fraction.
         
-        Nothing is done to the split result because no split can occur with a natural 21.
+        Nothing is done to the split result because no split can occur with
+        a natural 21. (Splits are offered when a pair is dealt to a player.)
         '''
         winnings = int(multiplier * self.bet)
         self.bank += winnings
@@ -504,8 +520,8 @@ class Player(object):
     
     def win(self):
         '''
-        This method handles the player's winngings wins with their regular hand. The split_hand
-        has a separate method for this purpose.
+        This method handles the player's winnings after a win with their
+        regular hand. The split_hand has a separate method for this purpose.
         
         This method does not accept arguments nor return values.
         '''
@@ -515,25 +531,28 @@ class Player(object):
     
     def split_win(self):
         '''
-        This method cleans up a split hand after the split hand wins. The regular hand is dealt
-        with in other methods.
+        This method handles the player's winnings after a win with their
+        split hand. The regular hand has a separate method for this purpose.
         
         This method does not accept arguments nor return values.
         '''
-        # There is no multiplier for a regular win with a split hand either.
+        # There is no multiplier for a win with a split hand.
         self.bank += self.split_bet
         return
     
     def reg_loss(self):
         '''
-        This method deducts player's losses from bets on their regular hand, either to a bust
-        or a lower hand score during the round than the dealer.
+        This method deducts player's losses from bets on their regular hand,
+        either to a bust or a lower hand score during the round than the
+        dealer.
         
-        This method takes no arguments. It returns True while the players has a positive
-        balance in the bank. A zero or negative balance returns False.
+        This method takes no arguments. It returns True while the players has
+        a positive balance in the bank. A zero or negative balance returns
+        False.
         
-        Note: This method is predicated on the idea that other methods or functions have made
-        certain that the player had enough in their bank to cover bets made.
+        Note: This method is predicated on the idea that other methods or
+        functions have made certain that the player had enough in their bank
+        to cover any bets made.
         '''
         self.bank -= self.bet
         self.hand = []
@@ -544,14 +563,16 @@ class Player(object):
        
     def split_loss(self):
         '''
-        This method deducts the player's losses on the split hand, either to a bust or a lower
-        score during the round than the dealer.
+        This method deducts the player's losses on the split hand, either
+        to a bust or a lower score during the round than the dealer.
         
-        This method takes no arguments. It returns True while the players has a positive
-        balance in the bank. A zero or negative balance returns False.
+        This method takes no arguments. It returns True while the players
+        has a positive balance in the bank. A zero or negative balance
+        returns False.
         
-        Note: This method is predicated on the idea that other methods or functions have made
-        certain that the player had enough in their bank to cover bets made.
+        Note: This method is predicated on the idea that other methods or
+        functions have made certain that the player had enough in their
+        bank to cover any bets made.
         '''
         self.bank -= self.split_bet
         self.split_hand = []
@@ -562,46 +583,59 @@ class Player(object):
     
     def tie(self):
         '''
-        This method clears the regular bet if the hand ties with the Dealer. Ties do not
-        normally result in casino wins.
+        This method clears the regular bet if the hand ties with the Dealer.
+        Ties do not normally result in casino wins. This is due to the
+        realization by gaming commissions and club owners that coming away
+        richer than you started at Blackjack tables is hard enough without
+        the Dealer winning ties.
         
-        This method accepts no arguments and returns no values. The reason for the latter is that
-        there is no deduction from the bank, nor gain in a tie.
+        This method accepts no arguments and returns no values. The reason
+        for the latter is that there is no deduction from the bank, nor gain
+        in a tie.
         '''
         self.bet = 0
         return
     
     def split_tie(self):
         '''
-        This method clears the bet on the split hand if it ties with the Dealer. Ties do not
-        normally result in casino wins.
+        This method clears the split bet if the split hand ties with the
+        Dealer. Ties do not normally result in casino wins. This is due to the
+        realization by gaming commissions and club owners that coming away
+        richer than you started at Blackjack tables is hard enough without
+        the Dealer winning ties.
         
-        This method accepts no arguments and returns no values. The reason for the latter is that
-        there is no deduction from the bank, nor gain in a tie.
+        This method accepts no arguments and returns no values. The reason
+        for the latter is that there is no deduction from the bank, nor gain
+        in a tie.
         '''
         self.split_bet = 0
         return
     
     def ins(self, dealer_blackjack):
         '''
-        This method handles bets taken on the Dealer getting a blackjack. This bet only happens
-        when the Dealer's face up card is an Ace, 10, or face card. Other methods or functions will
-        handle creating this bet when the conditions for it are met.
+        This method handles bets taken on the Dealer getting a blackjack.
+        This bet only happens when the Dealer's face up card is an Ace, 10,
+        or face card. Other methods or functions handle creating this bet
+        when the conditions for it are met.
         
-        This method takes a boolean indicating if the Dealer has a blackjack. If True, the player
-        wins their insurance bet. If False, the player lost the insurance bet.
+        This method takes a boolean indicating if the Dealer has a blackjack.
+        If True, the player wins their insurance bet. If False, the player
+        lost the insurance bet.
         
-        This method returns a boolean. True indicates that the player still has money in the bank.
-        False means they have zero or a negative balance and have to be eliminated from the game.
+        This method returns a boolean. True indicates that the player still
+        has money in the bank. False means they have zero or a negative
+        balance.
         
-        Note: This method does not care if the insurance bet is zero. In that case, it has no
-        effect on their bank balance.
+        Note: This method does not care if the insurance bet is zero. In that
+        case, it has no effect on their bank balance.
         '''
         if dealer_blackjack == True:
-            # The Dealer got blackjack. The player who has a non-zero insurance bet wins the bet.
+            # The Dealer got blackjack. The player who has a non-zero
+            # insurance bet wins the bet. Otherwise, self.insurance = 0.
             self.bank += self.insurance
         else:
-            # The Dealer did not get blackjack. The insurance bet is deducted from the player's bank.
+            # The Dealer did not get blackjack. The insurance bet is
+            # deducted from the player's bank.
             self.bank -= self.insurance
 
         # In case the bet was deducted from the bank, we need to check it.
