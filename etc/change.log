@@ -313,3 +313,24 @@ Added missing entries in master change log (this file).
 
 Missed in last push (updated immediately after):
 Converted card lists for suit and rank to tuples to make them constants.
+
+10/11/17 06:04
+
+General: Added import for os, os.path, and pygame. Using the import to eliminate need for pygame.locals on many calls.
+CardShoe: Creating much better comments on the class and methods, including the ones with printout in iPython or IDLE.
+CardShoe: __del__ returns its print string instead printing. This is a change from a boolean.
+Player: Minor comment cleanup to get comments to less than 80 characters per line.
+Player: Added clear comments on the definition of round, showing the full breakdown of each game round.
+Player: __str__() returns  a dict data type with the full data on the player. 0 bets and non-existent hands are set to None. The layout of the playerData dict is:
+The layout of the data is:
+'name'            : player's name
+'bank'            : player's bank
+'hand'            : player's regular hand or None
+'split hand'      : player's split hand or None
+'soft score'      : soft score for player's hand or None
+'hard score'      : hard score for player's hand or None
+'soft score split hand' : soft score for split hand or None
+'hard score split hand' : hard score for split hand or None
+'regular bet'     : bet amount on regular hand or None
+'split hand bet'  : bet amount on split hand or None
+'insurance bet'   : bet amount on dealer blackjack or None
