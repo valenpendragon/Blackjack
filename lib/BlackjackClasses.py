@@ -204,24 +204,37 @@ class Player(object):
     Methods:
         __init__: Creates the player object, initializing all of the
             attributes. The bank has a default value of 10,000 dollars.
-        __str__: This method prints the player's name, the player's bank,
-            bets, and primary hand. If the split_flag is True, it will print
-            that data as well.
-        __del__: prints a message while removing the player object
+        __str__: This method originally printed out the basic data on a Player's
+            bets, hands, and scores. As of the Pygame coversion, it now returns
+            a dict object containing the following:
+                'name'            : player's name
+                'bank'            : player's bank
+                'hand'            : player's regular hand or None
+                'split hand'      : player's split hand or None
+                'soft score'      : soft score for player's hand or None
+                'hard score'      : hard score for player's hand or None
+                'soft score split hand' : soft score for split hand or None
+                'hard score split hand' : hard score for split hand or None
+                'regular bet'     : bet amount on regular hand or None
+                'split hand bet'  : bet amount on split hand or None
+                'insurance bet'   : bet amount on dealer blackjack or None
+        __del__: removes the player object and returns a string indicating that
         __len__: prints out the len of the player's regular hand (This is
             used to determine player blackjack and splits)
-        print_split: This method does the same thing as __str__ except that
-            it prints only the data for the split hand
+        print_split: This method originally printed out player data and split
+            hand data and bets. It now returns the same dict object as the
+            __str__ method.
         score_hand: takes a hand and returns the soft and hard scores for
             the hand as a tuple (soft, hard)
-        add_card_to_hand: akes a card, adds it to the hand, calls score_hand
-            to get the new hard and soft scores, and returns 'blackjack',
-            'bust', or 'playable'
-        add_card_to_split: takes a card, adds it to the split hand, calls
-            score_hand to get a new hard and soft scores for it, and returns
+        add_card_to_hand: takes a card as an argument, adds it to the hand,
+            calls score_hand to get the new hard and soft scores, and returns
+            'blackjack', 'bust', or 'playable'
+        add_card_to_split: takes a card as an argument, adds it to the hand,
+            calls score_hand to get the new hard and soft scores, and returns
             'bust' or 'playable'
         blackjack: takes the player's regular bet, mulitplies it by the
-            Blackjack multiplier (supplied via argument)
+            Blackjack multiplier (supplied via argument) and adds it to their
+            bank
         win: adds the player's bet to their bank
         split_win: add the player's split bet to the bank
         reg_loss: subtracts the player's bet from the bank. Returns False
@@ -244,24 +257,25 @@ class Player(object):
             been reset, and all bets have been reset to zero (including
             insurance). This method is used to clean up after the Dealer's
             turn.
-        update_bet: this method makes sure that the player has the money
-            to cover the new amount of their regular bet and all other bets.
-            If so, it returns 'success'. If not, it returns an error code.
+        update_bet: This method requires an integer for the new bet amount.
+            It makes certain the player has the money in their bank to cover
+            the new amount of their regular bet and all other bets. If so,
+            it returns 'success'. If not, it returns an error code.
             The argument is the amount to increase the bet.
-        update_split_bet: this method makes sure that the player has the
-            money to cover the new amount of their split bet and all other
-            bets. If so, it returns 'success'. If not, it returns an error
-            code. The argument is the amount to increase the bet.
-        update_ins: this method makes sure that the player has the money
-            to cover the new amount of their insurance bet and all other bets. If so, it return 'success'. If not, it
-            returns an error code.  The argument is the amount to increase it.
-        total_bets: the calculates the total of all bets currently accepted
-            for the player, including an insurance bet.
-        double_down: checks to see if the hand has 2 cards. if so, it offers
-            an update to the bet of up to double the original amount. A 0
-            amount will be considered an change of heart. it loops until
-            a valid amount is entered. It calls the appropriate bet method
-            for the type of hand.
+        update_split_bet: This method performs the same operation on as
+            update_bet, only on the split hand bets.
+        update_ins: This method requires an integer amount of the insurance
+            bet to be made. It verifies that the player has enough money in
+            their bank to cover all of their bets, including the insurance
+            bet. It returns 'success' if the player can cover the new bet,
+            an error code if not.
+        total_bets: This method calculates the total of all bets currently
+            accepted for the player, including an insurance bet.
+        double_down: This method takes a bet amount (integer) and split
+            (boolean). Based on split (boolean), it calls either update_bet or
+            update_split_bet with  whatever 'bet_amt' contains,  0 as min and
+            self.bet as max arguments. It returns the string returned by the
+            bet update methods.
         diagnostic_print: This method prints out all of the attributes and
             object stored in this object. Normally, this is used for code
             diagnostics only.
@@ -664,76 +678,77 @@ class Player(object):
     
     def update_bet(self, new_increase, min_bet=1, max_bet=100):
         '''
-        This method increases the regular bet by the amount of the increase. It will add up all the
-        other bets to make sure that player has enough money in the bank to cover it.
+        This method increases the regular bet by the amount of the increase.
+        It will add up all the other bets to make sure that player has enough
+        money in the bank to cover it.
         INPUT: integer new_increase (or a float that will be truncated)
-        OPTIONAL: min_bet and max_bet are not required (because of defaults), but a casino could
-            override the value by including it.
+        OPTIONAL: min_bet and max_bet are not required (because of defaults),
+            but a casino could override the value by including it.
         OUTPUT: string with the following meanings
             'success'   = the bet could be increased
             'bust'      = the bet exceeds the money in the bank
-            'size'      = the bet is not allowed because it exceeds double the original bet
+            'size'      = the bet is not allowed because it exceeds double the
+                        original bet
             'min'       = the bet is not enough to meet the casino minimums
             'max'       = the bet exceeds the max allowed initial bet
-            'TypeError' = at least one numerical argument supplied was not a number
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
             'Unknown'   = an unknown error occurred
         
         Note: A zero max_bet means that there is no maximum initial bet amount.
         '''
-        # The first step is to convert a possible floating point number into an integer.
+        # The first step is to convert a possible floating point number into an
+        # integer.
         try:
             amt_to_increase = int(new_increase)
         except TypeError:
-            print("The value supplied is not a number")
             return 'TypeError'
         except:
-            print("An unknown error has occurred")
             return 'Unknown'
         else:
-            # If it could be converted, the sign needs to be stripped off the value.
+            # If it could be converted, the sign needs to be stripped off the
+            # value.
             amt_to_increase = abs(amt_to_increase)
         
-        # Next, the new amount needs to be checked to see against min and max bets.
-        # Note, min and max bets only apply to the bets laid before the cards are 
-        # dealt. So, Player.bet = 0 then.
+        # Next, the new amount needs to be checked against min and max bets.
+        # Note: min and max bets only apply to the bets laid before the cards
+        # are dealt. So, Player.bet = 0 then.
         if self.bet == 0:
             if amt_to_increase < min_bet:
-                print("The bet amount is too small.")
                 return 'min'
-            # A max_bet of zero means there is no maximum (besides the implicit all in).
+            # A max_bet of zero means there is no maximum (besides the implicit
+            # all in).
             if (max_bet != 0) and (amt_to_increase > max_bet):
-                print("The bet amount is too large.")
                 return 'max'
-        # A non-zero bet automatically is subject to the double down rule. A player
-        # may not exceed twice their original bet on a "great" hand.
+        # A non-zero bet automatically is subject to the double down rule. A
+        # player may not exceed twice their original bet on a "great" hand.
         elif self.bet < amt_to_increase:
-            print("Double down exceeds casino allowed amount.")
-            print("Players may not increase their bets by more than their original bet.")
             return 'size'
                 
-        # Now, the total amount of all bets needs be checked against the bank balance.
-        # total_bets = self.bet + self.split_bet + self.insurance
+        # Now, the total amount of all bets needs be checked against the bank
+        # balance. total_bets() = self.bet + self.split_bet + self.insurance
         if (self.total_bets() + amt_to_increase) > self.bank:
-            print("{0}'s total bets will exceed the bank of {1}".format(self.name, self.bank))
             return 'bust'
         self.bet += amt_to_increase
-        print("{0} accepted. New bet amount on this hand is {1}.".format(amt_to_increase, self.bet))
         return 'success'
     
     def update_split_bet(self, new_increase, min_bet=1, max_bet=100):
         '''
-        This method increases the regular bet by the amount of the increase. It will add up all the
-        other bets to make sure that player has enough money in the bank to cover it.
+        This method increases the split bet by the amount of the increase. It
+        will add up all the other bets to make sure that player has enough
+        money in the bank to cover it.
         INPUT: integer new_increase (or a float that will be truncated)
-        OPTIONAL: min_bet and max_bet are not required (because of defaults), but a casino could
-            override the value by including it.
+        OPTIONAL: min_bet and max_bet are not required (because of defaults),
+            but a casino could override the value by including it.
         OUTPUT: string with the following meanings
             'success'   = the bet could be increased
             'bust'      = the bet exceeds the money in the bank
-            'size'      = the bet is not allowed because it exceeds double the original bet
+            'size'      = the bet is not allowed because it exceeds double the
+                        original bet
             'min'       = the bet is not enough to meet the casino minimums
             'max'       = the bet exceeds the max allowed initial bet
-            'TypeError' = at least one numerical argument supplied was not a number
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
             'Unknown'   = an unknown error occurred
         
         Note: A zero max_bet means that there is no maximum initial bet amount.
@@ -742,7 +757,6 @@ class Player(object):
         try:
             amt_to_increase = int(new_increase)
         except TypeError:
-            print("The value supplied is not a number")
             return 'TypeError'
         except:
             return 'Unknown'
@@ -755,82 +769,76 @@ class Player(object):
         # dealt. So, Player.bet = 0 then.
         if self.split_bet == 0:
             if amt_to_increase < min_bet:
-                print("The bet amount is too small.")
                 return 'min'
             # A max_bet of zero means there is no maximum (besides the implicit all in).
             if (max_bet != 0) and (amt_to_increase > max_bet):
-                print("The bet amount is too large.")
                 return 'max'
         # A non-zero bet automatically is subject to the double down rule. A player
         # may not exceed twice their original bet on a "great" hand.
         elif self.split_bet < amt_to_increase:
-            print("Double down exceeds casino allowed amount.")
-            print("Players may not increase their bets by more than their original bet.")
             return 'size'
                 
         # Now, the total amount of all bets needs be checked against the bank balance.
         # total_bets = self.bet + self.split_bet + self.insurance
         if (self.total_bets() + amt_to_increase) > self.bank:
-            print("{0}'s total bets will exceed the bank of {1}".format(self.name, self.bank))
             return 'bust'
         self.split_bet += amt_to_increase
-        print("{0} accepted. New bet amount on this hand is {1}.".format(amt_to_increase, self.split_bet))
         return 'success'
     
     def update_ins(self, ins_bet, min_bet=0, max_bet=200):
         '''
-        This method accepts an insurance bet. This type of bet is a bet that the Dealer will
-        have a blackjack if an Ace or a 10-score card is visible. This is a way for the player
-        to win money even when the Dealer has a blackjack. There is generally no mininum bet,
-        but there is often a maxiumum allowed bet. There are no opportunities to raise this bet
-        not can the player place a second such bet if they split their hand.
+        This method accepts an integer insurance bet. This is a bet that the
+        Dealer has a hidden blackjack. It can only be made if the Dealer's
+        visible card is an Ace or a 10-score card. This is a way for the player
+        to win money even when the Dealer has a blackjack. There is generally
+        no mininum bet, but there is often a maxiumum allowed bet. There are no
+        opportunities to raise this bet nor can the player place a second such
+        bet if they split their hand.
         INPUT: integer ins_bet (or a float that will be truncated)
-        OPTIONAL: min_bet and max_bet are not required (because of defaults), but a casino could
-            override the value by including it.
+        OPTIONAL: min_bet and max_bet are not required (because of defaults),
+            but a casino could override the value by including it.
         OUTPUT: string with the following meanings
             'success'   = the insurance bet was acceptable and applied
             'exists'    = the insurance bet has already been made
             'bust'      = the bet exceeds the money in the bank
             'min'       = the bet is not enough to meet the casino minimums
             'max'       = the bet exceeds the max allowed for an insurance bet
-            'TypeError' = at least one numerical argument supplied was not a number
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
             'Unknown'   = an unknown error occurred
         '''
-        # The first step is to convert a possible floating point number into an integer.
+        # The first step is to convert a possible floating point number into an
+        # integer.
         try:
             ins_amt = int(ins_bet)
         except TypeError:
-            print("The values is not a number")
             return 'TypeError'
         except:
             return 'Unknown'
         else:
-            # If it could be converted, the sign needs to be stripped off the value.
+            # If it could be converted, the sign needs to be stripped off the
+            # value.
             ins_amt = abs(ins_amt)
         
-        # Next, we need to check for an existing insurance bet. If it exists already, no
-        # changes are permitted.
+        # Next, we need to check for an existing insurance bet. If it exists
+        # already, no changes are permitted.
         if (self.insurance != 0):
-            print("An insurance bet has already been made.")
             return 'exists'
         if (ins_amt < min_bet):
-            print("The bet amount is below the casino minimum for an insurance bet.")
             return 'min'
         if (ins_amt > max_bet):
-            print("The bet amount exceeds the casino maximum for an insurance bet.")
             return 'max'
-        # Now, the total amount of all bets needs be checked against the bank balance.
+        # Now, the total amount of all bets needs be checked against the bank
+        # balance.
         if (self.total_bets() + ins_amt) > self.bank:
-            print("{0}'s total bets will exceed the bank of {1}".format(self.name, self.bank))
             return 'bust'
         self.insurance += ins_amt
-        print("{0} has been accepted as an insurance bet.".format(self.insurance))
         return 'success'
     
     def split_check(self):
         '''
-        This method verifies that the player's initial deal supports a split. It returns True
-        if the cards are a pair, False otherwise.
+        This method verifies that the player's initial deal supports a split.
+        It returns True if the cards are a pair, False otherwise.
         '''
         if (self.hand[0][0] != self.hand[1][0]):
             return False
@@ -839,8 +847,9 @@ class Player(object):
         
     def split_pair(self):
         '''
-        This method moves the second card in the player's initial hand to the split_hand, sets
-        the split_flag to True, and recalculates the hand scores.
+        This method moves the second card in the player's initial hand to the
+        split_hand, sets the split_flag to True, and recalculates the hand
+        scores.
         '''
         self.split_flag = True
         self.add_card_to_split(self.hand[1])
@@ -849,53 +858,38 @@ class Player(object):
         (self.soft_split_score, self.hard_split_score) = self.score_hand(self.split_hand)
         return
     
-    def double_down(self, card_hand, split):
+    def double_down(self, bet_amt, split):
         '''
-        This method determines if the second card has been dealt to a hand. If so, it allows the
-        player to "double down", the playe can add to their original bet up to an equal amount, 
-        doubling the original bet. They do not have to make an additional bet, however. 0 is an
-        acceptable amount.
-        INPUT: card_hand, a list of card tuples (rank,suit), and split, boolean indicating if this
-            is a split hand, True = split hand, False = normal hand
+        Originally, this method actually asked the player if they wanted to
+        double down, then recorded their bet amount. The bet was checked to
+        see if it exceeded their ante bet at the beginning of the round or the
+        initial bet on their split hand. With Pygame, this method tests takes
+        a bet amount (integer) and a split flag (boolean) and determines if
+        the bet is a valid amount using update_bet or update_split_bet
+        methods. Return values are below.
+        INPUT: bet_amt: integer, split: boolean
+        OUTPUT: string with one of the following messages:
+            'success'   = the bet was a valid amount and was applied
+            'bust'      = the bet exceeds the money in the bank
+            'size'      = the bet is not allowed because it exceeds double the
+                        original bet
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
+            'Unknown'   = an unknown error occurred
+        Note: double_down will not return 'min' or 'max' because the table
+        min and max do not apply to this bet. Only 'size' matters. Neither
+        bets can be more than double the original bet.
         '''
-        (soft_score, hard_score) = self.score_hand(card_hand)
-        if len(card_hand) == 2:
-            if soft_score == hard_score:
-                print("Player {0}: You have a hard {1} showing.".format(self.name, hard_score))
-            else:
-                print("Player {0}: You have a hard {1} or a soft {2} showing.".format(self.name, hard_score, soft_score))
-            answer = raw_input("Would like to double down now? y/n")
-            if answer[0].lower() == 'y':
-                if split == True:
-                    print("The bet on your split hand was {0}. You may increase the bet up to that amount.".format(self.split_bet))
-                    while True:
-                        try:
-                            new_bet = raw_input("Enter an amount between 0 and {0}. 0 indicates you changed your mind.".format(self.split_bet))
-                        except:
-                            continue
-                        else:
-                            bet_check = self.update_split_bet(new_bet,0)
-                            if bet_check != 'success':
-                                print("Please try again.")
-                                continue
-                        break
-                else:
-                    print("The bet on your original hand was {0}. You may increase the bet up to that amount.".format(self.bet))
-                    while True:
-                        try:
-                            new_bet = raw_input("Enter an amount between 0 and {0}. 0 indicates you changed your mind.".format(self.bet))
-                        except:
-                            continue
-                        else:
-                            bet_check = self.update_bet(new_bet,0)
-                            if bet_check != 'success':
-                                print("Please try again.")
-                                continue
-                        break
-            else:
-                print("The bet will remain unchanged.")
-            print(self)
-        return
+        # First, we check the split boolean to see if this is the split hand.
+        # Regular and split hands use different methods because their
+        # attributes have to be handled differently.
+        if split:
+            # It is a split hand.
+            bet_check = self.update_split_bet(bet_amt, 0, self.bet)
+        else:
+            # It is a regular hand.
+            bet_check = self.update_bet(bet_amt, 0, self.bet)
+        return bet_check
     
     def diagnostic_print(self):
         '''

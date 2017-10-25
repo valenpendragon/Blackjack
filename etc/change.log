@@ -341,3 +341,9 @@ Player: __del__: returns a string indicating that a player has been removed from
 Player: print_split: now calls __str__ and returns the same result.
 Player: more fixes to comments in almost all methods to make them clearer.
 Player: add_card_to_hand: Improved the readability of the code.
+
+10/24/17 23:10 Pushed to origin
+
+Player: Updated the main comment block to reflect previous changes made to the methods in this class. Cleaned up comments for other methods. Reduced all comments to under 80 characters in length for readability.
+Player: Removed all print statements from update_bet, update_split_bet, and update_ins. Rendering for messages associated with the return codes from these methods needs to be handled in other classes. Also cleaned up the comments in these methods.
+Player: double_down method takes a bet amount (integer) and split (boolean). Based on split (boolean), it calls either update_bet or update_split_bet with  whatever 'bet_amt' contains,  0 as min and self.bet as max arguments. It returns the string returned by the bet update methods.
