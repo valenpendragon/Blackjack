@@ -1,5 +1,5 @@
 from __future__ import print_function
-import random, os, pygame
+import random, os, pygame, inflection
 from pygame.locals import *
 
 # from abc import ABCMeta, abstractmethod
@@ -839,9 +839,7 @@ class Player(object):
         This method verifies that the player's initial deal supports a split.
         It returns True if the cards are a pair, False otherwise.
         '''
-        (firstCardRank, firstCardSuit) = self.hand[0]
-        (secondCardRank, secondCardSuit) = self.hand[1]
-        if (firstCardRank != secondCardRank):
+        if (self.hand[0][0] != self.hand[1][0]):
             return False
         else:
             return True
@@ -991,9 +989,7 @@ class Dealer(Player):
         __len__, __del__, score_hand
 
     """
-    name = 'Dealer'
-    
-    def __init__(self, bank=100000):
+    def __init__(self, name='Dealer', bank=100000):
         '''
         This method creates the following attributes for Dealers:
             hand: creates an empty list
@@ -1006,8 +1002,10 @@ class Dealer(Player):
             visible_hard_scort: set to 0
             blackjack_flag: set to False
         
-        INPUT: integer dealer starting bank, defaults to 100,000
+        INPUT: bank, integer, defaults to 100,000 (dealer's starting bank)
+               name, string, defaults to 'Dealer' (dealer's name)
         '''
+        self.name = name
         self.hand = []
         self.bank = bank
         self.soft_hand_score = self.hard_hand_score = 0
@@ -1213,21 +1211,22 @@ class CasinoTable(object):
     
     Attributes:
         blackjack_multiplier: tuple storing ('ratio', float multiplier)
-            ratio is a string that prints out a ratio, like 3:2, or 6:5 which represents
-                the payout ratio for a player blackjack
-            multiplier is a floating point two decimal approximation of the ratio used to
-                calculate the actual winnings
-            This tuple is used to storage and manage the table mulitiplier
-        starting_bank: integer overrides the default of 100,000 if the bank is larger or
-            smaller, if non-zero
-        table_size: integer indicating the max number of players (other than dealer) for
-            this table object (3 or 5, normally)
-        table_index: the actual max index for the players list
-        deck: a CardShoe object that can be recreated via replace_cardshoe method
-        players: list of players associated with the table.
-            players[0]: a Dealer object initialized with starting bank, if non-zero, or the
-                default of 100,000 otherwise
-            players[1+]: Player objects up to the max number the table allows (table_size)
+            ratio is a string that prints out a ratio, like 3:2, or 6:5
+                which represents the payout ratio for a player blackjack
+            multiplier is a floating point two decimal approximation of the
+                ratio used to calculate the actual winnings
+            This tuple is used to store and manage the table mulitiplier
+        table_size: integer indicating the max number of players (other than
+            dealer) for this table object (3 or 5, normally)
+        tableSeats: ordinal dictionary for seat number to ordinal (to reduce
+            CPU overhead calculating it all the time)
+        deck: a CardShoe object that can be recreated via replace_cardshoe()
+            method
+        tableDealer: a Dealer object, initialized by a name and starting
+            bank amount
+        players: a dict object of the form {'seat ordinal': playerObj},
+            where seat ordinal is literall 1st, 2nd, ... up to the table_size
+            and playerObject is the player object created from a name and bank
     
     Methods:
         __init__: Creats a table, initializing the attributes. It will generate a CardShoe,
@@ -1285,33 +1284,57 @@ class CasinoTable(object):
             least one player remains, False otherwise.
         
     """
-    def __init__(self, starting_bank = 100000):
+    def __init__(self,
+                 playerNames          = list({'name' : 'Fred', 'bank' : 50000}),
+                 blackjack_multiplier = ('3:2', 1.50),
+                 name = 'Sarah',
+                 bank = 100000):
         '''
-        This method creates several objects and attributes.
-        
-        For initial testing:
-            blackjack multiplier will be set to ('3:2', 1.50)
-            starting bank will be 10,000
-            table_size will be 3 for testing and 5 for normal play.
+        This method requires several arguments from the calling program, even
+        though it has clear defaults for each one. These inputs are:
+        INPUT:
+            playerNames: a list of dict objects of the form {'name': string,
+                'bank': amount} for each player. This list will be accepted
+                as the seating order of the players.
+                Default: one player {'name' : 'Fred', 'bank' : 50000}
+            blackjack_multiplier: a tuple ('string', float), the 'string' is a
+                text ratio equivalent to the value of the float (the value used
+                calculate player blackjack instant wins.
+                Default: ('3:2', 1.50)
+            name: string, the name of the dealer for this table
+                Default: 'Sarah'
+            bank: integer, the initial bank for this table's dealer
+                Default: 100,000
+
+        This method will generate the following attributes from its input:
+            tableDealer: a Dealer class object
+            players:     a dict object mapping 'seat ordinal' to playerObject
+            table_size:  maximum number of players seatable at the table
+            tableSeats:  dictionary of seat number to 'seat ordinal', using
+                         dict comprehensions
+            deck:        a CardShoe object (6 full 52 card decks shuffled
+                         together)
             
         '''
-        self.blackjack_multiplier = ('3:2', 1.50)
-        print("This table has a blackjack payout of ", self.blackjack_multiplier[0])
-        self.starting_bank = starting_bank
-        self.table_size = 3
-        print("This table allows {0} player(s).".format(self.table_size))
-        self.table_index = self.table_size + 1
-        self.players = []
-        self.deck = CardShoe()
-        self.players.append(Dealer(self.starting_bank))
-        for i in xrange(1, self.table_index):
-            player_num = i
-            name = raw_input("Please give the name for Player {0}. Type 'none' when finished.".format(player_num))
-            if name != 'none':
-                self.players.append(Player(name))
-                
-            else:
-                self.table_index = i
+        # The table_size attribute can be built by using len on the
+        # playerNames list.
+        self.table_size    = len(playerNames)
+        
+        # The Dealer object is created by calling the class with the name and
+        # bank amount provided in the arguments.
+        self.tableDealer   = Dealer(name, bank)
+
+        # The ordinale dictionary is created with a dictionary comprehension.
+        self.tableSeats    = {x: str(x) + inflection.ordinal(x) for x in range(1, self.table_size + 1)}
+
+        # Now, we need a for loop to create the player objects from the list
+        # supplied in playerNames. Player.__init__() also has a default bank
+        # in case one is not specified. We have to use the numbers to call the
+        # ordinals we need. seat below is an integer, while ordinal it the
+        # orginal number, e.g. 1st, 2nd, etc.
+        self.players = {}
+        for seat, ordinal in self.tableSeats.iteritems():
+            self.players[ordinal] = Player(playerNames[seat]['name'], playerNames[seat]['bank'])            
         return
     
     def __str__(self):

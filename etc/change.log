@@ -363,3 +363,11 @@ Dealer: end_round: cleaned up the comments
 Dealer: dealer_lost: Cleaned up comments and removed print statements.
 Dealer: dealer_wins: Cleaned up comments.
 Dealer: diagnostic_print: Cleaned up comments.
+
+11/16/17 22:15
+
+Added inflection module to convert integers to ordinals to be used for seating around the table. This helps convert players from a list to a dict object {'ordinal': playerObject}
+Dealer: Dealer.name is no longer a constant.
+Dealer: __init__:  A name is now accepted as the first argument and defaults to 'dealer'. A bank was already accepted with a default.
+CasinoTable: Attributes are now blackjack_multiplier (unchanged), table_size (unchanged), deck (unchanged), tableDealer (new Dealer only object), players (new player dict object using seat ordinals to match playerObjects), and tableSeats (a dict object matching ordinals and seat numbers).
+CasinoTable: __init__: Initializes all the objects with new defaults for playerNames, blackjack_multiplier, name, and bank.
