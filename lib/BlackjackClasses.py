@@ -1224,20 +1224,24 @@ class CasinoTable(object):
             method
         tableDealer: a Dealer object, initialized by a name and starting
             bank amount
+        dealerLosses: helps track losses during a round
         players: a dict object of the form {'seat ordinal': playerObj},
             where seat ordinal is literall 1st, 2nd, ... up to the table_size
             and playerObject is the player object created from a name and bank
     
     Methods:
-        __init__: Creats a table, initializing the attributes. It will generate a CardShoe,
-            a Dealer, and prompt for players up to table_size. It accepts an integer for
-            dealer's starting bank, but has a default of 100,000. Starting bank can be
-            overridden in a derived class.
-        __str__: Prints out the table for the players to see. Normally, used after a full
-            deal has been done.
-        diagnostic_print: prints out all attributes to assist with code debugging
-        rules: this announces the general rules of play, including using 'Break the bank'
-            to defeat the house
+        __init__: Accepts several arguments that have defaults (playerNames,
+            blackjack_multiplier, dealer's name, and dealer's bank. From this
+            data, it creates a CasinoTable object: generates a tableDealer,
+            a CardShoe (312 card random deck), calculates table_size, generates
+            playerObjects for all human players, and builds tableSeats (an
+            ordinal dictionary for seating).
+        __str__: Returns the CasinoTable object. Assumes an upstream function
+            or method will render the contents in Pygame.
+        diagnostic_print: prints out all attributes to assist with code
+            debugging (unchanged in Pygame version)
+        rules: Returns the contents of the Blackjack-rules.txt file or an
+            error message if the file is not found.
         deal_round: Deals a round of cards to each player, printing out the table when 
             completed. It checks for player blackjacks and pays them out. it also checks
             the dealer's blackjack_flag and offers insurance bets.
@@ -1313,8 +1317,7 @@ class CasinoTable(object):
             tableSeats:  dictionary of seat number to 'seat ordinal', using
                          dict comprehensions
             deck:        a CardShoe object (6 full 52 card decks shuffled
-                         together)
-            
+                         together)            
         '''
         # The table_size attribute can be built by using len on the
         # playerNames list.
@@ -1323,6 +1326,7 @@ class CasinoTable(object):
         # The Dealer object is created by calling the class with the name and
         # bank amount provided in the arguments.
         self.tableDealer   = Dealer(name, bank)
+        self.dealerLosses  = 0
 
         # The ordinale dictionary is created with a dictionary comprehension.
         self.tableSeats    = {x: str(x) + inflection.ordinal(x) for x in range(1, self.table_size + 1)}
@@ -1339,18 +1343,14 @@ class CasinoTable(object):
     
     def __str__(self):
         '''
-        This method prints out the table. It is used after deals; so, all players can 
-        see their cards as they receive them.
+        This method returns the CasinoTable object.
         '''
-        print(self.deck)
-        for i in xrange(0, self.table_index):
-            print(self.players[i])
-        return 'Table complete'
+        return self
     
     def diagnostic_print(self):
         '''
-        This method prints out every attribute for debugging purposes, calling the same
-        named method in the classes for each object.
+        This method prints out every attribute for debugging purposes, calling
+        the same named method in the classes for each object.
         '''
         print("Blackjack multiplier: ", self.blackjack_multiplier)
         print("Starting bank: ", self.starting_bank)
@@ -1364,17 +1364,16 @@ class CasinoTable(object):
     
     def rules(self):
         '''
-        This prints out a quick list of the rules, including table rules, for the current
-        game. Most people do not know that full rules of Blackjack. Make sure that the 
-        file, BlackJack-Rules.txt is the etc directory under the main directory.
+        Pulls a copy of the rules from a Blackjack-Rules.txt and returns the
+        copy. If this file is not found, it returns an error message.
         '''
         if os.path.exists('./etc/BlackJack-Rules.txt'):
             f = open('./etc/BlackJack-Rules.txt', 'r')
             contents = f.read()
             f.close()
-            print(contents)
+            return contents
         else:
-            print('File, BlackJack-Rules.txt, was not found. Check installation of Blackjack.')
+            return 'File, BlackJack-Rules.txt, was not found. Check installation of Blackjack.'
         return
 
     def deal_round(self):

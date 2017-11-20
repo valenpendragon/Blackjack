@@ -371,3 +371,13 @@ Dealer: Dealer.name is no longer a constant.
 Dealer: __init__:  A name is now accepted as the first argument and defaults to 'dealer'. A bank was already accepted with a default.
 CasinoTable: Attributes are now blackjack_multiplier (unchanged), table_size (unchanged), deck (unchanged), tableDealer (new Dealer only object), players (new player dict object using seat ordinals to match playerObjects), and tableSeats (a dict object matching ordinals and seat numbers).
 CasinoTable: __init__: Initializes all the objects with new defaults for playerNames, blackjack_multiplier, name, and bank.
+
+11/19/17 20:40 Pushed to origin/pygame.
+
+CasinoTable: Cleaned up the class comment block for __init__(), __str__(),  diagnostic_print(), and rules() methods.
+CasinoTable: attributes: Added dealerLosses to track dealer's losses during a round
+CasinoTable: __str__: returns the CasinoTable object. Cleaned up its comment block.
+CasinoTable: diagnostic_print: Cleaned up its comment block.
+CasinoTable: rules: returns the rules text or an error message if the rules file is not found.
+Casino (game): Added Constants: Colors, FPS, game window specs.
+Casino (game): main(): added global constants TABLEIMAGE, CARDIMAGES (maps card tuples to card images). Initialized pygame and the DISPLAYSURF and game caption.
