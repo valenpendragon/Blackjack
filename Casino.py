@@ -20,15 +20,21 @@ GREEN        = (  0, 128,   0)
 PURPLE       = (128,   0, 128)
 TEAL         = (  0, 128, 128)
 NAVY         = (  0,   0, 128)
+PERU         = (205, 133,  63)
 
 
 # Pygame Constants
 FPS = 30
 WINDOWWIDTH  = 1024
 WINDOWHEIGHT =  768
+WINCENTERX   = int(WINDOWWIDTH / 2)
+WINCENTERY   = int(WINDOWHEIGHT / 2)
 
-def main(): main game function
-    global FPSCLOCK, DISPLAYSURF, TABLEIMAGE, CARDIMAGES
+BGCOLOR   = GRAY
+TEXTCOLOR = WHITE
+
+def main(): # main game function
+    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BASICFONT, SCOREFONT, DATAFONT
 
     # Pygame initialization.
     pygame.init()
@@ -39,9 +45,42 @@ def main(): main game function
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
 
     pygame.display.set_caption('Casino Blackjack')
+    DISPLAYSURF.fill(BGCOLOR)
+
+    # The next stanza sets the default text font for the game to GNU Free Sans
+    # TTF. If it is not found in etc, it defaults to freesansbold.ttf which is
+    # part of Pygame.
+    try:
+        BASICFONT = pygame.font.Font('etc/FreeSans.ttf', 12)
+    except:
+        # FreeSans.ttf could not be found or could not be used.
+        BASICFONT = pygame.font.Font('freesansbold.ttf', 12)        
+
+    # The next stanza sets the SCOREFONT for the game to GNU Free Serif TTF.
+    # If it is not found in etc, it defaults to freesansbold.ttf which is
+    # part of Pygame.
+    try:
+        SCOREFONT = pygame.font.Font('etc/FreeSerif.ttf', 12)
+    except:
+        # FreeSerif.ttf could not be found or could not be used.
+        SCOREFONT = pygame.font.Font('freesansbold.ttf', 12)        
     
-    # This images may not be needed. It is better to build this image instead.
-    TABLEIMAGE   = pygame.image.load('graphic/FivePlayerTable.png')
+    # The next stanza sets the DATAFONT for the game to GNU Free Serif TTF.
+    # If it is not found in etc, it defaults to freesansbold.ttf which is
+    # part of Pygame.
+    try:
+        DATAFONT = pygame.font.Font('etc/FreeMono.ttf', 12)
+    except:
+        # FreeMono.ttf could not be found or could not be used.
+        DATAFONT = pygame.font.Font('freesansbold.ttf', 12)        
+
+    # This stanza imports the table image and converts it into a Surface and
+    # a Rect object so that it can be displayed on screen.
+    tableSURF   = pygame.image.load('graphics/FivePlayerTable.png')
+    tableSURF.convert()
+    tableRect = tableSURF.get_rect()
+    tableRect.center = (WINCENTERX, WINCENTERY)
+    DISPLAYSURF.blit(tableSURF, tableRect)
 
     # Global dictionary mapping card tuples of the form (rank, suit), the
     # form of all cards are identified in the game classes, to the image of the
@@ -51,7 +90,7 @@ def main(): main game function
                     ( '3', 'S') : pygame.image.load('graphics/3-S.png'),
                     ( '4', 'S') : pygame.image.load('graphics/4-S.png'),
                     ( '5', 'S') : pygame.image.load('graphics/5-S.png'),
-                    { '6', 'S') : pygame.image.load('graphics/6-S.png'),
+                    ( '6', 'S') : pygame.image.load('graphics/6-S.png'),
                     ( '7', 'S') : pygame.image.load('graphics/7-S.png'),
                     ( '8', 'S') : pygame.image.load('graphics/8-S.png'),
                     ( '9', 'S') : pygame.image.load('graphics/9-S.png'),
@@ -64,7 +103,7 @@ def main(): main game function
                     ( '3', 'D') : pygame.image.load('graphics/3-D.png'),
                     ( '4', 'D') : pygame.image.load('graphics/4-D.png'),
                     ( '5', 'D') : pygame.image.load('graphics/5-D.png'),
-                    { '6', 'D') : pygame.image.load('graphics/6-D.png'),
+                    ( '6', 'D') : pygame.image.load('graphics/6-D.png'),
                     ( '7', 'D') : pygame.image.load('graphics/7-D.png'),
                     ( '8', 'D') : pygame.image.load('graphics/8-D.png'),
                     ( '9', 'D') : pygame.image.load('graphics/9-D.png'),
@@ -77,7 +116,7 @@ def main(): main game function
                     ( '3', 'H') : pygame.image.load('graphics/3-H.png'),
                     ( '4', 'H') : pygame.image.load('graphics/4-H.png'),
                     ( '5', 'H') : pygame.image.load('graphics/5-H.png'),
-                    { '6', 'H') : pygame.image.load('graphics/6-H.png'),
+                    ( '6', 'H') : pygame.image.load('graphics/6-H.png'),
                     ( '7', 'H') : pygame.image.load('graphics/7-H.png'),
                     ( '8', 'H') : pygame.image.load('graphics/8-H.png'),
                     ( '9', 'H') : pygame.image.load('graphics/9-H.png'),
@@ -90,7 +129,7 @@ def main(): main game function
                     ( '3', 'C') : pygame.image.load('graphics/3-C.png'),
                     ( '4', 'C') : pygame.image.load('graphics/4-C.png'),
                     ( '5', 'C') : pygame.image.load('graphics/5-C.png'),
-                    { '6', 'C') : pygame.image.load('graphics/6-C.png'),
+                    ( '6', 'C') : pygame.image.load('graphics/6-C.png'),
                     ( '7', 'C') : pygame.image.load('graphics/7-C.png'),
                     ( '8', 'C') : pygame.image.load('graphics/8-C.png'),
                     ( '9', 'C') : pygame.image.load('graphics/9-C.png'),
@@ -98,3 +137,8 @@ def main(): main game function
                     ( 'J', 'C') : pygame.image.load('graphics/J-C.png'),
                     ( 'Q', 'C') : pygame.image.load('graphics/Q-C.png'),
                     ( 'K', 'C') : pygame.image.load('graphics/K-C.png')}
+
+    pygame.display.update()
+
+if __name__ == '__main__':
+    main()

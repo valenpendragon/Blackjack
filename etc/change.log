@@ -381,3 +381,9 @@ CasinoTable: diagnostic_print: Cleaned up its comment block.
 CasinoTable: rules: returns the rules text or an error message if the rules file is not found.
 Casino (game): Added Constants: Colors, FPS, game window specs.
 Casino (game): main(): added global constants TABLEIMAGE, CARDIMAGES (maps card tuples to card images). Initialized pygame and the DISPLAYSURF and game caption.
+
+11/22/17 02:10
+
+Casino (game): Added an extra brown color (PERU). Added GNU fonts for BASICFONT, SCOREFONT, and DATAFONT pygame font.  The fonts default to freesansbolf if not found. Added BGCOLOR and TEXTCOLOR. Created Surface and Rect objects for a five player table. This is a preparation for building the table image in the program.
+
+
