@@ -386,4 +386,14 @@ Casino (game): main(): added global constants TABLEIMAGE, CARDIMAGES (maps card 
 
 Casino (game): Added an extra brown color (PERU). Added GNU fonts for BASICFONT, SCOREFONT, and DATAFONT pygame font.  The fonts default to freesansbolf if not found. Added BGCOLOR and TEXTCOLOR. Created Surface and Rect objects for a five player table. This is a preparation for building the table image in the program.
 
+11/26/17 04:00 Pushed to origin/pygame
 
+Casino (game): Added import of collections to get OrderedDict objects.
+Casino (game): Converted CARDIMAGES into a nested ordered dict object that generates pygame.Surface and Rect objects for card images.
+Casino (game): Added cardImagesDiagnosticPrint as a diagnostic routine to printout the card images.
+Casino (game): Added BLANKCARD dict (image import, surface, and rect for a blank card image). Also added an Rect.inflate() call to ensure all card images were CARDWIDTH x CARDHEIGHT in size.
+Casino (game): Determined the constants: CARDWIDTH, CARDHEIGHT, CARDSPACING, LINESPACING, BLANKCARD (dict object)
+Casino (game): Better comments on the pygame constants.
+Casino (game): Added data printing routines diagnosticPrint (placeholders for player printouts) and printTableDealer. These routines need to be tested next.
+Dealer: Clarified comments regarding __str__ output.
+Added Blank.png (a blankcard dictionary)

@@ -928,13 +928,13 @@ class Dealer(Player):
         
     Attributes:
         hand: tracks the card tuples (rank, suit) of the cards in the Dealer's
-            hand
+            hand (a list)
         bank: tracks dealers bank (integer)
         soft_hand_score: integer value of the current "soft" score of the
             Dealer's hand
         hard_hand_score: integer value of the "hard" score of the player's
             hand
-        visible_card: single tuple showing hand[0]
+        visible_card: single tuple showing hand[1] once it is dealt
         visible_soft_score: integer soft score of the visible card
         visible_hard_score: integer hard score of the visible card (only
             differs on Aces)
@@ -955,8 +955,8 @@ class Dealer(Player):
             the following:
                 'name'               : dealer's name (aka "Dealer")
                 'bank'               : dealer's bank
-                'hand'               : dealer's hand or None
-                'visible card'       : a tuple of the hand[0]
+                'hand'               : dealer's hand or None (a list)
+                'visible card'       : a tuple of the hand[1]
                 'visible soft score  : soft score of the visible card
                 'visible hard score  : hard score of the visible card
                 'soft score'         : soft score for dealers's hand or None
@@ -1026,13 +1026,13 @@ class Dealer(Player):
         and the scores for that hand as the Dealer player its hand during the
         Dealer's turn.
 
-        In the Pygame convesion, it returns the following dict object:
+        In the Pygame conversion, it returns the following dict object:
                 'name'               : dealer's name (aka "Dealer")
                 'bank'               : dealer's bank
-                'hand'               : dealer's hand or None
+                'hand'               : dealer's hand or None (a list)
                 'soft score'         : soft score for dealer's hand or None
                 'hard score'         : hard score for dealer's hand or None
-                'visible card'       : a tuple of the hand[0] or None
+                'visible card'       : a tuple of the hand[1] or None
                 'visible soft score  : soft score of the visible card
                 'visible hard score  : hard score of the visible card
                 'dealer turn'        : set to None

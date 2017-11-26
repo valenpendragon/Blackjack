@@ -1,5 +1,5 @@
 from __future__ import print_function
-import random, os, pygame, inflection
+import random, os, pygame, inflection, collections
 from pygame.locals import *
 
 # Colors          R    G    B
@@ -23,18 +23,26 @@ NAVY         = (  0,   0, 128)
 PERU         = (205, 133,  63)
 
 
-# Pygame Constants
+# Pygame Constants. All of these values are in pixels
 FPS = 30
-WINDOWWIDTH  = 1024
-WINDOWHEIGHT =  768
-WINCENTERX   = int(WINDOWWIDTH / 2)
-WINCENTERY   = int(WINDOWHEIGHT / 2)
+WINDOWWIDTH   = 1024                    # Width of game window
+WINDOWHEIGHT  =  768                    # Height of game window
+WINCENTERX    = int(WINDOWWIDTH / 2)    # X coordinate of window's center
+WINCENTERY    = int(WINDOWHEIGHT / 2)   # Y coordinate of winwow's center
+CARDWIDTH     = 45                      # Width of a card image
+CARDSPACING   =  3                      # Spacing between cards (both axes)
+CARDHEIGHT    = 70                      # Height of a card image
+LINESPACING   = 30                      # Spacing between text Rect objects
+DEALERSCARDS  = 300                     # Y position in front of dealer's
+                                        # where Dealer's cards are dealt.
+                                        # WINCENTERX is the X coordinate that
+                                        # that cards bracket.
 
-BGCOLOR   = GRAY
+BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
 
 def main(): # main game function
-    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BASICFONT, SCOREFONT, DATAFONT
+    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT
 
     # Pygame initialization.
     pygame.init()
@@ -82,63 +90,366 @@ def main(): # main game function
     tableRect.center = (WINCENTERX, WINCENTERY)
     DISPLAYSURF.blit(tableSURF, tableRect)
 
-    # Global dictionary mapping card tuples of the form (rank, suit), the
-    # form of all cards are identified in the game classes, to the image of the
-    # card used in the game. All images are stored in main_directory/graphics.
-    CARDIMAGES   = {( 'A', 'S') : pygame.image.load('graphics/A-S.png'),
-                    ( '2', 'S') : pygame.image.load('graphics/2-S.png'),
-                    ( '3', 'S') : pygame.image.load('graphics/3-S.png'),
-                    ( '4', 'S') : pygame.image.load('graphics/4-S.png'),
-                    ( '5', 'S') : pygame.image.load('graphics/5-S.png'),
-                    ( '6', 'S') : pygame.image.load('graphics/6-S.png'),
-                    ( '7', 'S') : pygame.image.load('graphics/7-S.png'),
-                    ( '8', 'S') : pygame.image.load('graphics/8-S.png'),
-                    ( '9', 'S') : pygame.image.load('graphics/9-S.png'),
-                    ('10', 'S') : pygame.image.load('graphics/10-S.png'),
-                    ( 'J', 'S') : pygame.image.load('graphics/J-S.png'),
-                    ( 'Q', 'S') : pygame.image.load('graphics/Q-S.png'),
-                    ( 'K', 'S') : pygame.image.load('graphics/K-S.png'),
-                    ( 'A', 'D') : pygame.image.load('graphics/A-D.png'),
-                    ( '2', 'D') : pygame.image.load('graphics/2-D.png'),
-                    ( '3', 'D') : pygame.image.load('graphics/3-D.png'),
-                    ( '4', 'D') : pygame.image.load('graphics/4-D.png'),
-                    ( '5', 'D') : pygame.image.load('graphics/5-D.png'),
-                    ( '6', 'D') : pygame.image.load('graphics/6-D.png'),
-                    ( '7', 'D') : pygame.image.load('graphics/7-D.png'),
-                    ( '8', 'D') : pygame.image.load('graphics/8-D.png'),
-                    ( '9', 'D') : pygame.image.load('graphics/9-D.png'),
-                    ('10', 'D') : pygame.image.load('graphics/10-D.png'),
-                    ( 'J', 'D') : pygame.image.load('graphics/J-D.png'),
-                    ( 'Q', 'D') : pygame.image.load('graphics/Q-D.png'),
-                    ( 'K', 'D') : pygame.image.load('graphics/K-D.png'),
-                    ( 'A', 'H') : pygame.image.load('graphics/A-H.png'),
-                    ( '2', 'H') : pygame.image.load('graphics/2-H.png'),
-                    ( '3', 'H') : pygame.image.load('graphics/3-H.png'),
-                    ( '4', 'H') : pygame.image.load('graphics/4-H.png'),
-                    ( '5', 'H') : pygame.image.load('graphics/5-H.png'),
-                    ( '6', 'H') : pygame.image.load('graphics/6-H.png'),
-                    ( '7', 'H') : pygame.image.load('graphics/7-H.png'),
-                    ( '8', 'H') : pygame.image.load('graphics/8-H.png'),
-                    ( '9', 'H') : pygame.image.load('graphics/9-H.png'),
-                    ('10', 'H') : pygame.image.load('graphics/10-H.png'),
-                    ( 'J', 'H') : pygame.image.load('graphics/J-H.png'),
-                    ( 'Q', 'H') : pygame.image.load('graphics/Q-H.png'),
-                    ( 'K', 'H') : pygame.image.load('graphics/K-H.png'),
-                    ( 'A', 'C') : pygame.image.load('graphics/A-C.png'),
-                    ( '2', 'C') : pygame.image.load('graphics/2-C.png'),
-                    ( '3', 'C') : pygame.image.load('graphics/3-C.png'),
-                    ( '4', 'C') : pygame.image.load('graphics/4-C.png'),
-                    ( '5', 'C') : pygame.image.load('graphics/5-C.png'),
-                    ( '6', 'C') : pygame.image.load('graphics/6-C.png'),
-                    ( '7', 'C') : pygame.image.load('graphics/7-C.png'),
-                    ( '8', 'C') : pygame.image.load('graphics/8-C.png'),
-                    ( '9', 'C') : pygame.image.load('graphics/9-C.png'),
-                    ('10', 'C') : pygame.image.load('graphics/10-C.png'),
-                    ( 'J', 'C') : pygame.image.load('graphics/J-C.png'),
-                    ( 'Q', 'C') : pygame.image.load('graphics/Q-C.png'),
-                    ( 'K', 'C') : pygame.image.load('graphics/K-C.png')}
+    # CARDIMAGES is a two layer neested dictionary. The first layer maps a
+    # card, a tuple of (rank, suit) generated by CardShoe objects, to a nested
+    # dictionary that maps the following items together with the card:
+    #    (card) ---> 'image'    : loaded graphics file
+    #                'surface'  : a surface object made from the file
+    #                'rect'     : a rect object large enough to display the
+    #                             surface object
+    # The first step to import the images and map them to their respective
+    # cards. The rest can be done with a iterables. Note: CARDIMAGES is an
+    # ordered dict since that makes it easier to test changes.
+    BLANKCARD['image']     = pygame.image.load('graphics/Blank.png')
+    BLANKCARD['surface']   = BLANKCARD['image'].convert()
+    BLANKCARD['rect']      = BLANKCARD['surface'].get_rect()
+    BLANKCARD['rect']      = BLANKCARD['rect'].inflate(45, 70)
 
+    CARDIMAGES   = collections.OrderedDict()
+    CARDIMAGES[( 'A', 'S')] = { 'image' : pygame.image.load('graphics/A-S.png') }
+    CARDIMAGES[( '2', 'S')] = { 'image' : pygame.image.load('graphics/2-S.png') }
+    CARDIMAGES[( '3', 'S')] = { 'image' : pygame.image.load('graphics/3-S.png') }
+    CARDIMAGES[( '4', 'S')] = { 'image' : pygame.image.load('graphics/4-S.png') }
+    CARDIMAGES[( '5', 'S')] = { 'image' : pygame.image.load('graphics/5-S.png') }
+    CARDIMAGES[( '6', 'S')] = { 'image' : pygame.image.load('graphics/6-S.png') }
+    CARDIMAGES[( '7', 'S')] = { 'image' : pygame.image.load('graphics/7-S.png') }
+    CARDIMAGES[( '8', 'S')] = { 'image' : pygame.image.load('graphics/8-S.png') }
+    CARDIMAGES[( '9', 'S')] = { 'image' : pygame.image.load('graphics/9-S.png') }
+    CARDIMAGES[('10', 'S')] = { 'image' : pygame.image.load('graphics/10-S.png') }
+    CARDIMAGES[( 'J', 'S')] = { 'image' : pygame.image.load('graphics/J-S.png') }
+    CARDIMAGES[( 'Q', 'S')] = { 'image' : pygame.image.load('graphics/Q-S.png') }
+    CARDIMAGES[( 'K', 'S')] = { 'image' : pygame.image.load('graphics/K-S.png') }
+    CARDIMAGES[( 'A', 'D')] = { 'image' : pygame.image.load('graphics/A-D.png') }
+    CARDIMAGES[( '2', 'D')] = { 'image' : pygame.image.load('graphics/2-D.png') }
+    CARDIMAGES[( '3', 'D')] = { 'image' : pygame.image.load('graphics/3-D.png') }
+    CARDIMAGES[( '4', 'D')] = { 'image' : pygame.image.load('graphics/4-D.png') }
+    CARDIMAGES[( '5', 'D')] = { 'image' : pygame.image.load('graphics/5-D.png') }
+    CARDIMAGES[( '6', 'D')] = { 'image' : pygame.image.load('graphics/6-D.png') }
+    CARDIMAGES[( '7', 'D')] = { 'image' : pygame.image.load('graphics/7-D.png') }
+    CARDIMAGES[( '8', 'D')] = { 'image' : pygame.image.load('graphics/8-D.png') }
+    CARDIMAGES[( '9', 'D')] = { 'image' : pygame.image.load('graphics/9-D.png') }
+    CARDIMAGES[('10', 'D')] = { 'image' : pygame.image.load('graphics/10-D.png') }
+    CARDIMAGES[( 'J', 'D')] = { 'image' : pygame.image.load('graphics/J-D.png') }
+    CARDIMAGES[( 'Q', 'D')] = { 'image' : pygame.image.load('graphics/Q-D.png') }
+    CARDIMAGES[( 'K', 'D')] = { 'image' : pygame.image.load('graphics/K-D.png') }
+    CARDIMAGES[( 'A', 'H')] = { 'image' : pygame.image.load('graphics/A-H.png') }
+    CARDIMAGES[( '2', 'H')] = { 'image' : pygame.image.load('graphics/2-H.png') }
+    CARDIMAGES[( '3', 'H')] = { 'image' : pygame.image.load('graphics/3-H.png') }
+    CARDIMAGES[( '4', 'H')] = { 'image' : pygame.image.load('graphics/4-H.png') }
+    CARDIMAGES[( '5', 'H')] = { 'image' : pygame.image.load('graphics/5-H.png') }
+    CARDIMAGES[( '6', 'H')] = { 'image' : pygame.image.load('graphics/6-H.png') }
+    CARDIMAGES[( '7', 'H')] = { 'image' : pygame.image.load('graphics/7-H.png') }
+    CARDIMAGES[( '8', 'H')] = { 'image' : pygame.image.load('graphics/8-H.png') }
+    CARDIMAGES[( '9', 'H')] = { 'image' : pygame.image.load('graphics/9-H.png') }
+    CARDIMAGES[('10', 'H')] = { 'image' : pygame.image.load('graphics/10-H.png') }
+    CARDIMAGES[( 'J', 'H')] = { 'image' : pygame.image.load('graphics/J-H.png') }
+    CARDIMAGES[( 'Q', 'H')] = { 'image' : pygame.image.load('graphics/Q-H.png') }
+    CARDIMAGES[( 'K', 'H')] = { 'image' : pygame.image.load('graphics/K-H.png') }
+    CARDIMAGES[( 'A', 'C')] = { 'image' : pygame.image.load('graphics/A-C.png') }
+    CARDIMAGES[( '2', 'C')] = { 'image' : pygame.image.load('graphics/2-C.png') }
+    CARDIMAGES[( '3', 'C')] = { 'image' : pygame.image.load('graphics/3-C.png') }
+    CARDIMAGES[( '4', 'C')] = { 'image' : pygame.image.load('graphics/4-C.png') }
+    CARDIMAGES[( '5', 'C')] = { 'image' : pygame.image.load('graphics/5-C.png') }
+    CARDIMAGES[( '6', 'C')] = { 'image' : pygame.image.load('graphics/6-C.png') }
+    CARDIMAGES[( '7', 'C')] = { 'image' : pygame.image.load('graphics/7-C.png') }
+    CARDIMAGES[( '8', 'C')] = { 'image' : pygame.image.load('graphics/8-C.png') }
+    CARDIMAGES[( '9', 'C')] = { 'image' : pygame.image.load('graphics/9-C.png') }
+    CARDIMAGES[('10', 'C')] = { 'image' : pygame.image.load('graphics/10-C.png') }
+    CARDIMAGES[( 'J', 'C')] = { 'image' : pygame.image.load('graphics/J-C.png') }
+    CARDIMAGES[( 'Q', 'C')] = { 'image' : pygame.image.load('graphics/Q-C.png') }
+    CARDIMAGES[( 'K', 'C')] = { 'image' : pygame.image.load('graphics/K-C.png') }
+    # Step two is to iterate through the cards (dict keys) and create the
+    # surfaces and rects we need to display the cards on screen. The inflate()
+    # method ensures all cards are the same size.
+    for card in CARDIMAGES.iterkeys():
+        CARDIMAGES[card]['surface'] = CARDIMAGES[card]['image'].convert()
+        CARDIMAGES[card]['rect']    = CARDIMAGES[card]['surface'].get_rect()
+        CARDIMAGES[card]['rect']    = CARDIMAGES[card]['rect'].inflate(45, 70)
+    
+
+def cardImagesDiagnosticPrint(posX=30, posY=30):
+    """
+    This function prints out all 52 cards to verify spacing and apperance.
+    INPUT: optional posX and posY adjustments, defaults are 30 (LINESPACING)
+    OUTPUT: None
+    """
+    DISPLAYSURF.fill(BGCOLOR)
+    posX = 30
+    posY = 30
+    for card in CARDIMAGES.iterkeys():
+        rank, suit = card
+        if rank == 'A':
+            posX  = 30
+            posY += CARDHEIGHT + CARDSPACING
+        CARDIMAGES[card]['rect'].center = (posX, posY)
+        DISPLAYSURF.blit(CARDIMAGES[card]['surface'], CARDIMAGES[card]['rect'])
+        posX += CARDWIDTH + CARDSPACING
+        pygame.display.update()
+        FPSCLOCK.tick()
+
+def diagnosticPrint(output = ''):
+    """
+    This function checks for and prints out the following objects classes:
+        CasinoTable
+        CardShoe
+        Player(s)
+        Dealer
+    It also prints out the game information on the following local objects:
+        listPlayers : stores names of players and their current bank
+        blackjack_multiplier : multiplier for the casino (can be overridden
+            by the table multiplier, if better)
+        listDealers : list of the Dealers in the casino and the type of table
+            they deal at (normal, special event, high rollar, beginner)
+    When player(s) pick a table to play at, a tableObject is created. Before
+    that, it does not exist. The tableObject has a Dealer object and up to
+    five player objects that manage their hands, banks, and betting options.
+    Since this is partly a diagnostic function, we cannot assume that any of
+    these objects exist.
+    INPUT: option 'v' or 'verbose' argument (all other strings are ignored)
+    OUTPUT: A quick visual printout of the contents of the active objects in
+        the current game. If the verbose option is requested, it will also
+        issue the dianostic_print() methods for the classes CasinoTable,
+        Player, Dealer, and CardShoe. The latter outputs should go to the
+        terminal output.
+    """
+    # First, clear the screen.
+    DISPLAYSURF.fill(BGCOLOR)
+    posY = LINESPACING
+    
+    # See if a table object exists.
+    if tableObject and type(tableObject) == 'CasinoTable':
+        tableObjectInfoSurf = BASICFONT.render('A CasinoTable object exists', True, TEXTCOLOR)
+        tableObjectInfoRect = tableObjectInfoSurf.get_rect()
+        tableObjectInfoRect.center = (WINCENTERX, posY)
+        DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
+        posY += LINESPACING
+        if output == 'v' or output == 'verbose':
+            tableObject.diagnostic_print()
+
+        # Checking tableObject for a Dealer object. If it does, the __str__()
+        # method will provide a dictionary with all of the Dealer's data,
+        # including cards, both visible and masked. The dictionary's structure:
+        #   'name'               : dealer's name (aka "Dealer")
+	#   'bank'               : dealer's bank
+	#   'hand'               : dealer's hand or None (a list)
+	#   'soft score'         : soft score for dealer's hand or None
+	#   'hard score'         : hard score for dealer's hand or None
+	#   'visible card'       : a tuple of the hand[0] or None
+	#   'visible soft score  : soft score of the visible card
+	#   'visible hard score  : hard score of the visible card
+	#   'dealer turn'        : set to None
+	# We send this data object to printTableDealer to print it out to
+	# avoid as much duplication of code as possible.
+        if tableObject.tableDealer and type(tableObject.tableDealer) == 'Dealer':
+            tableObjectInfoSurf = BASICFONT.render('A Dealer object was found inside the CasinoTable', True, TEXTCOLOR)
+            tableObjectInfoRect = tableObjectInfoSurf.get_rect()
+            tableObjectInfoRect.center = (WINCENTERX, posY)
+            DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
+            posY += LINESPACING
+            tableDealer = print(tableObject.tableDealer)
+            printTableDealer(tableDealer, 'diagnostic')
+
+        if tableObject.players:
+            pass
+
+    else: # tableObject is not defined.
+        tableObjectInfoSurf = BASICFONT.render('No CasinoTable object found', True, TEXTCOLOR)
+        tableObjectInfoRect = tableObjectInfoSurf.get_rect()
+        tableObjectInfoRect.center = (WINCENTERX, posY)
+        DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
+        posY += LINESPACING
+
+
+def printTableDealer(tableDealer, output = 'player turn'):
+    '''
+    This method requires a dealer object produced by the Dealer.__str__()
+    method. The dictionary with all of the Dealer's data has the  structure:
+        'name'               : dealer's name (aka "Dealer")
+        'bank'               : dealer's bank
+	'hand'               : dealer's hand or None (a list)
+	'soft score'         : soft score for dealer's hand or None
+	'hard score'         : hard score for dealer's hand or None
+	'visible card'       : a tuple of the hand[0] or None
+	'visible soft score  : soft score of the visible card
+	'visible hard score  : hard score of the visible card
+	'dealer turn'        : set to None (normal) or True (dealer's turn)
+    To avoid too much code duplication, this method uses an argument to
+    determine what kind of output to produce. See below for an explanation:
+    INPUT: tableDealer (a dict object with the data above),
+           optional output argument that determines printout content
+               valid options are:
+               'player turn'    : keep dealer's hold card and actual scores
+                                  hidden, default value
+               'dealer turn'    : print out real hands and score, skipping any
+                                  marked 'visible', can be triggered by the
+                                  'dealer turn' key existing
+               'diagnostic'     : print everything in the dealer's dictionary
+    OUTPUT: There is output to the screen, but no return value
+    '''
+    # We need a starting position for this data above the dealer. All the
+    # remaining lines of output will print relative to the staring position.
+    # Dealer's name and bank always print out regardless of the mode in this
+    # function call.
+    posY = 2 * LINESPACING
+    dealerNameSurf = BASICFONT.render("Dealer's Name: " % (tableDealer['name']), True, TEXTCOLOR)
+    dealerNameRect = dealerNameSurf.get_rect()
+    dealerNameRect.center = (WINCENTERX, posY)
+    DISPLAYSURF.blit(dealerNameSurf, dealerNameRect)
+    posY += LINESPACING
+    dealerBankSurf = BASICFONT.render("Dealer's Bank: " % (tableDealer['bank']), True, TEXTCOLOR)
+    dealerBankRect = dealerBankSurf.get_rect()
+    dealerBankRect.center = (WINCENTERX, posY)
+    DISPLAYSURF.blit(dealerBankSurf, dealerBankRect)
+    posY += LINESPACING
+
+    # The cover color for the hold card will be SILVER. The alpha for its
+    # overlay is 50% for diagnostic printouts, 100% during player's turns,
+    # and unused in the Dealer's turn. Opaque = 255. These cards stay in front
+    # of the Dealer's station until the Dealer's turn.
+    r, g, b = SILVER
+    alpha = 255
+    posXoverlay = WINCENTERX - (int(CARDSPACING / 2) + CARDWIDTH)
+    posYoverlay = DEALERSCARDS
+    dealerHoldCardOverlaySurf = pygame.Surface((CARDWIDTH, CARDHEIGHT))
+    dealerHoldCardOverlaySurf.fill(SILVER)
+    dealerHoldCardOverlaySurf.convert_alpha()
+    dealerHoldCardOverlayRect = dealerHoldCardOverlaySurf.get_rect()
+
+    # Now, we need to know how many cards are in the Dealer's hand.
+    sizeOfHand = len(tableDealer.hand)
+    
+    # The dealer's hand and actual scores print out during the dealer's turn
+    # or when a diagnostic printout was requested. However, there are other
+    # parts of this data to consider. There is a key, 'dealer turn' that will
+    # require that this be treated as the Dealer's Turn unless diagnostic
+    # output overrides it.
+    if tableDealer['dealer turn'] or output == 'dealer turn' or output == 'diagnostic':
+        # There are a two conditions to consider. The first is that the Dealer
+        # has no hand to print out. Normally, this would be skipped, but
+        # diagnostic output requires it.
+        if not tableDealer['hand'] and output == 'diagnostic':
+            dealerHandSurf = BASICFONT.render("Dealer's hand does not exist", True, TEXTCOLOR)
+            dealerHandRect = dealerHandSurf.get_rect()
+            dealerHandRect.center = (WINCENTERX, posY)
+            DISPLAYSURF.blit(dealerHandSurf, dealerHandRect)
+            posY += LINESPACING
+        # The other case we need to consider is that the Dealer's hand exists.
+        # This case, we have to print out the scores and the hand. If it is
+        # not a diagnostic output, though, we will skip the visible card data.
+        # Remember, this is already predicated on this being the dealer's turn.
+        # Remember, too, that the scores are calculated using methods belonging
+        # to the Dealer and its parent, Player, classes. The card images during
+        # the Dealer's turn are face up in the middle of the table.
+        if tableDealer['hand']:
+            dealerHardScoreSurf = SCOREFONT.render("Dealer's hard score: " % (tableDealer['hard score']), True, TEXTCOLOR)
+            dealerHardScoreRect = dealerHardScoreSurf.get_rect()
+            dealerHardScoreRect.center = (WINCENTERX, posY)
+            DISPLAYSURF.blit(dealerHardScoreSurf, dealerHardScoreRect)
+            posY += LINESPACING
+            dealerSoftScoreSurf = SCOREFONT.render("Dealer's soft score: " % (tableDealer['soft score']), True, TEXTCOLOR)
+            dealerSoftScoreRect = dealerSoftScoreSurf.get_rect()
+            dealerSoftScoreRect.center = (WINCENTERX, posY)
+            DISPLAYSURF.blit(dealerSoftScoreSurf, dealerSoftScoreRect)
+            posY += LINESPACING
+            # Odd number of cards centers a card on top of the table center.
+            # The formula in that case is even multiples of the width of a
+            # card and its spacing on either side of the middle card. The
+            # card centers are the easiest thing to use.
+            # Even number of cards bracket the table center evenly, making
+            # the centers hard to use, but the lower left corner much
+            # easier to use.
+            for i in xrange(0, sizeOfHand):
+                card = tableDealer['hand'][i]
+                if sizeOfHand % 2 == 0:
+                    # The lower right corner will be full multiples of the
+                    # card width and spacing to either side. It needs a small
+                    # adjustment of half the spacing width to center it.
+                    adjX = int(CARDSPACING / 2)
+                    cardY = WINCENTERY + int(CARDHEIGHT / 2)
+                    cardX = WINCENTERX - ((int(sizeOfHand / 2) - i) * (CARDWIDTH + CARDSPACING) - adjX)
+                    cardRect = CARDIMAGES[card]['rect']
+                    cardRect.bottomleft = (cardX, cardY)
+                else: # sizeOfHand is odd.
+                    # In this case, we only need to truncate the division by
+                    # 2 of the multiples CARDWIDTH + CARDSPACING
+                    cardY = WINCENTERY
+                    cardX = WINCENTERX - ((int(sizeOfHand / 2) - i) * (CARDWIDTH + CARDSPACING))
+                    cardRect = CARDIMAGES[card]['rect']
+                    cardRect.center = (cardX, cardY)
+                DISPLAYSURF.blit(CARDIMAGES[card]['surface'], cardRect)
+
+    # If it is a players' turn or this is a diagnostic output, we need to
+    # print the "visible card" output. That combinatino precludes the use of
+    # an else statement here. Note: We can have dealer turn be set in
+    # inside the dictionary argument under key = 'dealer turn' as well.
+    # For appearance, at most two cars will be in front of the dealer. These
+    # two cards will bracket the vertical midline of the table, regardless of
+    # the number of cards dealt. We don't need a formula for it. We will use
+    # the lower left corner to position them.
+    if (output == 'player turn' and not tableDealer['dealer turn']) or output == 'diagnostic':
+
+        # As before, we print any scores that are valid, but this time only
+        # on the visible card. It is possible to get this far, and still not
+        # have a dealer's hand (and therefore no visible card either).
+        # There could also be only the hold card dealt.
+        if not tableDealer['visible card'] and sizeOfHand == 1 and output == 'diagnostic':
+            # As above, in diagnostic mode, we need to see that there is no
+            # visible card in a message on screen. On the Player's turn
+            # and Dealer's turn, this code would be skipped.
+            dealerVisibleCardSurf = BASICFONT.render("Dealer's visible card does not exist", True, TEXTCOLOR)
+            dealerVisibleCardRect = dealerVisibleCardSurf.get_rect()
+            dealerVisibleCardRect.center = (WINCENTERX, posY)
+            DISPLAYSURF.blit(dealerVisibleCardSurf, dealerVisibleCardRect)
+            posY += LINESPACING
+            # Create a 50% overlay on the dealer's card. It was 255.
+            alpha = 128
+
+        # This code covers that case that we need a diagnostic output, but the
+        # dealer has no hand.
+        if not tableDealer['hand'] and output == 'diagnostic':
+            dealerHandSurf = BASICFONT.render("Dealer's hand does not exist", True, TEXTCOLOR)
+            dealerHandRect = dealerHandSurf.get_rect()
+            dealerHandRect.center = (WINCENTERX, posY)
+            DISPLAYSURF.blit(dealerHandSurf, dealerHandRect)
+            posY += LINESPACING
+
+        # Now, we need to print the hold card, if the hand exists. This code
+        # block is still inside the test for player's turn or diagnostics.
+        if tableDealer['hand'] and sizeOfHand > 0:
+            posXHoldCard = WINCENTERX - (int(CARDSPACING / 2) + CARDWIDTH)
+            posYHoldCard = DEALERCARDS
+            holdCard = tableDealer['hand'][0]
+            dealerHoldCardSurf = CARDIMAGES[holdCard]['suface']
+            dealerHoldCardRect = CARDIMAGES[holdCard]['rect']
+            dealerHoldCardRect.topleft = (posXHoldCard, posYHoldCard)
+            DISPLAYSURF.blit(dealerHoldCardSurf, dealerHoldCardRect)
+            dealerHoldCardOverlaySurf.set_alpha(alpha)
+            dealerHoldCardOverlayRect.topleft = (posXoverlay, posYoverlay)
+            DISPLAYSURF.blit(dealerHoldCardOverlaySurf, dealerHoldCardOverlayRect)
+
+        # We need to print the "visisble card" if it exists. Again, we are
+        # still in the player's turn code block.
+        if tableDealer['hand'] and sizeOfHand == 2:
+            posXVisCard = WINCENTERX + (int(CARDSPACING / 2) + CARDWIDTH)
+            posYVisCard = DEALERCARDS
+            visCard = tableDealer['visible card']
+            dealerVisCardSurf = CARDIMAGES[visCard]['suface']
+            dealerVisCardRect = CARDIMAGES[visCard]['rect']
+            dealerVisCardRect.topleft = (posXVisCard, posYVisCard)
+            dealerVisHardScoreSurf = SCOREFONT.render("Dealer is showing a hard score: " % (tableDealer['hard score']), True, TEXTCOLOR)
+            dealerVisHardScoreRect = dealerVisHardScoreSurf.get_rect()
+            dealerVisHardScoreRect.center = (WINCENTERX, posY)
+            DISPLAYSURF.blit(dealerVisHardScoreSurf, dealerVisHardScoreRect)
+            posY += LINESPACING
+            dealerVisSoftScoreSurf = SCOREFONT.render("Dealer is showing a soft score: " % (tableDealer['soft score']), True, TEXTCOLOR)
+            dealerVisSoftScoreRect = dealerVisSoftScoreSurf.get_rect()
+            dealerVisSoftScoreRect.center = (WINCENTERX, posY)
+            DISPLAYSURF.blit(dealerVisSoftScoreSurf, dealerVisSoftScoreRect)
+            posY += LINESPACING
+                
     pygame.display.update()
-
+    FPSCLOCK.tick()
+    return # printTableDealer
+    
 if __name__ == '__main__':
     main()
