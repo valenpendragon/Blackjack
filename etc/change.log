@@ -397,3 +397,10 @@ Casino (game): Better comments on the pygame constants.
 Casino (game): Added data printing routines diagnosticPrint (placeholders for player printouts) and printTableDealer. These routines need to be tested next.
 Dealer: Clarified comments regarding __str__ output.
 Added Blank.png (a blankcard dictionary)
+
+11/27/17 09:36 Pushed to origin/pygame
+
+Casino (game): cardImagesDiagnosticPrint: changed the default values of posX and posY to adjustments to make the printouts appear in a different part of the screen.
+Casino (game): Debugging diagnostic routines, since these routines also print information players need during game play.
+Casino (game): Increased the size of the DATAFONT to 14pt to make more noticeable and readable on screen.
+Casino (game): Built the table out of ovals and rectangles.
