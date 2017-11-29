@@ -1,5 +1,6 @@
 from __future__ import print_function
 import random, os, pygame, inflection, collections
+from pygame.transform import scale
 from pygame.locals import *
 from lib import CardShoe, Player, Dealer, CasinoTable
 import pdb
@@ -31,20 +32,41 @@ WINDOWWIDTH   = 1024                    # Width of game window
 WINDOWHEIGHT  =  768                    # Height of game window
 WINCENTERX    = int(WINDOWWIDTH / 2)    # X coordinate of window's center
 WINCENTERY    = int(WINDOWHEIGHT / 2)   # Y coordinate of winwow's center
-CARDWIDTH     =   45                    # Width of a card image
-CARDSPACING   =    3                    # Spacing between cards (both axes)
-CARDHEIGHT    =   70                    # Height of a card image
+CARDWIDTH     =   30                    # Width of a card image
+CARDSPACING   =    4                    # Spacing between cards (both axes)
+CARDHEIGHT    =   60                    # Height of a card image
 LINESPACING   =   15                    # Spacing between text Rect objects
 TABLEWIDTH    =  700                    # width of playing table
-TABLEHEIGHT   =  450                    # height of playing table
+TABLEHEIGHT   =  400                    # height of playing table
 TABLERIM      =   40                    # width of band around table
 STATIONWIDTH  =  250                    # width of dealer's station
 STATIONHEIGHT =   60                    # height of dealer's station
+MAXPLAYERS    =    3                    # board space limits players to 3
 
-DEALERSCARDS  =  220                    # Y position in front of dealer's
-                                        # where Dealer's cards are dealt.
-                                        # WINCENTERX is the X coordinate that
-                                        # that cards bracket.
+# These four items are the edges of printable area in game window.
+LEFTMARGIN    =   10                    
+RIGHTMARGIN   = WINDOWWIDTH - LEFTMARGIN
+TOPMARGIN     =   10
+BOTTOMMARGIN  = WINDOWHEIGHT - TOPMARGIN
+
+# This constant adjusts the position of player output in the center of the
+# table.
+CENTEROUTPUT  =  100
+
+# Y position in front of dealer's where Dealer's cards are dealt. Orignally,
+# This was a flat value, but now, it needs to be a formula that adjusts for
+# size of the table and the station itself. It is adjusted from the center
+# of the table. Half the table height gets it to the edge of the table. Next,
+# we adjust for half the height of the station itself.
+# These two constants control where the Dealer's station prints and where the
+# dealer's cards are printed relative to it. The Y coordinate of the top
+# of the station uses a formula of adjustments to get it centered on the edge
+# of the table, regardless of shape. The X coordinate of the left edge is
+# half the length of the station from the center line of the table.
+# DEALERSCARDS is adjusted to a distance of CARDSPACING below the station.
+DEALERSTATIONTOP  = WINCENTERY - int(TABLEHEIGHT / 2) - int(STATIONHEIGHT / 2)
+DEALERSTATIONLEFT = WINCENTERX - int(STATIONWIDTH / 2)
+DEALERSCARDS = DEALERSTATIONTOP + STATIONHEIGHT + CARDSPACING
 
 BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
@@ -90,20 +112,29 @@ def main(): # main game function
         # FreeMono.ttf could not be found or could not be used.
         DATAFONT = pygame.font.Font('freesansbold.ttf', 14)        
 
-    # This stanza imports the table image and converts it into a Surface and
-    # a Rect object so that it can be displayed on screen. 
-    # tableSURF   = pygame.image.load('graphics/FivePlayerTable.png')
     # This stanza creates the table surface. It is composed of a brown oval
     # a green oval, a black rectangle (dealer's station), and areas where
     # player cards will be dealt. These Rect objects use the form:
     # pygame.Rect((left, top), (width, height)). The formulas are calculating
-    # the X and Y distances to the (left, top) from the CENTER of the game
-    # window.
-    tableOuterRect = pygame.Rect((WINCENTERX - int(TABLEWIDTH / 2), WINCENTERY - int(TABLEHEIGHT / 2)), (TABLEWIDTH, TABLEHEIGHT))
-    tableInnerRect = pygame.Rect((WINCENTERX - int((TABLEWIDTH - TABLERIM) / 2), WINCENTERY - int((TABLEHEIGHT - TABLERIM) / 2)), (TABLEWIDTH - TABLERIM + 1, TABLEHEIGHT - TABLERIM + 1))
-    pygame.draw.ellipse(DISPLAYSURF, OLIVE, tableOuterRect, TABLERIM)
-    pygame.draw.ellipse(DISPLAYSURF, LIME, tableInnerRect)
-    dealerStationRect = pygame.Rect((WINCENTERX - int(STATIONWIDTH / 2), DEALERSCARDS - CARDSPACING - STATIONHEIGHT), (STATIONWIDTH, STATIONHEIGHT))
+    # the X and Y distances to the (left, top) of each rect object from the
+    # CENTER of the game window.
+    
+    tableOuterRectLeft = WINCENTERX - int(TABLEWIDTH / 2)
+    tableOuterRectTop  = WINCENTERY - int(TABLEHEIGHT / 2)
+    tableOuterRect = pygame.Rect((tableOuterRectLeft, tableOuterRectTop), (TABLEWIDTH, TABLEHEIGHT))
+
+    tableInnerRectLeft = WINCENTERX - int((TABLEWIDTH - TABLERIM) / 2)
+    tableInnerRectTop  = WINCENTERY - int((TABLEHEIGHT - TABLERIM) / 2)
+    tableInnerRect = pygame.Rect((tableInnerRectLeft, tableInnerRectTop), (TABLEWIDTH - TABLERIM, TABLEHEIGHT - TABLERIM))
+    
+    dealerStationRectTop  = DEALERSTATIONTOP
+    dealerStationRectLeft = DEALERSTATIONLEFT
+    dealerStationRect = pygame.Rect((dealerStationRectLeft, dealerStationRectTop), (STATIONWIDTH, STATIONHEIGHT))
+
+    # pygame.draw.ellipse(DISPLAYSURF, OLIVE, tableOuterRect)
+    # pygame.draw.ellipse(DISPLAYSURF, LIME,  tableInnerRect)
+    pygame.draw.rect(DISPLAYSURF, OLIVE, tableOuterRect)
+    pygame.draw.rect(DISPLAYSURF, LIME,  tableInnerRect)
     pygame.draw.rect(DISPLAYSURF, BLACK, dealerStationRect)
 
     # Next, we need to build the BLANKCARD and CARDIMAGES dictionaries.
@@ -118,18 +149,19 @@ def main(): # main game function
     # CARDIMAGES is a two layer nested ordered dictionary. The first layer maps
     # a card, a tuple of (rank, suit) generated by CardShoe class, to a nested
     # dictionary that maps the following items together with the card:
-    # (card) --> {'image'    : loaded graphics file of the tuple specified card
-    #             'surface'  : a surface object made from the file, scaled to
-    #                          45x70 pixels for display
-    #             'rect'     : a rect object large enough to display the
-    #                          Surface object}
+    # (card) --> {'image'        : loaded graphics file of the tuple (card)
+    #             'scaled image' : image scaled to card width/height
+    #             'surface'      : a surface object created from the scaled
+    #                              scaled image
+    #             'rect'         : a rect object large enough to display the
+    #                              Surface object}
     # BLANKCARD is the simpler process, but it lays out the steps in building
     # the full nested dictionary, CARDIMAGES.
     BLANKCARD = {}
     BLANKCARD['image']     = pygame.image.load('graphics/Blank.png')
     BLANKCARD['surface']   = BLANKCARD['image'].convert()
     BLANKCARD['rect']      = BLANKCARD['surface'].get_rect()
-    BLANKCARD['rect']      = BLANKCARD['rect'].inflate(45, 70)
+    BLANKCARD['rect']      = BLANKCARD['rect'].inflate(CARDWIDTH, CARDHEIGHT)
     
     # The first step to import the images and map them to their respective
     # 'cards'. The rest can be done with a iterables. Note: CARDIMAGES is an
@@ -193,13 +225,14 @@ def main(): # main game function
     # surfaces and rects we need to display the cards on screen. The inflate()
     # method ensures all cards are the same size.
     for card in CARDIMAGES.iterkeys():
-        CARDIMAGES[card]['surface'] = CARDIMAGES[card]['image'].convert()
+        tempSurf = CARDIMAGES[card]['image'].convert()
+        CARDIMAGES[card]['scaled image'] = pygame.transform.scale(CARDIMAGES[card]['image'], (CARDWIDTH, CARDHEIGHT))
+        CARDIMAGES[card]['surface'] = CARDIMAGES[card]['scaled image'].convert()
         CARDIMAGES[card]['rect']    = CARDIMAGES[card]['surface'].get_rect()
-        CARDIMAGES[card]['rect']    = CARDIMAGES[card]['rect'].inflate(45, 70)
     # Diagnostic print to see if these cards were setup correctly.
     # cardImagesDiagnosticPrint()
     
-    # Defining the next item for the purpose of testing the printouts.
+    # Defining the tempDealer for the purpose of testing the printouts.
     tempDealer = {}
     tempDealer['name'] = "Fred"
     tempDealer['bank'] = 100000
@@ -215,6 +248,28 @@ def main(): # main game function
     tempDealer['dealer turn'] = None
     printTableDealer(tempDealer, 'diagnostic')
 
+    # Defining tempPlayer for the purpose of testing these printouts.
+    tempPlayer = {}
+    tempPlayer['name'] = "Manfred"
+    tempPlayer['bank'] = 25000
+    tempPlayer['hand'] = [('A', 'D'), ('J', 'S')]
+    # tempPlayer['hand'] = [('A', 'D')]
+    # tempPlayer['hand'] = None
+    tempPlayer['soft score'] = 21
+    # tempPlayer['soft score'] = None
+    tempPlayer['hard score'] = 11
+    # tempPlayer['hard score'] = None
+    tempPlayer['split hand'] = [('K', 'D'), ('J', 'C')]
+    # tempPlayer['split hand'] = [('J', 'C')]
+    # tempPlayer['split hand'] = None
+    tempPlayer['regular bet'] = 100
+    # tempPlayer['regular bet'] = None
+    tempPlayer['split hand bet'] = 75
+    # tempPlayer['split hand bet'] = None
+    tempPlayer['insurance bet'] = 50
+    # tempPlayer['insurance bet'] = None
+    printTablePlayer(tempPlayer, 3, 'diagnostic')    
+    
     # Update the screen before recycle.
     pygame.display.update()
     FPSCLOCK.tick()
@@ -277,21 +332,6 @@ def diagnosticPrint(output = ''):
         posY += LINESPACING
         if output == 'v' or output == 'verbose':
             tableObject.diagnostic_print()
-
-        # Checking tableObject for a Dealer object. If it does, the __str__()
-        # method will provide a dictionary with all of the Dealer's data,
-        # including cards, both visible and masked. The dictionary's structure:
-        #   'name'               : dealer's name (aka "Dealer")
-	#   'bank'               : dealer's bank
-	#   'hand'               : dealer's hand or None (a list)
-	#   'soft score'         : soft score for dealer's hand or None
-	#   'hard score'         : hard score for dealer's hand or None
-	#   'visible card'       : a tuple of the hand[0] or None
-	#   'visible soft score  : soft score of the visible card
-	#   'visible hard score  : hard score of the visible card
-	#   'dealer turn'        : set to None
-	# We send this data object to printTableDealer to print it out to
-	# avoid as much duplication of code as possible.
         if tableObject.tableDealer and type(tableObject.tableDealer) == 'Dealer':
             tableObjectInfoSurf = BASICFONT.render('A Dealer object was found inside the CasinoTable', True, TEXTCOLOR)
             tableObjectInfoRect = tableObjectInfoSurf.get_rect()
@@ -302,7 +342,12 @@ def diagnosticPrint(output = ''):
             printTableDealer(tableDealer, 'diagnostic')
 
         if tableObject.players:
-            pass
+            numOfPlayers = len(tableObject.players)
+            tableObjectInfoSurf = BASICFONT.render('%s players have been found inside the CasinoTable' % (numOfPlayers), True, TEXTCOLOR)
+            for i in xrange(1, numOfPlayers + 1):
+                playerObj = print(tableObject.players[i])
+                printTablePlayer(playerObj, i, 'diagnostic')
+            
 
     else: # tableObject is not defined.
         tableObjectInfoSurf = BASICFONT.render('No CasinoTable object found', True, TEXTCOLOR)
@@ -489,6 +534,67 @@ def printTableDealer(tableDealer, output = 'player turn'):
     pygame.display.update()
     FPSCLOCK.tick()
     return # printTableDealer
-    
+
+def printTablePlayer(playerObj, ordinal, output = 'normal'):
+    '''
+    This method prints on screen the full data for each players. This data
+    is pulled from the CasinoTable.players.__str__() method, which returns
+    a dictionary of the form below:
+        'name'                  : player's name
+        'bank'                  : player's bank
+        'hand'                  : player's regular hand or None
+        'split hand'            : player's split hand or None
+        'soft score'            : soft score for player's hand or None
+        'hard score'            : hard score for player's hand or None
+        'soft score split hand' : soft score for split hand or None
+        'hard score split hand' : hard score for split hand or None
+        'regular bet'           : bet amount on regular hand or None
+        'split hand bet'        : bet amount on split hand or None
+        'insurance bet'         : bet amount on dealer blackjack or None
+    "hands" are set to None if they do not exist, including split_hand.  The
+    split_flag is used to check for the latter. Bets and scores are set to
+    None if they are zero in this dictionary.
+    Note: This method assumes that player being printed has been found in a
+    CasinoTable class object.
+    INPUTS: playerObj : dict object, see above
+            ordinal   : integer, player number, valid for 1, 2, 3
+            output    : string determining the output of this function
+                'diagnostic' : prints everything about the player, putting in
+                               messages for None items
+                'normal'     : prints only what exists for the player. "None"
+                               items are skipped.
+    '''
+    # This function has to calculate where the player's data will be printed.
+    # There is only room for MAXPLAYERS.
+    if ordinal == 1:
+        # The player is the left one. posY is adjusted by 25% of the space
+        # below the center of the table.
+        posX = LEFTMARGIN
+        posY = WINCENTERY + int((BOTTOMMARGIN - WINCENTERY) / 4)
+
+    elif ordinal == 2:
+        # The player is the center one. posX moves the output under the center
+        # of the table, but it will be lined up there.
+        posX = WINCENTERX - CENTEROUTPUT
+        posY = WINCENTERY - int(TABLEHEIGHT) + LINESPACING
+
+    elif ordinal == 3:
+        # The player is the right one. This time, both the X and Y adjustments
+        # are 25% of the space below the right edge of the table.
+        posX = WINCENTERX + int((RIGHTMARGIN - WINCENTERX) / 4)
+        posY = WINCENTERY + int((BOTTOMMARGIN - WINCENTERY) / 4)
+
+    # Diagnostic output should be indicated on each player.
+    if output == 'diagnostic':
+        outputTypeSurf = DATAFONT.render("Diagnostic Printout", True, TEXTCOLOR)
+        outputTypeRect = outputTypeSurf.get_rect()
+        outputTypeRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(outputTypeSurf, outputTypeRect)
+        posY += LINESPACING
+    # All players have names and bank amounts.
+    #playerNameSurf = BASICFONT.render("Player's Name: 
+    pygame.display.update()
+    FPSCLOCK.tick()
+
 if __name__ == '__main__':
     main()

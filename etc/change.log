@@ -404,3 +404,11 @@ Casino (game): cardImagesDiagnosticPrint: changed the default values of posX and
 Casino (game): Debugging diagnostic routines, since these routines also print information players need during game play.
 Casino (game): Increased the size of the DATAFONT to 14pt to make more noticeable and readable on screen.
 Casino (game): Built the table out of ovals and rectangles.
+
+11/27/17 Pushed to origin/pygame
+
+Casino (game): Removed old comments from the block for the table image.
+Casino (game): Produced a more readable version of the table creation.
+Casino (game): Finished testing printTableDealer. Positioning bug and all functionality is working.
+Casino (game): Trying to resolve an issue with screen space being insufficient for the game. This required creating a better set of constants to generate the Dealer's station.
+Casino (game): Added 'scaled image' to CARDIMAGES to fix the image scaling problem.
