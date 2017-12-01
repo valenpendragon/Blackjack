@@ -42,12 +42,20 @@ TABLERIM      =   40                    # width of band around table
 STATIONWIDTH  =  250                    # width of dealer's station
 STATIONHEIGHT =   60                    # height of dealer's station
 MAXPLAYERS    =    3                    # board space limits players to 3
+SCOREWIDTH    =  200                    # width of all players' score text
 
 # These four items are the edges of printable area in game window.
 LEFTMARGIN    =   10                    
 RIGHTMARGIN   = WINDOWWIDTH - LEFTMARGIN
 TOPMARGIN     =   10
 BOTTOMMARGIN  = WINDOWHEIGHT - TOPMARGIN
+
+# These three constants define the printable area for the players on the casino
+# table. A player's regular hand will appear along these margins. The split
+# hand will appear above it.
+TABLELEFTMARGIN   = WINCENTERX - int(TABLEWIDTH / 2) + (TABLERIM + CARDWIDTH)
+TABLEBOTTOMMARGIN = WINCENTERY + int(TABLEHEIGHT / 2) - (TABLERIM + CARDWIDTH)
+TABLERIGHTMARGIN  = WINCENTERX + int(TABLEWIDTH / 2) - (TABLERIM + CARDWIDTH)
 
 # This constant adjusts the position of player output in the center of the
 # table.
@@ -246,7 +254,7 @@ def main(): # main game function
     tempDealer['visible soft score'] = 10
     tempDealer['visible hard score'] = 10
     tempDealer['dealer turn'] = None
-    printTableDealer(tempDealer, 'diagnostic')
+    printTableDealer(tempDealer)
 
     # Defining tempPlayer for the purpose of testing these printouts.
     tempPlayer = {}
@@ -262,14 +270,20 @@ def main(): # main game function
     tempPlayer['split hand'] = [('K', 'D'), ('J', 'C')]
     # tempPlayer['split hand'] = [('J', 'C')]
     # tempPlayer['split hand'] = None
+    tempPlayer['soft score split hand'] = 20
+    # tempPlayer['soft score split hand'] = 10
+    # tempPlayer['soft score split hand'] = None
+    # tempPlayer['hard score split hand'] = 20
+    tempPlayer['hard score split hand'] = 10
+    # tempPlayer['hard score split hand'] = None
     tempPlayer['regular bet'] = 100
     # tempPlayer['regular bet'] = None
     tempPlayer['split hand bet'] = 75
     # tempPlayer['split hand bet'] = None
     tempPlayer['insurance bet'] = 50
     # tempPlayer['insurance bet'] = None
-    printTablePlayer(tempPlayer, 3, 'diagnostic')    
-    
+    # printTablePlayer(tempPlayer, 2, 'diagnostic')
+    printTablePlayer(tempPlayer, 3)
     # Update the screen before recycle.
     pygame.display.update()
     FPSCLOCK.tick()
@@ -565,24 +579,189 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
                                items are skipped.
     '''
     # This function has to calculate where the player's data will be printed.
-    # There is only room for MAXPLAYERS.
+    # There is only room for MAXPLAYERS. All of this screen output needs  to
+    # written from the bottom up. The players will never see teh difference
+    # because nothing appears on screen until a pygame.display.update() is
+    # called. regHandX and regHandY are the positions of the player's cards.
+    # splitHandY are a card height directly above them while splitHandX will
+    # the same for the both the regular and split hands. We need all three
+    # sets of coordinates for the score data and both hands of cards, as they
+    # all printing independently of each other.
     if ordinal == 1:
-        # The player is the left one. posY is adjusted by 25% of the space
-        # below the center of the table.
-        posX = LEFTMARGIN
-        posY = WINCENTERY + int((BOTTOMMARGIN - WINCENTERY) / 4)
+        # The player is the left one. posX will be on the screen margin,
+        # while regHandX and splitHandX will on the left margin of the green
+        # area of the table.
+        posX       = LEFTMARGIN
+        regHandX   = TABLELEFTMARGIN
+        splitHandX = regHandX
 
     elif ordinal == 2:
         # The player is the center one. posX moves the output under the center
-        # of the table, but it will be lined up there.
-        posX = WINCENTERX - CENTEROUTPUT
-        posY = WINCENTERY - int(TABLEHEIGHT) + LINESPACING
+        # of the table, but it will be lined up there. Likewise, regHandX moves
+        # there as well. We set the pointer to place the first two cards of
+        # either hand to the left of the center line of the table. splitHandX
+        # does the same.
+        posX       = WINCENTERX - CENTEROUTPUT
+        regHandX   = WINCENTERX - (2 * (CARDWIDTH + CARDSPACING)) + (int((CARDSPACING + CARDWIDTH)/ 2))
+        splitHandX = regHandX
 
     elif ordinal == 3:
-        # The player is the right one. This time, both the X and Y adjustments
-        # are 25% of the space below the right edge of the table.
-        posX = WINCENTERX + int((RIGHTMARGIN - WINCENTERX) / 4)
-        posY = WINCENTERY + int((BOTTOMMARGIN - WINCENTERY) / 4)
+        # The player is the right one. posX will be on the screen margin, with
+        # an adjustment width of the score data rectangle. regHandX will on the
+        # left margin of the green area of the table, less the width of four
+        # cards laid side by side. The same is true of splitHandX,
+        posX       = RIGHTMARGIN - SCOREWIDTH
+        regHandX   = TABLERIGHTMARGIN - (4 * (CARDWIDTH + CARDSPACING))
+        splitHandX = regHandX
+    # posY is the same in all cases. It starts half of LINESPACING above the
+    # bottom margin. regHandY is at the bottom margin of the table. This is
+    # where the split and regular hands differ. The split hand is positioned
+    # above the regular hand.
+    posY       = BOTTOMMARGIN - int(LINESPACING / 2)
+    regHandY   = TABLEBOTTOMMARGIN
+    splitHandY = regHandY - (CARDHEIGHT + CARDSPACING)
+
+    if playerObj['insurance bet']:
+        insBetSurf = SCOREFONT.render("Insurance Bet: $%s" % (playerObj['insurance bet']), True, TEXTCOLOR)
+        insBetRect = insBetSurf.get_rect()
+        insBetRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(insBetSurf, insBetRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            insBetSurf = SCOREFONT.render("No insurance bet found", True, TEXTCOLOR)
+            insBetRect = insBetSurf.get_rect()
+            insBetRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(insBetSurf, insBetRect)
+            posY -= LINESPACING
+
+    if playerObj['split hand bet']:
+        splitBetSurf = SCOREFONT.render("Bet on split hand: $%s" % (playerObj['split hand bet']), True, TEXTCOLOR)
+        splitBetRect = splitBetSurf.get_rect()
+        splitBetRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(splitBetSurf, splitBetRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            splitBetSurf = SCOREFONT.render("No split bet found", True, TEXTCOLOR)
+            splitBetRect = splitBetSurf.get_rect()
+            splitBetRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(splitBetSurf, splitBetRect)
+            posY -= LINESPACING
+
+    if playerObj['regular bet']:
+        regBetSurf = SCOREFONT.render("Bet on regular hand: $%s" % (playerObj['regular bet']), True, TEXTCOLOR)
+        regBetRect = regBetSurf.get_rect()
+        regBetRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(regBetSurf, regBetRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            regBetSurf = SCOREFONT.render("No regular bet found", True, TEXTCOLOR)
+            regBetRect = regBetSurf.get_rect()
+            regBetRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(regBetSurf, regBetRect)
+            posY -= LINESPACING
+
+    if playerObj['hard score split hand']:
+        hardSplitScoreSurf = SCOREFONT.render("Hard score on split hand: %s" % (playerObj['hard score split hand']), True, TEXTCOLOR)
+        hardSplitScoreRect = hardSplitScoreSurf.get_rect()
+        hardSplitScoreRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(hardSplitScoreSurf, hardSplitScoreRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            hardSplitScoreSurf = SCOREFONT.render("No hard hand score on split hand was found", True, TEXTCOLOR)
+            hardSplitScoreRect = hardSplitScoreSurf.get_rect()
+            hardSplitScoreRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(hardSplitScoreSurf, hardSplitScoreRect)
+            posY -= LINESPACING
+
+    if playerObj['soft score split hand']:
+        softSplitScoreSurf = SCOREFONT.render("Soft score on split hand: %s" % (playerObj['soft score split hand']), True, TEXTCOLOR)
+        softSplitScoreRect = softSplitScoreSurf.get_rect()
+        softSplitScoreRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(softSplitScoreSurf, softSplitScoreRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            softSplitScoreSurf = SCOREFONT.render("No soft hand score on split hand was found", True, TEXTCOLOR)
+            softSplitScoreRect = softSplitScoreSurf.get_rect()
+            softSplitScoreRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(softSplitScoreSurf, softSplitScoreRect)
+            posY -= LINESPACING
+
+    # This is purely diagnostic message that the split hand has does not exist.
+    if not playerObj['hand'] and output == 'diagnostic':
+        splitHandDiagSurf = SCOREFONT.render("No split hand was found", True, TEXTCOLOR)
+        splitHandDiagRect = splitHandDiagSurf.get_rect()
+        splitHandDiagRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(splitHandDiagSurf, splitHandDiagRect)
+        posY -= LINESPACING
+
+    if playerObj['hard score']:
+        hardScoreSurf = SCOREFONT.render("Hard score on regular hand: %s" % (playerObj['hard score']), True, TEXTCOLOR)
+        hardScoreRect = hardScoreSurf.get_rect()
+        hardScoreRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(hardScoreSurf, hardScoreRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            hardScoreSurf = SCOREFONT.render("No hard hand score was found", True, TEXTCOLOR)
+            hardScoreRect = hardScoreSurf.get_rect()
+            hardScoreRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(hardScoreSurf, hardScoreRect)
+            posY -= LINESPACING
+
+    if playerObj['soft score']:
+        softScoreSurf = SCOREFONT.render("Soft score on regular hand: %s" % (playerObj['soft score']), True, TEXTCOLOR)
+        softScoreRect = softScoreSurf.get_rect()
+        softScoreRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(softScoreSurf, softScoreRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            softScoreSurf = SCOREFONT.render("No soft hand score was found", True, TEXTCOLOR)
+            softScoreRect = softScoreSurf.get_rect()
+            softScoreRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(softScoreSurf, softScoreRect)
+            posY -= LINESPACING
+
+    # This is purely diagnostic message that the regular has does not exist.
+    if not playerObj['hand'] and output == 'diagnostic':
+        handDiagSurf = SCOREFONT.render("No regular hand was found", True, TEXTCOLOR)
+        handDiagRect = handDiagSurf.get_rect()
+        handDiagRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(handDiagSurf, handDiagRect)
+        posY -= LINESPACING
+
+    if playerObj['bank']:
+        playerBankSurf = SCOREFONT.render("Bank: $%s" % (playerObj['bank']), True, TEXTCOLOR)
+        playerBankRect = playerBankSurf.get_rect()
+        playerBankRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(playerBankSurf, playerBankRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            playerBankSurf = SCOREFONT.render("No bank for this player was found", True, TEXTCOLOR)
+            playerBankRect = playerBankSurf.get_rect()
+            playerBankRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(playerBankSurf, playerBankRect)
+            posY -= LINESPACING
+
+    if playerObj['name']:
+        playerNameSurf = SCOREFONT.render("Name: %s" % (playerObj['name']), True, TEXTCOLOR)
+        playerNameRect = playerNameSurf.get_rect()
+        playerNameRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(playerNameSurf, playerNameRect)
+        posY -= LINESPACING
+    else:
+        if output == 'diagnostic':
+            playerNameSurf = SCOREFONT.render("No name for the player was found", True, TEXTCOLOR)
+            playerNameRect = playerNameSurf.get_rect()
+            playerNameRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(playerNameSurf, playerNameRect)
+            posY -= LINESPACING
 
     # Diagnostic output should be indicated on each player.
     if output == 'diagnostic':
@@ -590,9 +769,33 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         outputTypeRect = outputTypeSurf.get_rect()
         outputTypeRect.topleft = (posX, posY)
         DISPLAYSURF.blit(outputTypeSurf, outputTypeRect)
-        posY += LINESPACING
-    # All players have names and bank amounts.
-    #playerNameSurf = BASICFONT.render("Player's Name: 
+        posY -= LINESPACING
+
+    # Now, we need to print out the cards in any hands the player has,
+    # starting with the regular hand. The users cannot see this take place.
+    # (regHandX, regHandY) and (splitHandX, splitHandY) have already been
+    # intialized at the beginning of this function. All these loops do is
+    # increment across horizontally as the cards are laid out. Y coordinates
+    # do not change.
+    if playerObj['hand']:
+        sizeOfHand = len(playerObj['hand'])
+        for i in xrange(0, sizeOfHand):
+            card = playerObj['hand'][i]
+            cardRect = CARDIMAGES[card]['rect']
+            cardRect.center = (regHandX, regHandY)
+            DISPLAYSURF.blit(CARDIMAGES[card]['surface'], cardRect)
+            regHandX += CARDWIDTH + CARDSPACING
+
+    if playerObj['split hand']:
+        sizeOfHand = len(playerObj['split hand'])
+        for i in xrange(0, sizeOfHand):
+            card = playerObj['split hand'][i]
+            cardRect = CARDIMAGES[card]['rect']
+            cardRect.center = (splitHandX, splitHandY)
+            DISPLAYSURF.blit(CARDIMAGES[card]['surface'], cardRect)
+            splitHandX += CARDWIDTH + CARDSPACING
+        
+        
     pygame.display.update()
     FPSCLOCK.tick()
 

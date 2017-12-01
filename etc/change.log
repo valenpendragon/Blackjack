@@ -412,3 +412,8 @@ Casino (game): Produced a more readable version of the table creation.
 Casino (game): Finished testing printTableDealer. Positioning bug and all functionality is working.
 Casino (game): Trying to resolve an issue with screen space being insufficient for the game. This required creating a better set of constants to generate the Dealer's station.
 Casino (game): Added 'scaled image' to CARDIMAGES to fix the image scaling problem.
+
+12/1/17 17:00 Pushed to origin/pygame
+
+Casino (game): printTablePlayer: Score section prints correctly for all three players. Diagnostic printouts work as well. The cards also appear exactly where they are supposed to appear for each player.
+Casino (game); printTableDealer: This function works with 'regular play' modes.
