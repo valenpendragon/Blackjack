@@ -120,31 +120,6 @@ def main(): # main game function
         # FreeMono.ttf could not be found or could not be used.
         DATAFONT = pygame.font.Font('freesansbold.ttf', 14)        
 
-    # This stanza creates the table surface. It is composed of a brown oval
-    # a green oval, a black rectangle (dealer's station), and areas where
-    # player cards will be dealt. These Rect objects use the form:
-    # pygame.Rect((left, top), (width, height)). The formulas are calculating
-    # the X and Y distances to the (left, top) of each rect object from the
-    # CENTER of the game window.
-    
-    tableOuterRectLeft = WINCENTERX - int(TABLEWIDTH / 2)
-    tableOuterRectTop  = WINCENTERY - int(TABLEHEIGHT / 2)
-    tableOuterRect = pygame.Rect((tableOuterRectLeft, tableOuterRectTop), (TABLEWIDTH, TABLEHEIGHT))
-
-    tableInnerRectLeft = WINCENTERX - int((TABLEWIDTH - TABLERIM) / 2)
-    tableInnerRectTop  = WINCENTERY - int((TABLEHEIGHT - TABLERIM) / 2)
-    tableInnerRect = pygame.Rect((tableInnerRectLeft, tableInnerRectTop), (TABLEWIDTH - TABLERIM, TABLEHEIGHT - TABLERIM))
-    
-    dealerStationRectTop  = DEALERSTATIONTOP
-    dealerStationRectLeft = DEALERSTATIONLEFT
-    dealerStationRect = pygame.Rect((dealerStationRectLeft, dealerStationRectTop), (STATIONWIDTH, STATIONHEIGHT))
-
-    # pygame.draw.ellipse(DISPLAYSURF, OLIVE, tableOuterRect)
-    # pygame.draw.ellipse(DISPLAYSURF, LIME,  tableInnerRect)
-    pygame.draw.rect(DISPLAYSURF, OLIVE, tableOuterRect)
-    pygame.draw.rect(DISPLAYSURF, LIME,  tableInnerRect)
-    pygame.draw.rect(DISPLAYSURF, BLACK, dealerStationRect)
-
     # Next, we need to build the BLANKCARD and CARDIMAGES dictionaries.
     # We need to initialize the dictionaries that store card images and
     # their respecitive surfaces. The first is BLANKCARD, a single layer dict
@@ -239,51 +214,53 @@ def main(): # main game function
         CARDIMAGES[card]['rect']    = CARDIMAGES[card]['surface'].get_rect()
     # Diagnostic print to see if these cards were setup correctly.
     # cardImagesDiagnosticPrint()
+
+    listDealers = generateDealerList()
     
     # Defining the tempDealer for the purpose of testing the printouts.
-    tempDealer = {}
-    tempDealer['name'] = "Fred"
-    tempDealer['bank'] = 100000
-    tempDealer['hand'] = [('A', 'D'), ('J', 'S')]
+    # tempDealer = {}
+    # tempDealer['name'] = "Fred"
+    # tempDealer['bank'] = 100000
+    # tempDealer['hand'] = [('A', 'D'), ('J', 'S')]
     # tempDealer['hand'] = [('A', 'D')]
     # tempDealer['hand'] = None
-    tempDealer['soft score'] = 21
-    tempDealer['hard score'] = 11
-    tempDealer['visible card'] = tempDealer['hand'][1]
+    # tempDealer['soft score'] = 21
+    # tempDealer['hard score'] = 11
+    # tempDealer['visible card'] = tempDealer['hand'][1]
     # tempDealer['visible card'] = None
-    tempDealer['visible soft score'] = 10
-    tempDealer['visible hard score'] = 10
-    tempDealer['dealer turn'] = None
-    printTableDealer(tempDealer)
+    # tempDealer['visible soft score'] = 10
+    # tempDealer['visible hard score'] = 10
+    # tempDealer['dealer turn'] = None
+    # printTableDealer(tempDealer)
 
     # Defining tempPlayer for the purpose of testing these printouts.
-    tempPlayer = {}
-    tempPlayer['name'] = "Manfred"
-    tempPlayer['bank'] = 25000
-    tempPlayer['hand'] = [('A', 'D'), ('J', 'S')]
+    # tempPlayer = {}
+    # tempPlayer['name'] = "Manfred"
+    # tempPlayer['bank'] = 25000
+    # tempPlayer['hand'] = [('A', 'D'), ('J', 'S')]
     # tempPlayer['hand'] = [('A', 'D')]
     # tempPlayer['hand'] = None
-    tempPlayer['soft score'] = 21
+    # tempPlayer['soft score'] = 21
     # tempPlayer['soft score'] = None
-    tempPlayer['hard score'] = 11
+    # tempPlayer['hard score'] = 11
     # tempPlayer['hard score'] = None
-    tempPlayer['split hand'] = [('K', 'D'), ('J', 'C')]
+    # tempPlayer['split hand'] = [('K', 'D'), ('J', 'C')]
     # tempPlayer['split hand'] = [('J', 'C')]
     # tempPlayer['split hand'] = None
-    tempPlayer['soft score split hand'] = 20
+    # tempPlayer['soft score split hand'] = 20
     # tempPlayer['soft score split hand'] = 10
     # tempPlayer['soft score split hand'] = None
     # tempPlayer['hard score split hand'] = 20
-    tempPlayer['hard score split hand'] = 10
+    # tempPlayer['hard score split hand'] = 10
     # tempPlayer['hard score split hand'] = None
-    tempPlayer['regular bet'] = 100
+    # tempPlayer['regular bet'] = 100
     # tempPlayer['regular bet'] = None
-    tempPlayer['split hand bet'] = 75
+    # tempPlayer['split hand bet'] = 75
     # tempPlayer['split hand bet'] = None
-    tempPlayer['insurance bet'] = 50
+    # tempPlayer['insurance bet'] = 50
     # tempPlayer['insurance bet'] = None
     # printTablePlayer(tempPlayer, 2, 'diagnostic')
-    printTablePlayer(tempPlayer, 3)
+    # printTablePlayer(tempPlayer, 3)
     # Update the screen before recycle.
     pygame.display.update()
     FPSCLOCK.tick()
@@ -798,6 +775,74 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         
     pygame.display.update()
     FPSCLOCK.tick()
+
+def generateTable():
+    """
+    This function prints a basic table to the screen. It does not print the
+    cards, nor any data on the players or dealers. That is done by other
+    methods and functions.
+    INPUTS: None
+    OUTPUTS: None, other than pygame creation of a blank table.
+    """
+    # This stanza creates the table surface. It is composed of a brown oval
+    # a green oval, a black rectangle (dealer's station), and areas where
+    # player cards will be dealt. These Rect objects use the form:
+    # pygame.Rect((left, top), (width, height)). The formulas are calculating
+    # the X and Y distances to the (left, top) of each rect object from the
+    # CENTER of the game window.
+    
+    tableOuterRectLeft = WINCENTERX - int(TABLEWIDTH / 2)
+    tableOuterRectTop  = WINCENTERY - int(TABLEHEIGHT / 2)
+    tableOuterRect = pygame.Rect((tableOuterRectLeft, tableOuterRectTop), (TABLEWIDTH, TABLEHEIGHT))
+
+    tableInnerRectLeft = WINCENTERX - int((TABLEWIDTH - TABLERIM) / 2)
+    tableInnerRectTop  = WINCENTERY - int((TABLEHEIGHT - TABLERIM) / 2)
+    tableInnerRect = pygame.Rect((tableInnerRectLeft, tableInnerRectTop), (TABLEWIDTH - TABLERIM, TABLEHEIGHT - TABLERIM))
+    
+    dealerStationRectTop  = DEALERSTATIONTOP
+    dealerStationRectLeft = DEALERSTATIONLEFT
+    dealerStationRect = pygame.Rect((dealerStationRectLeft, dealerStationRectTop), (STATIONWIDTH, STATIONHEIGHT))
+
+    # pygame.draw.ellipse(DISPLAYSURF, OLIVE, tableOuterRect)
+    # pygame.draw.ellipse(DISPLAYSURF, LIME,  tableInnerRect)
+    pygame.draw.rect(DISPLAYSURF, OLIVE, tableOuterRect)
+    pygame.draw.rect(DISPLAYSURF, LIME,  tableInnerRect)
+    pygame.draw.rect(DISPLAYSURF, BLACK, dealerStationRect)
+
+    pygame.display.update()
+    FPSCLOCK.tick()
+
+def generateDealerList():
+    """
+    This function creates a list of dictionary objects that feed initial
+    settings for creating dealer objects in CasinoTable objects. The structure
+    is a list of dictionaries of the form below:
+        'name'  : Dealer's name (string)
+        'type'  : This has a number of possible values
+                    'high'    : only works high roller tables, banks over $1m
+                    'starter' : best for new players, bank under $100k
+                    'normal'  : banks 100-250k
+                    'special' : dealer only works special events
+                    
+    For the early versions of the pygame implementation, this list will be
+    hardcoded, but the intention is to migrate this data to a much more
+    complete database, such as a postgres or sql-lite database.
+    INPUTS: None
+    OUTPUTS: list of dictionaries (see above for structure)
+    """
+    listDealers = []
+    for i in xrange(0, 8):
+        listDealers[i] = {}
+    
+    listDealers[0] = {'name' : 'Frank',   'type' : 'starter'}
+    listDealers[1] = {'name' : 'Hannah',  'type' : 'normal'}
+    listDealers[2] = {'name' : 'Mike',    'type' : 'normal'}
+    listDealers[3] = {'name' : 'Rayden',  'type' : 'special'}
+    listDealers[4] = {'name' : 'Charlie', 'type' : 'special'}
+    listDealers[5] = {'name' : 'Freddie', 'type' : 'high'}
+    listDealers[6] = {'name' : 'James',   'type' : 'high'}
+    listDealers[7] = {'name' : 'Angela',  'type' : 'high'}
+    return listDealers
 
 if __name__ == '__main__':
     main()

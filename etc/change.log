@@ -417,3 +417,8 @@ Casino (game): Added 'scaled image' to CARDIMAGES to fix the image scaling probl
 
 Casino (game): printTablePlayer: Score section prints correctly for all three players. Diagnostic printouts work as well. The cards also appear exactly where they are supposed to appear for each player.
 Casino (game); printTableDealer: This function works with 'regular play' modes.
+
+12/1/17 20:45
+
+Casino (game): generateTable: Moved the code for printing tables on screen to this function.
+Casino (game): generateDealerList: Returns a hardcoded list of dealers linking names and types of dealers. A call to this function to create the data object listDealers is in the main() function.
