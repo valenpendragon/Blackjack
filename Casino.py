@@ -844,5 +844,28 @@ def generateDealerList():
     listDealers[7] = {'name' : 'Angela',  'type' : 'high'}
     return listDealers
 
+def dieRoll(die, minNum, maxNum, adj=0):
+    """
+    This function generates random numbers for sequences with floor or ceiling
+    values. For example, suppose you need to have a roll weighted to be zero
+    more often than one possible value, such as d6-2 with a 0 minimum value.
+    The sequence of numbers would be [0, 0, 1, 2, 3, 4]. Or suppose you want
+    a d12+3 with max of 12. That sequence would be [4, 5, 6, 7, 8, 9 ,10, 11
+    12, 12, 12, 12]. In this version, it cannot do a sequence like [1, 1, 2, 2].
+    """
+    numList = []
+    for i in range(1, die + 1):
+        currentNum = i + adj
+        if not (minNum <= currentNum <= maxNum):
+            if currentNum < minNum:
+                currentNum = minNum
+            elif currentNum > maxNum:
+                currentNum = maxNum
+        numList.append(currentNum)
+    random.shuffle(numList)
+    output = random.randint(0, die - 1)
+    return numList[output]
+
+
 if __name__ == '__main__':
     main()

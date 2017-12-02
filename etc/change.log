@@ -422,3 +422,7 @@ Casino (game); printTableDealer: This function works with 'regular play' modes.
 
 Casino (game): generateTable: Moved the code for printing tables on screen to this function.
 Casino (game): generateDealerList: Returns a hardcoded list of dealers linking names and types of dealers. A call to this function to create the data object listDealers is in the main() function.
+
+12/2/17 11:25 Pushed to origin/pygame
+
+Casino (game): dieRoll: Created this routine to generate 'weighted' dice rolls to generate appropriate banks for dealers. It may be used for other purposes as well. This function takes a die type, min value, max value, and an adjustment and generates a sequence of outputs from it.
