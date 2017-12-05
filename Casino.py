@@ -776,7 +776,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
     pygame.display.update()
     FPSCLOCK.tick()
 
-def generateTable():
+def generateTable(tableColor = OLIVE ):
     """
     This function prints a basic table to the screen. It does not print the
     cards, nor any data on the players or dealers. That is done by other
@@ -805,9 +805,9 @@ def generateTable():
 
     # pygame.draw.ellipse(DISPLAYSURF, OLIVE, tableOuterRect)
     # pygame.draw.ellipse(DISPLAYSURF, LIME,  tableInnerRect)
-    pygame.draw.rect(DISPLAYSURF, OLIVE, tableOuterRect)
-    pygame.draw.rect(DISPLAYSURF, LIME,  tableInnerRect)
-    pygame.draw.rect(DISPLAYSURF, BLACK, dealerStationRect)
+    pygame.draw.rect(DISPLAYSURF, tableColor, tableOuterRect)
+    pygame.draw.rect(DISPLAYSURF, LIME,       tableInnerRect)
+    pygame.draw.rect(DISPLAYSURF, BLACK,      dealerStationRect)
 
     pygame.display.update()
     FPSCLOCK.tick()
@@ -818,7 +818,7 @@ def generateDealerList():
     settings for creating dealer objects in CasinoTable objects. The structure
     is a list of dictionaries of the form below:
         'name'  : Dealer's name (string)
-        'type'  : This has a number of possible values
+        'type'  : This is type of CasinoTable that this "dealer" normally works
                     'high'    : only works high roller tables, banks over $1m
                     'starter' : best for new players, bank under $100k
                     'normal'  : banks 100-250k
@@ -828,20 +828,166 @@ def generateDealerList():
     hardcoded, but the intention is to migrate this data to a much more
     complete database, such as a postgres or sql-lite database.
     INPUTS: None
-    OUTPUTS: list of dictionaries (see above for structure)
+    OUTPUTS: list of dictionaries with the following additions
+        'bank' : A value calculated from a base determined by table type
+                 and adjusted by a random amount
+        'blackjack_multiplier : A value chosen randomly from a set of ratios
+                 controlled by the table type
+        'table color' : This the color of the felt of the table. The rim is
+                 always leather.
+        'table bets'  : Tuple storing the min and max bets that table allows
+
+    Each table type has formulas, complete with random choices to create
+    variety during play. All die rolls have a max value of whatever the die
+    itself can produce (d6+2 still maxes at 6, but a d6-2 maxes at 4). All die
+    rolls have a min of 0 (no negative values). The function, dieRoll(),
+    produces these "weighted" die results.
+        'starter': Starter tables
+            'bank': $50k + [(d30 - 5) * $1k]
+                This produces a range 50-75k with most banks being 50k
+            'table color' : OLIVE
+            'blackjack multiplier' : d6 choice from the following options:
+                1) 7:3, 2.33
+                2) 9:4, 2.25
+                3) 2:1, 2.00
+                4) 7:4, 1.75
+                5) 5:3, 1.67
+                6) 3:2, 1.50
+            'table bets' : (tableMin = 50, tableMax = 100)
+            
+        'high' : High Roller Tables
+            'bank': $1m + (d100 * $25k)
+                This produces a range of $1-3.5m (uniform)
+            'table color' : PURPLE
+            'blackjack multiplier' : d6 choice from the following options:
+                1) 11:4, 2.75
+                2) 8:3, 2.67
+                3) 5:2, 2.50
+                4) 7:3, 2.33
+                5) 9:4, 2.25
+                6) 2:1, 2.00
+            'table bets' : (tableMin = 500, tableMax = 100k)
+
+        'special' : Special Event Tables
+            'bank': $250k + (d100 * 5k)
+                This produces a range of $250-750k (uniform)
+            'table color' : AQUAMARINE
+            'blackjack multiplier' : d4 choice from the following options:
+                1) 3:1, 3.00
+                2) 5:2, 2.50
+                3) 2:1, 2.00
+                4) 3:2, 1.50
+            'table bets' : (tableMin = 250, tableMax = 1000)        
+
+        'normal' : Regular Tables
+            'bank': $100k + [(d100 - 25) * 2k]
+                This produces a range of $100-250k, weighted to 25% of banks
+                being $100k
+            'table color' : BLUE
+            'blackjack multiplier' : d8 choice from the following options:
+                1) 2:1, 2.00
+                2) 9:5, 1.80
+                3) 7:4, 1.75
+                4) 8:5, 1.60
+                5) 5:3, 1.67
+                6) 7:5, 1.40
+                7) 4:3, 1.33
+                8) 6:5, 1.20
+            'table bets' : (tableMin = 50, tableMax = 200)
+            
+    Note: All players start with the starter tables while they learn to play
+    this game. It helps to reinforce that the game is partly about having fun,
+    but it is also about beating the bank.
     """
     listDealers = []
-    for i in xrange(0, 8):
-        listDealers[i] = {}
-    
-    listDealers[0] = {'name' : 'Frank',   'type' : 'starter'}
-    listDealers[1] = {'name' : 'Hannah',  'type' : 'normal'}
-    listDealers[2] = {'name' : 'Mike',    'type' : 'normal'}
-    listDealers[3] = {'name' : 'Rayden',  'type' : 'special'}
-    listDealers[4] = {'name' : 'Charlie', 'type' : 'special'}
-    listDealers[5] = {'name' : 'Freddie', 'type' : 'high'}
-    listDealers[6] = {'name' : 'James',   'type' : 'high'}
-    listDealers[7] = {'name' : 'Angela',  'type' : 'high'}
+    listDealers.append({'name' : 'Frank',   'type' : 'starter'})
+    listDealers.append({'name' : 'Hannah',  'type' : 'normal'})
+    listDealers.append({'name' : 'Mike',    'type' : 'normal'})
+    listDealers.append({'name' : 'Rayden',  'type' : 'special'})
+    listDealers.append({'name' : 'Charlie', 'type' : 'special'})
+    listDealers.append({'name' : 'Freddie', 'type' : 'high'})
+    listDealers.append({'name' : 'James',   'type' : 'high'})
+    listDealers.append({'name' : 'Angela',  'type' : 'high'})
+    print(listDealers)
+
+    numOfDealers = len(listDealers)
+    # As mentioned in the main comment block, we need to calculate the banks
+    # for each dealer, their current table blackjack_multiplier, and the color
+    # of the felt on their table. These are determined by formulas that depend
+    # on the type of table the dealer works at.
+    for i in range(0, numOfDealers):
+        if listDealers[i]['type'] == 'starter':
+            listDealers[i]['table color'] = OLIVE
+            listDealers[i]['bank'] = 50000 + (1000 * dieRoll(30, 0, 25, -5))
+            multiplierChoice = dieRoll(6, 1, 6)
+            if multiplierChoice == 1:
+                listDealers[i]['blackjack multiplier'] = ('7:3', 2.33)
+            elif  multiplierChoice == 2:
+                listDealers[i]['blackjack multiplier'] = ('9:4', 2.25)
+            elif  multiplierChoice == 3:
+                listDealers[i]['blackjack multiplier'] = ('2:1', 2.00)
+            elif  multiplierChoice == 4:
+                listDealers[i]['blackjack multiplier'] = ('7:4', 1.75)
+            elif  multiplierChoice == 5:
+                listDealers[i]['blackjack multiplier'] = ('5:3', 1.67)
+            elif  multiplierChoice == 6:
+                listDealers[i]['blackjack multiplier'] = ('3:2', 1.50)
+            listDealers[i]['table bets'] = (25, 100)
+            
+        elif listDealers[i]['type'] == 'normal':
+            listDealers[i]['table color'] = BLUE
+            listDealers[i]['bank'] = 100000 + (2000 * dieRoll(100, 0, 75, -25))
+            multiplierChoice = dieRoll(8, 1, 8)
+            if multiplierChoice == 1:
+                listDealers[i]['blackjack multiplier'] = ('2:1', 2.00)
+            elif  multiplierChoice == 2:
+                listDealers[i]['blackjack multiplier'] = ('9:5', 1.80)
+            elif  multiplierChoice == 3:
+                listDealers[i]['blackjack multiplier'] = ('7:4', 1.75)
+            elif  multiplierChoice == 4:
+                listDealers[i]['blackjack multiplier'] = ('8:5', 1.60)
+            elif  multiplierChoice == 5:
+                listDealers[i]['blackjack multiplier'] = ('3:2', 1.50)
+            elif  multiplierChoice == 6:
+                listDealers[i]['blackjack multiplier'] = ('7:5', 1.40)
+            elif  multiplierChoice == 7:
+                listDealers[i]['blackjack multiplier'] = ('4:3', 1.33)
+            elif  multiplierChoice == 8:
+                listDealers[i]['blackjack multiplier'] = ('6:5', 1.20)
+            listDealers[i]['table bets'] = (50, 200)
+
+        elif listDealers[i]['type'] == 'special':
+            listDealers[i]['table color'] = AQUAMARINE
+            listDealers[i]['bank'] = 250000 + (5000 * dieRoll(100, 1, 100))
+            multiplierChoice = dieRoll(4, 1, 4)
+            if multiplierChoice == 1:
+                listDealers[i]['blackjack multiplier'] = ('3:1', 3.00)
+            elif  multiplierChoice == 2:
+                listDealers[i]['blackjack multiplier'] = ('5:2', 2.50)
+            elif  multiplierChoice == 3:
+                listDealers[i]['blackjack multiplier'] = ('2:1', 2.00)
+            elif  multiplierChoice == 4:
+                listDealers[i]['blackjack multiplier'] = ('3:2', 1.50)
+            listDealers[i]['table bets'] = (250, 1000)
+
+        elif listDealers[i]['type'] == 'high':
+            listDealers[i]['table color'] = PURPLE
+            listDealers[i]['bank'] = 1000000 + (25000 * dieRoll(100, 1, 100))
+            multiplierChoice = dieRoll(6, 1, 6)
+            if multiplierChoice == 1:
+                listDealers[i]['blackjack multiplier'] = ('11:4', 2.75)
+            elif  multiplierChoice == 2:
+                listDealers[i]['blackjack multiplier'] = ('8:3', 2.67)
+            elif  multiplierChoice == 3:
+                listDealers[i]['blackjack multiplier'] = ('5:2', 2.50)
+            elif  multiplierChoice == 4:
+                listDealers[i]['blackjack multiplier'] = ('7:3', 2.33)
+            elif  multiplierChoice == 5:
+                listDealers[i]['blackjack multiplier'] = ('9:4', 2.25)
+            elif  multiplierChoice == 6:
+                listDealers[i]['blackjack multiplier'] = ('2:1', 2.00)
+            listDealers[i]['table bets'] = (500, 1000000)
+
     return listDealers
 
 def dieRoll(die, minNum, maxNum, adj=0):

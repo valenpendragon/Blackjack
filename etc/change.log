@@ -426,3 +426,8 @@ Casino (game): generateDealerList: Returns a hardcoded list of dealers linking n
 12/2/17 11:25 Pushed to origin/pygame
 
 Casino (game): dieRoll: Created this routine to generate 'weighted' dice rolls to generate appropriate banks for dealers. It may be used for other purposes as well. This function takes a die type, min value, max value, and an adjustment and generates a sequence of outputs from it.
+
+12/5/17 08:10 Pushed to origin master
+
+Casino (game): generateDealerList: Calculates each dealer's bank, table color, and blackjack_multiplier and adds these to the dealer's dictionary. This will create more variety in game play, as the same dealer often will have different table setups.
+Casino (game): generateTable: Has an optional tableColor parameter to override the default color of OLIVE.
