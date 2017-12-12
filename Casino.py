@@ -2,7 +2,8 @@ from __future__ import print_function
 import random, os, pygame, inflection, collections
 from pygame.transform import scale
 from pygame.locals import *
-from lib import CardShoe, Player, Dealer, CasinoTable
+from lib import CardShoe, Player, Dealer, CasinoTable, Textbox
+
 import pdb
 
 # Colors          R    G    B
@@ -74,7 +75,7 @@ CENTEROUTPUT  =  100
 # DEALERSCARDS is adjusted to a distance of CARDSPACING below the station.
 DEALERSTATIONTOP  = WINCENTERY - int(TABLEHEIGHT / 2) - int(STATIONHEIGHT / 2)
 DEALERSTATIONLEFT = WINCENTERX - int(STATIONWIDTH / 2)
-DEALERSCARDS = DEALERSTATIONTOP + STATIONHEIGHT + CARDSPACING
+DEALERSCARDS      = DEALERSTATIONTOP + STATIONHEIGHT + CARDSPACING
 
 BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
