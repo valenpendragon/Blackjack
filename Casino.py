@@ -1,5 +1,5 @@
 from __future__ import print_function
-import random, os, pygame, inflection, collections
+import random, os, pygame, inflection, collections, sys, string
 from pygame.transform import scale
 from pygame.locals import *
 from lib import CardShoe, Player, Dealer, CasinoTable, Textbox
@@ -217,54 +217,40 @@ def main(): # main game function
     # cardImagesDiagnosticPrint()
 
     listDealers = generateDealerList()
-    
-    # Defining the tempDealer for the purpose of testing the printouts.
-    # tempDealer = {}
-    # tempDealer['name'] = "Fred"
-    # tempDealer['bank'] = 100000
-    # tempDealer['hand'] = [('A', 'D'), ('J', 'S')]
-    # tempDealer['hand'] = [('A', 'D')]
-    # tempDealer['hand'] = None
-    # tempDealer['soft score'] = 21
-    # tempDealer['hard score'] = 11
-    # tempDealer['visible card'] = tempDealer['hand'][1]
-    # tempDealer['visible card'] = None
-    # tempDealer['visible soft score'] = 10
-    # tempDealer['visible hard score'] = 10
-    # tempDealer['dealer turn'] = None
-    # printTableDealer(tempDealer)
+    # print(listDealers)
 
-    # Defining tempPlayer for the purpose of testing these printouts.
-    # tempPlayer = {}
-    # tempPlayer['name'] = "Manfred"
-    # tempPlayer['bank'] = 25000
-    # tempPlayer['hand'] = [('A', 'D'), ('J', 'S')]
-    # tempPlayer['hand'] = [('A', 'D')]
-    # tempPlayer['hand'] = None
-    # tempPlayer['soft score'] = 21
-    # tempPlayer['soft score'] = None
-    # tempPlayer['hard score'] = 11
-    # tempPlayer['hard score'] = None
-    # tempPlayer['split hand'] = [('K', 'D'), ('J', 'C')]
-    # tempPlayer['split hand'] = [('J', 'C')]
-    # tempPlayer['split hand'] = None
-    # tempPlayer['soft score split hand'] = 20
-    # tempPlayer['soft score split hand'] = 10
-    # tempPlayer['soft score split hand'] = None
-    # tempPlayer['hard score split hand'] = 20
-    # tempPlayer['hard score split hand'] = 10
-    # tempPlayer['hard score split hand'] = None
-    # tempPlayer['regular bet'] = 100
-    # tempPlayer['regular bet'] = None
-    # tempPlayer['split hand bet'] = 75
-    # tempPlayer['split hand bet'] = None
-    # tempPlayer['insurance bet'] = 50
-    # tempPlayer['insurance bet'] = None
-    # printTablePlayer(tempPlayer, 2, 'diagnostic')
-    # printTablePlayer(tempPlayer, 3)
-    # Update the screen before recycle.
+    # Now, we need to see if a saved game exists. If so, it will import it
+    # into listPlayers, a list of player objects. Players include a name
+    # ranking (starter, normal, special event, or high roller. If there are
+    # no saved game(s), we call the function that creates new players.
+    # If creating players fails, then the game bails out.
+    listPlayers = findPlayers()
+    if listPlayers == None:
+        print("main: No saved data could be found.")
+        terminate()
+        # listPlayers = createPlayers()
+        # if listPlayers = None:
+            # terminate()
+    print("main: Found player data {} in a saved game file.".format(listPlayers))
+
+    # This is a test block to test saving games to disk.
+    savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
+    if savedGameSuccess:
+        print("main: Successfully saved game.")
+    else:
+        print("main: Unable to save game to disk.")
+    terminate()
+
     pygame.display.update()
     FPSCLOCK.tick()
+
+def terminate():
+    """
+    This function ends the game, closing pygame and exiting to the system.
+    It has no inputs or outputs.
+    """
+    pygame.quit()
+    sys.exit()
 
 def cardImagesDiagnosticPrint(adjX=0, adjY=0):
     """
@@ -909,7 +895,7 @@ def generateDealerList():
     listDealers.append({'name' : 'Freddie', 'type' : 'high'})
     listDealers.append({'name' : 'James',   'type' : 'high'})
     listDealers.append({'name' : 'Angela',  'type' : 'high'})
-    print(listDealers)
+    # print(listDealers)
 
     numOfDealers = len(listDealers)
     # As mentioned in the main comment block, we need to calculate the banks
@@ -1013,6 +999,143 @@ def dieRoll(die, minNum, maxNum, adj=0):
     output = random.randint(0, die - 1)
     return numList[output]
 
+def findPlayers(filename = './etc/savedgame.txt'):
+    """
+    This function looks for saved game files. The correct format for a saved
+    game is a CSV file broken down as follows:
+        string1, integer, string2
+    where string1 is the player's name, integer is their remaining money in
+    their bank (without any formatting), and string2 is their rank as a
+    player (acceptable values are 'high', 'starter', 'normal', or 'special'.
+    INPUT: filename (optional), defaults to 'etc/savedgame'
+    OUTPUT: listPlayers, which will either be None or a list of player
+        dictionaries with the following structure:
+        'name'   : player's name (string)
+        'bank'   : player's money in chips (integer)
+        'skill'  : player's skill ('high'|'starter'|'normal'|'special')
+    The list corresponds to seating where 0 --> left, 1 --> center, and
+    2 --> right.
+    NOTE: If filename cannot be found, read, or written to, it will return
+    None. Likewise, if the file has bad data, it will return None.
+    NOTE: This file can contain less than three players, but it cannot
+    have less than one.
+    """
+    listPlayers = None
+    try:
+        # We try to open the saved game file. If it fails, we return None.
+        testOpen = open(filename)
+    except:
+        # Something went wrong. So, we return None.
+        listPlayers = None
+        print("findPlayers: {} not found.".format(filename))
+    else:
+        # Successful fileopen. We need to see if we any good players contained
+        # in the file. Note: We will only read up to three players. There can
+        # be less than three in a saved game if a player was eliminated from
+        # during a previous game.
+        i = 0
+        with open(filename) as savedGame:
+            # We need to reinitialize listPlayers since the saved game is
+            # readable. We will put this player's data into their dictionary
+            # near the end of this process.
+            print("findPlayers: Preparing to read {}.".format(filename))
+            listPlayers = []
+            for line in savedGame:
+                print("findPlayers: Reading line {} of {}.".format(i, filename))
+                # Break the line up into a list of strings on the commas.
+                data = line.split(',')
+                # There must be at least three strings. If not, the file is
+                # corrupt.
+                print("findPlayers: Read {} from {}.".format(data, filename))
+                if len(data) < 3:
+                    listPlayers = None
+                    break
+                # Assign the first string to playerName.
+                playerName = data[0]
+                # Now, we try to set the second string to an integer and
+                # assign it to playerBank
+                try:
+                    playerBank = int(data[1])
+                except:
+                    # Python could not convert it into an integer, suggesting
+                    # a corrupt file. We need to cancel the file reading
+                    # process and return None.
+                    listPlayers = None
+                    break
+
+                # Now, we need to check the third string to see if it is valid.
+                # If it has an invalid value, again, we need to cancel reading
+                # the file and return None. If it is valid, we assign it to
+                # playerSkill. To make sure it ignores whitespace characters,
+                # like linefeeds or returns, we need to remove them from this
+                # string.
+                for char in string.whitespace:
+                    data[2] = data[2].replace(char, '')
+                if data[2] not in ('high', 'starter', 'normal', 'special'):
+                    listPlayers = None
+                    break
+                else:
+                    playerSkill = data[2]
+
+                # Since we got this far, all three data elements were usable.
+                # We need to assign them to a player dictionary.
+                listPlayers.append({ 'name'  : playerName,
+                                     'bank'  : playerBank,
+                                     'skill' : playerSkill})
+                # Now, we increment our player counter. If it reaches 3, we
+                # break out of the saved game file. We only need to read the
+                # data for three players successfully. The writeSavedGame
+                # function will overwrite the saved game later on.
+                i += 1
+                if i > 3:
+                    break
+
+    # We have either read a file with good data and return that data or we
+    # had problems along the way and have to return None.
+    return listPlayers
+
+def writeSavedGame(listPlayers, filename = './etc/savedgame.txt'):
+    """
+    This function saves Player data to a saved game file.
+    INPUTS: listPlayers, which will a list of player dictionaries with the
+        following structure:
+        'name'   : player's name (string)
+        'bank'   : player's money in chips (integer)
+        'skill'  : player's skill ('high'|'starter'|'normal'|'special')
+        There will never be more than 3 players in listPlayers, but their
+        may be less as players are eliminated during the game play.
+    OUTPUTS: Boolean for successful/failed write. The data is written to
+        a CSV text file with the following format:
+            string1, integer, string2
+        where string1 is the player's name, integer is their remaining money
+        in their bank (without any formatting), and string2 is their rank as
+        a player (acceptable values are 'high', 'starter', 'normal', or
+        'special'. This indicates the highest dealer bank the surviving
+        "team" busted.
+    NOTE: This function will return True if there are no players to write to
+    disk.
+    """
+    # If there are no players in listPlayers, there is nothing to do.
+    if len(listPlayers) == 0:
+        print("writeSavedGame: No players remained after the last game. Nothing to do.")
+        return True
+    # We need to convert the player data back into a list of CSV text lines.
+    savedGameData = []
+    for i in range(0, len(listPlayers)):
+        newLine = listPlayers[i]['name'] + ', ' + str(listPlayers[i]['bank']) + ', ' + listPlayers[i]['skill'] + '\n'
+        savedGameData.append(newLine)
+        print("writeSavedGame: Data to save is now {}.".format(savedGameData))
+    # Now, we try to write this data to disk.
+    try:
+        open(filename, 'w')
+    except:
+        print("writeSavedGame: Could not save game to disk.")
+        return False
+    else:
+        with open(filename, 'a') as savedGame:
+            for lineOut in savedGameData:
+                savedGame.write(lineOut)
+        return True
 
 if __name__ == '__main__':
     main()

@@ -1,7 +1,7 @@
 from __future__ import print_function
 import random
 from BlackjackClasses import CardShoe, Player, Dealer, CasinoTable
-from PygameTexboxClass import Textbox
+from PygameTextboxClass import Textbox
 __doc__ = """
 This is the library subpackage for Blackjack. The libraries include the
 following classes:

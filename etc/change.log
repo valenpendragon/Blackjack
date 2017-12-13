@@ -436,3 +436,14 @@ Casino (game): generateTable: Has an optional tableColor parameter to override t
 
 Textbox: A class similar to the one Sean McKiernan (Mekire on GItHub) created as a tutorial. The class is needed to be able to filter acceptable characters, allowing for a numbers only textbox or an alphabetical only textbox. This ensures that the input is an acceptable content before the code has to check it. This class is new and untested. Consider it an alpha.
 Classes: ___init__: Added Textbox class to the import list.
+
+12/13/17 06:17 Pushed to origin pygame
+
+Libraries: __init__.py: Corrected a typo preventing PygameTextboxClass from importing.
+Libraries: Fixed a missing import for sys in Casino.py.
+Casino (game): terminate: Created a function to properly terminate pygame.
+Casino (game): Removed commented out fake dealer and players to test table print routines.
+Casino (game): findPlayers: Created a function to find and attempt to read a saved game file. It will return None if the file does not exist or is not in the right format.
+Casino (game): writeSavedGame: Created a function to write player data to a saved game file on disk. It uses a default filename, like findPlayers does. There is a text block that will need to be removed after testing this.
+Casino (game): Print statements: Many diagnostic statements will remain in place in their respective functions until testing is fully completed. These messages will (eventually) be put into a log file.
+PygameTextboxClass: Still working toward the point of being able to test the class.
