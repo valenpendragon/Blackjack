@@ -1,5 +1,5 @@
 from __future__ import print_function
-import random, os, pygame, inflection, collections, sys, string
+import random, os, pygame, inflection, collections, sys, string, copy
 from pygame.transform import scale
 from pygame.locals import *
 from lib import CardShoe, Player, Dealer, CasinoTable, Textbox
@@ -36,7 +36,8 @@ WINCENTERY    = int(WINDOWHEIGHT / 2)   # Y coordinate of winwow's center
 CARDWIDTH     =   30                    # Width of a card image
 CARDSPACING   =    4                    # Spacing between cards (both axes)
 CARDHEIGHT    =   60                    # Height of a card image
-LINESPACING   =   15                    # Spacing between text Rect objects
+LINESPACING12 =   15                    # Spacing between 12pt text Rect objects
+LINESPACING18 =   25                    # Spacing between 18pt text Rect objects
 TABLEWIDTH    =  700                    # width of playing table
 TABLEHEIGHT   =  400                    # height of playing table
 TABLERIM      =   40                    # width of band around table
@@ -44,6 +45,7 @@ STATIONWIDTH  =  250                    # width of dealer's station
 STATIONHEIGHT =   60                    # height of dealer's station
 MAXPLAYERS    =    3                    # board space limits players to 3
 SCOREWIDTH    =  200                    # width of all players' score text
+STARTINGBANK  =50000                    # Bank for 'starter' players
 
 # These four items are the edges of printable area in game window.
 LEFTMARGIN    =   10                    
@@ -81,7 +83,7 @@ BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
 
 def main(): # main game function
-    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT
+    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, listPlayers, listDealers
 
     # Pygame initialization.
     pygame.init()
@@ -96,7 +98,7 @@ def main(): # main game function
 
     # The next stanza sets the default text font for the game to GNU Free Sans
     # TTF. If it is not found in etc, it defaults to freesansbold.ttf which is
-    # part of Pygame.
+    # part of Pygame. 12pt and 14pt fonts use LINESPACING12 to separate lines.
     try:
         BASICFONT = pygame.font.Font('etc/FreeSans.ttf', 12)
     except:
@@ -105,7 +107,7 @@ def main(): # main game function
 
     # The next stanza sets the SCOREFONT for the game to GNU Free Serif TTF.
     # If it is not found in etc, it defaults to freesansbold.ttf which is
-    # part of Pygame.
+    # part of Pygame. 12pt and 14pt fonts use LINESPACING12 to separate lines.
     try:
         SCOREFONT = pygame.font.Font('etc/FreeSerif.ttf', 12)
     except:
@@ -114,12 +116,21 @@ def main(): # main game function
     
     # The next stanza sets the DATAFONT for the game to GNU Free Serif TTF.
     # If it is not found in etc, it defaults to freesansbold.ttf which is
-    # part of Pygame.
+    # part of Pygame. 12pt and 14pt fonts use LINESPACING12 to separate lines.
     try:
         DATAFONT = pygame.font.Font('etc/FreeMono.ttf', 14)
     except:
         # FreeMono.ttf could not be found or could not be used.
         DATAFONT = pygame.font.Font('freesansbold.ttf', 14)        
+
+    # The next stanza sets INSTRUCTFONT, used for instructions. It is an
+    # 18pt font instead of a 12pt or 14pt font. It is setup the same way
+    # as the previous fonts. It uses LINESPACING18 for specing.
+    try:
+        INSTRUCTFONT = pygame.font.Font('etc/FreeMonoBold.ttf', 18)
+    except:
+        # FreeMonoBold.ttf could not be found or could not be used.
+        INSTRUCTFONT = pygame.font.Font('freesansbold.ttf', 18)
 
     # Next, we need to build the BLANKCARD and CARDIMAGES dictionaries.
     # We need to initialize the dictionaries that store card images and
@@ -224,23 +235,25 @@ def main(): # main game function
     # ranking (starter, normal, special event, or high roller. If there are
     # no saved game(s), we call the function that creates new players.
     # If creating players fails, then the game bails out.
-    listPlayers = findPlayers()
-    if listPlayers == None:
+    listPlayers = []
+    tempListPlayers = findPlayers()
+    if tempListPlayers != None:
+        listPlayers = deepcopy(tempListPlayers)
+    if listPlayers == []:
         print("main: No saved data could be found.")
-        terminate()
-        # listPlayers = createPlayers()
-        # if listPlayers = None:
-            # terminate()
-    print("main: Found player data {} in a saved game file.".format(listPlayers))
-
+        createPlayers()
+        if listPlayers == []:
+            terminate()
+    
     # This is a test block to test saving games to disk.
-    savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
-    if savedGameSuccess:
-        print("main: Successfully saved game.")
-    else:
-        print("main: Unable to save game to disk.")
-    terminate()
+    # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
+    # if savedGameSuccess:
+        # print("main: Successfully saved game.")
+    # else:
+        # print("main: Unable to save game to disk.")
+    # terminate()
 
+    
     pygame.display.update()
     FPSCLOCK.tick()
 
@@ -255,7 +268,7 @@ def terminate():
 def cardImagesDiagnosticPrint(adjX=0, adjY=0):
     """
     This function prints out all 52 cards to verify spacing and apperance.
-    INPUT: optional posX and posY adjustments, defaults are 30 (LINESPACING)
+    INPUT: optional posX and posY adjustments, defaults are 30 (LINESPACING12)
     OUTPUT: None
     """
     DISPLAYSURF.fill(BGCOLOR)
@@ -299,7 +312,7 @@ def diagnosticPrint(output = ''):
     """
     # First, clear the screen.
     DISPLAYSURF.fill(BGCOLOR)
-    posY = LINESPACING
+    posY = LINESPACING12
     
     # See if a table object exists.
     if tableObject and type(tableObject) == 'CasinoTable':
@@ -307,7 +320,7 @@ def diagnosticPrint(output = ''):
         tableObjectInfoRect = tableObjectInfoSurf.get_rect()
         tableObjectInfoRect.center = (WINCENTERX, posY)
         DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
-        posY += LINESPACING
+        posY += LINESPACING12
         if output == 'v' or output == 'verbose':
             tableObject.diagnostic_print()
         if tableObject.tableDealer and type(tableObject.tableDealer) == 'Dealer':
@@ -315,7 +328,7 @@ def diagnosticPrint(output = ''):
             tableObjectInfoRect = tableObjectInfoSurf.get_rect()
             tableObjectInfoRect.center = (WINCENTERX, posY)
             DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
-            posY += LINESPACING
+            posY += LINESPACING12
             tableDealer = print(tableObject.tableDealer)
             printTableDealer(tableDealer, 'diagnostic')
 
@@ -332,7 +345,7 @@ def diagnosticPrint(output = ''):
         tableObjectInfoRect = tableObjectInfoSurf.get_rect()
         tableObjectInfoRect.center = (WINCENTERX, posY)
         DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
-        posY += LINESPACING
+        posY += LINESPACING12
 
 
 def printTableDealer(tableDealer, output = 'player turn'):
@@ -365,7 +378,7 @@ def printTableDealer(tableDealer, output = 'player turn'):
     # remaining lines of output will print relative to the staring position.
     # Dealer's name and bank always print out regardless of the mode in this
     # function call.
-    posY = 2 * LINESPACING
+    posY = 2 * LINESPACING12
     if output == 'dealer turn':
         outputTypeSurf = DATAFONT.render("Dealer's Turn", True, TEXTCOLOR)
     elif output == 'diagnostic':
@@ -375,17 +388,17 @@ def printTableDealer(tableDealer, output = 'player turn'):
     outputTypeRect = outputTypeSurf.get_rect()
     outputTypeRect.center = (WINCENTERX, posY)
     DISPLAYSURF.blit(outputTypeSurf, outputTypeRect)
-    posY += 2 * LINESPACING
+    posY += 2 * LINESPACING12
     dealerNameSurf = BASICFONT.render("Dealer's Name: %s" % (tableDealer['name']), True, TEXTCOLOR)
     dealerNameRect = dealerNameSurf.get_rect()
     dealerNameRect.center = (WINCENTERX, posY)
     DISPLAYSURF.blit(dealerNameSurf, dealerNameRect)
-    posY += LINESPACING
+    posY += LINESPACING12
     dealerBankSurf = BASICFONT.render("Dealer's Bank: %s" % (tableDealer['bank']), True, TEXTCOLOR)
     dealerBankRect = dealerBankSurf.get_rect()
     dealerBankRect.center = (WINCENTERX, posY)
     DISPLAYSURF.blit(dealerBankSurf, dealerBankRect)
-    posY += LINESPACING
+    posY += LINESPACING12
 
     # The cover color for the hold card will be SILVER. The alpha for its
     # overlay is 50% for diagnostic printouts, 100% during player's turns,
@@ -416,7 +429,7 @@ def printTableDealer(tableDealer, output = 'player turn'):
         dealerHandRect = dealerHandSurf.get_rect()
         dealerHandRect.center = (WINCENTERX, posY)
         DISPLAYSURF.blit(dealerHandSurf, dealerHandRect)
-        posY += LINESPACING
+        posY += LINESPACING12
 
     # During the Dealer's turn and in diagnostic mode, we need a full view of
     # the Dealer's hand and the actual cards present. The hand is also placed
@@ -429,12 +442,12 @@ def printTableDealer(tableDealer, output = 'player turn'):
         dealerHardScoreRect = dealerHardScoreSurf.get_rect()
         dealerHardScoreRect.center = (WINCENTERX, posY)
         DISPLAYSURF.blit(dealerHardScoreSurf, dealerHardScoreRect)
-        posY += LINESPACING
+        posY += LINESPACING12
         dealerSoftScoreSurf = SCOREFONT.render("Dealer's soft score: %s" % (tableDealer['soft score']), True, TEXTCOLOR)
         dealerSoftScoreRect = dealerSoftScoreSurf.get_rect()
         dealerSoftScoreRect.center = (WINCENTERX, posY)
         DISPLAYSURF.blit(dealerSoftScoreSurf, dealerSoftScoreRect)
-        posY += LINESPACING
+        posY += LINESPACING12
         # Now, we need print the hand in the middle of the table. The cards
         # are played in the center of the table. The first two cards will be
         # to the left of center. Any additional cards the Dealer must accept
@@ -459,7 +472,7 @@ def printTableDealer(tableDealer, output = 'player turn'):
         dealerVisibleCardRect = dealerVisibleCardSurf.get_rect()
         dealerVisibleCardRect.center = (WINCENTERX, posY)
         DISPLAYSURF.blit(dealerVisibleCardSurf, dealerVisibleCardRect)
-        posY += LINESPACING
+        posY += LINESPACING12
     
     # On the players' turn (the turn in which all of the players play their
     # hands, the Dealer's hold card is kept confidential and the hand scores
@@ -502,12 +515,12 @@ def printTableDealer(tableDealer, output = 'player turn'):
             dealerVisHardScoreRect = dealerVisHardScoreSurf.get_rect()
             dealerVisHardScoreRect.center = (WINCENTERX, posY)
             DISPLAYSURF.blit(dealerVisHardScoreSurf, dealerVisHardScoreRect)
-            posY += LINESPACING
+            posY += LINESPACING12
             dealerVisSoftScoreSurf = SCOREFONT.render("Dealer is showing a soft score: %s" % (tableDealer['visible soft score']), True, TEXTCOLOR)
             dealerVisSoftScoreRect = dealerVisSoftScoreSurf.get_rect()
             dealerVisSoftScoreRect.center = (WINCENTERX, posY)
             DISPLAYSURF.blit(dealerVisSoftScoreSurf, dealerVisSoftScoreRect)
-            posY += LINESPACING
+            posY += LINESPACING12
                 
     pygame.display.update()
     FPSCLOCK.tick()
@@ -577,11 +590,11 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         posX       = RIGHTMARGIN - SCOREWIDTH
         regHandX   = TABLERIGHTMARGIN - (4 * (CARDWIDTH + CARDSPACING))
         splitHandX = regHandX
-    # posY is the same in all cases. It starts half of LINESPACING above the
+    # posY is the same in all cases. It starts half of LINESPACING12 above the
     # bottom margin. regHandY is at the bottom margin of the table. This is
     # where the split and regular hands differ. The split hand is positioned
     # above the regular hand.
-    posY       = BOTTOMMARGIN - int(LINESPACING / 2)
+    posY       = BOTTOMMARGIN - int(LINESPACING12 / 2)
     regHandY   = TABLEBOTTOMMARGIN
     splitHandY = regHandY - (CARDHEIGHT + CARDSPACING)
 
@@ -590,70 +603,70 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         insBetRect = insBetSurf.get_rect()
         insBetRect.topleft = (posX, posY)
         DISPLAYSURF.blit(insBetSurf, insBetRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             insBetSurf = SCOREFONT.render("No insurance bet found", True, TEXTCOLOR)
             insBetRect = insBetSurf.get_rect()
             insBetRect.topleft = (posX, posY)
             DISPLAYSURF.blit(insBetSurf, insBetRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     if playerObj['split hand bet']:
         splitBetSurf = SCOREFONT.render("Bet on split hand: $%s" % (playerObj['split hand bet']), True, TEXTCOLOR)
         splitBetRect = splitBetSurf.get_rect()
         splitBetRect.topleft = (posX, posY)
         DISPLAYSURF.blit(splitBetSurf, splitBetRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             splitBetSurf = SCOREFONT.render("No split bet found", True, TEXTCOLOR)
             splitBetRect = splitBetSurf.get_rect()
             splitBetRect.topleft = (posX, posY)
             DISPLAYSURF.blit(splitBetSurf, splitBetRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     if playerObj['regular bet']:
         regBetSurf = SCOREFONT.render("Bet on regular hand: $%s" % (playerObj['regular bet']), True, TEXTCOLOR)
         regBetRect = regBetSurf.get_rect()
         regBetRect.topleft = (posX, posY)
         DISPLAYSURF.blit(regBetSurf, regBetRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             regBetSurf = SCOREFONT.render("No regular bet found", True, TEXTCOLOR)
             regBetRect = regBetSurf.get_rect()
             regBetRect.topleft = (posX, posY)
             DISPLAYSURF.blit(regBetSurf, regBetRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     if playerObj['hard score split hand']:
         hardSplitScoreSurf = SCOREFONT.render("Hard score on split hand: %s" % (playerObj['hard score split hand']), True, TEXTCOLOR)
         hardSplitScoreRect = hardSplitScoreSurf.get_rect()
         hardSplitScoreRect.topleft = (posX, posY)
         DISPLAYSURF.blit(hardSplitScoreSurf, hardSplitScoreRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             hardSplitScoreSurf = SCOREFONT.render("No hard hand score on split hand was found", True, TEXTCOLOR)
             hardSplitScoreRect = hardSplitScoreSurf.get_rect()
             hardSplitScoreRect.topleft = (posX, posY)
             DISPLAYSURF.blit(hardSplitScoreSurf, hardSplitScoreRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     if playerObj['soft score split hand']:
         softSplitScoreSurf = SCOREFONT.render("Soft score on split hand: %s" % (playerObj['soft score split hand']), True, TEXTCOLOR)
         softSplitScoreRect = softSplitScoreSurf.get_rect()
         softSplitScoreRect.topleft = (posX, posY)
         DISPLAYSURF.blit(softSplitScoreSurf, softSplitScoreRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             softSplitScoreSurf = SCOREFONT.render("No soft hand score on split hand was found", True, TEXTCOLOR)
             softSplitScoreRect = softSplitScoreSurf.get_rect()
             softSplitScoreRect.topleft = (posX, posY)
             DISPLAYSURF.blit(softSplitScoreSurf, softSplitScoreRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     # This is purely diagnostic message that the split hand has does not exist.
     if not playerObj['hand'] and output == 'diagnostic':
@@ -661,35 +674,35 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         splitHandDiagRect = splitHandDiagSurf.get_rect()
         splitHandDiagRect.topleft = (posX, posY)
         DISPLAYSURF.blit(splitHandDiagSurf, splitHandDiagRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
 
     if playerObj['hard score']:
         hardScoreSurf = SCOREFONT.render("Hard score on regular hand: %s" % (playerObj['hard score']), True, TEXTCOLOR)
         hardScoreRect = hardScoreSurf.get_rect()
         hardScoreRect.topleft = (posX, posY)
         DISPLAYSURF.blit(hardScoreSurf, hardScoreRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             hardScoreSurf = SCOREFONT.render("No hard hand score was found", True, TEXTCOLOR)
             hardScoreRect = hardScoreSurf.get_rect()
             hardScoreRect.topleft = (posX, posY)
             DISPLAYSURF.blit(hardScoreSurf, hardScoreRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     if playerObj['soft score']:
         softScoreSurf = SCOREFONT.render("Soft score on regular hand: %s" % (playerObj['soft score']), True, TEXTCOLOR)
         softScoreRect = softScoreSurf.get_rect()
         softScoreRect.topleft = (posX, posY)
         DISPLAYSURF.blit(softScoreSurf, softScoreRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             softScoreSurf = SCOREFONT.render("No soft hand score was found", True, TEXTCOLOR)
             softScoreRect = softScoreSurf.get_rect()
             softScoreRect.topleft = (posX, posY)
             DISPLAYSURF.blit(softScoreSurf, softScoreRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     # This is purely diagnostic message that the regular has does not exist.
     if not playerObj['hand'] and output == 'diagnostic':
@@ -697,35 +710,35 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         handDiagRect = handDiagSurf.get_rect()
         handDiagRect.topleft = (posX, posY)
         DISPLAYSURF.blit(handDiagSurf, handDiagRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
 
     if playerObj['bank']:
         playerBankSurf = SCOREFONT.render("Bank: $%s" % (playerObj['bank']), True, TEXTCOLOR)
         playerBankRect = playerBankSurf.get_rect()
         playerBankRect.topleft = (posX, posY)
         DISPLAYSURF.blit(playerBankSurf, playerBankRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             playerBankSurf = SCOREFONT.render("No bank for this player was found", True, TEXTCOLOR)
             playerBankRect = playerBankSurf.get_rect()
             playerBankRect.topleft = (posX, posY)
             DISPLAYSURF.blit(playerBankSurf, playerBankRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     if playerObj['name']:
         playerNameSurf = SCOREFONT.render("Name: %s" % (playerObj['name']), True, TEXTCOLOR)
         playerNameRect = playerNameSurf.get_rect()
         playerNameRect.topleft = (posX, posY)
         DISPLAYSURF.blit(playerNameSurf, playerNameRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
     else:
         if output == 'diagnostic':
             playerNameSurf = SCOREFONT.render("No name for the player was found", True, TEXTCOLOR)
             playerNameRect = playerNameSurf.get_rect()
             playerNameRect.topleft = (posX, posY)
             DISPLAYSURF.blit(playerNameSurf, playerNameRect)
-            posY -= LINESPACING
+            posY -= LINESPACING12
 
     # Diagnostic output should be indicated on each player.
     if output == 'diagnostic':
@@ -733,7 +746,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         outputTypeRect = outputTypeSurf.get_rect()
         outputTypeRect.topleft = (posX, posY)
         DISPLAYSURF.blit(outputTypeSurf, outputTypeRect)
-        posY -= LINESPACING
+        posY -= LINESPACING12
 
     # Now, we need to print out the cards in any hands the player has,
     # starting with the regular hand. The users cannot see this take place.
@@ -1137,5 +1150,148 @@ def writeSavedGame(listPlayers, filename = './etc/savedgame.txt'):
                 savedGame.write(lineOut)
         return True
 
+def pressSpaceToContinue():
+    """
+    This function actually pauses the game so that the user can read the
+    screen. It basically halts any progress until a key is pressed. It
+    grabs all events, and terminates on QUIT events.
+    """
+    while True:
+        # In the lower right corner, print this message.
+        textSurf = DATAFONT.render("Press spacebar when you are ready to continue.", True, TEXTCOLOR)
+        textRect = textSurf.get_rect()
+        textRect.bottomright = (WINDOWWIDTH, WINDOWHEIGHT)
+        DISPLAYSURF.blit(textSurf, textRect)
+        for event in pygame.event.get(QUIT): # get all QUIT events
+            terminate()                      # terminate if any QUIT events are present
+        for event in pygame.event.get(KEYUP):# get all KEYUP events
+            if event.key == K_ESCAPE:        # ESCAPE is also a 'quit' event
+                terminate()
+
+        for event in pygame.event.get(KEYDOWN):
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:    # These are also QUIT events.
+                    terminate()
+                elif event.key == K_SPACE:
+                    return
+        pygame.display.update()
+        FPSCLOCK.tick()
+
+def createPlayers():
+    """
+    This function uses the Textbox class to create alphabetical only textboxes
+    to get player names from the user. listPlayers is a global variable, but
+    this function can return the value as well.
+    INPUTS: None
+    OUTPUTS: A list of player dictionaries with the following structure:
+        'name'   : player's name (string)
+        'bank'   : player's money in chips (integer)
+        'skill'  : player's skill ('high'|'starter'|'normal'|'special')
+        The skill will default to 'starter' since these are "new" players.
+    """
+    DISPLAYSURF.fill(BLACK)
+    leftEdgeY = 0
+    # We need to create a while loop that acts like a game loop here.
+    welcomeMessage = "Welcome to Casino Blackjack."
+    welcomeSurf = INSTRUCTFONT.render(welcomeMessage, True, TEXTCOLOR)
+    welcomeRect = welcomeSurf.get_rect()
+    welcomeRect.topleft = (LEFTMARGIN, leftEdgeY)
+    DISPLAYSURF.blit(welcomeSurf, welcomeRect)
+    leftEdgeY += LINESPACING18
+    instructionMessages = []
+    instructionMessages.append("You  will be prompted for the names of three")
+    instructionMessages.append("players who will help you beat the bank. Since")
+    instructionMessages.append("you are starting a new game, all players will be")
+    instructionMessages.append("'starter' in skill. Starter tables often have")
+    instructionMessages.append("better blackjack payouts than regular tables.")
+    instructionMessages.append("Only high roller and special event tables have")
+    instructionMessages.append("better payouts than the starters. You will also")
+    instructionMessages.append("have a chance to read the actual casino rules for")
+    instructionMessages.append("blackjack once you have chosen a table.")
+    # print("createPlayers: Instructions: {}".format(instructionMessages))
+    # This loop prints the instruction messages down the left edge of the
+    # screen. pressAnyKeyToContinue() pauses the game to give the player time
+    # to read the instructions.
+    for i in range(0, len(instructionMessages)):
+        instMsgSurf = INSTRUCTFONT.render(instructionMessages[i], True, TEXTCOLOR)
+        instMsgRect = instMsgSurf.get_rect()
+        instMsgRect.topleft = (LEFTMARGIN, leftEdgeY)
+        DISPLAYSURF.blit(instMsgSurf, instMsgRect)
+        leftEdgeY += LINESPACING18
+    pygame.display.update()
+    FPSCLOCK.tick()
+    pressSpaceToContinue()
+    posY = int(WINDOWHEIGHT/3)
+    playerOneText   = "What would you like to name Player #1?"
+    pOneTextSurf    = INSTRUCTFONT.render(playerOneText, True, TEXTCOLOR)
+    pOneTextRect    = pOneTextSurf.get_rect(centerx = WINCENTERX, centery = posY)
+    posY += LINESPACING18
+    pOneTextboxRect = pOneTextRect.copy()
+    pOneTextboxRect.center = (WINCENTERX, posY)
+    pOneName = Textbox((pOneTextboxRect), fontSize = 18, command = setupPlayer, charFilter = 'alpha', enterClears = True, enterDeactivates = True)
+    playerName = getTextboxEvents(pOneName, pOneTextSurf, pOneTextRect, DISPLAYSURF)
+    print("createPlayers: Received Player 1's name as {}.".format(playerName))
+    print("createPlayers: listPlayers = {}".format(listPlayers))
+    # playerTwoText   = "What would you like to name Player #2?"
+    # pTwoTextSurf    = INSTRUCTFONT.render(playerTwoText, True, TEXTCOLOR)
+    # pTwoTextRect    = pTwoTextSurf.get_rect(centerx = WINCENTERX, centery = posY)
+    # DISPLAYSURF.blit(pTwoTextSurf, pTwoTextRect)
+    # posY += 2 * LINESPACING18
+    # playerThreeText = "What would you like to name Player #3?"
+    # pThreeTextSurf  = INSTRUCTFONT.render(playerThreeText, True, TEXTCOLOR)
+    # pThreeTextRect  = pThreeTextSurf.get_rect(centerx = WINCENTERX, centery = posY)
+    # DISPLAYSURF.blit(pThreeTextSurf, pThreeTextRect)
+    # posY += 2 * LINESPACING18
+        
+
+def getTextboxEvents(Textbox, promptSurf, promptRect, Surface):
+    """
+    This function takes a textbox as an argument and runs an event loop
+    around it to capture the text entered into the textbox and return it to
+    calling program.
+    INPUTS: four arguments
+        Textbox (a Textbox class object)
+        promptSurf (a user prompt rendered text Surface)
+        promptRect (the rect object for promptSurf)
+        Surface (the surface to render prompts and Textbox on)
+    OUTPUTS: string, Textbox.buffer contents
+    """
+    finishUp = False
+    numPlayers = len(listPlayers)
+    while not finishUp:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                finishUp = True
+            Textbox.getEvent(event)
+        # Update Textbox with any changes the "event" required.
+        Textbox.updateBox()
+        # Render the Textbox with the user prompt. Clear the screen as part
+        # of the process.
+        Surface.fill(NAVY)
+        Textbox.drawBox(Surface)
+        Surface.blit(promptSurf, promptRect)
+        pygame.display.update()
+        FPSCLOCK.tick()
+        # Now, we test to see if a new player has been added listPlayers.
+        # If so, we can stop executing this event loop.
+        if numPlayers != len(listPlayers):
+            finishUp = True
+        
+
+def setupPlayer(id, name):
+    """
+    This method sets a player's name in listPlayers with the name extracted
+    by the Textbox. It uses the command attribute to pull this off.
+    to execute with its attribute buffer when RETURN or ENTER are pressed.
+    This is onl used when a new set of players has to be created. So, all
+    players are 'starter' skill and 
+    INPUTS: None
+    OUTPUT: None, all changes are made to global variables
+    """
+    # pdb.set_trace()
+    listPlayers.append({ 'name'  : name,
+                         'bank'  : STARTINGBANK,
+                         'skill' : 'starter' })
+    
 if __name__ == '__main__':
     main()

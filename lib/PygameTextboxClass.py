@@ -2,6 +2,7 @@ from __future__ import print_function
 import string, os, pygame
 from pygame.transform import scale
 from pygame.locals import *
+import pdb
 
 class Textbox(object):
     """
@@ -29,7 +30,7 @@ class Textbox(object):
             with Pygame. If pygame is installed properly, this font will be
             available, even if no others are available.
         DEFAULTBOXWIDTH: Default width of the textbox in characters.
-        DEFAUTLBOXHEIGHT: Default height of the textbox in pixels.
+        DEFAULTBOXHEIGHT: Default height of the textbox in pixels.
         DEFAULTOFFSET: This is maximum acceptable difference in width between
             the original textbox (self.rect) and the rendered version after
             a character has been added to the self.buffer. This creates an
@@ -120,13 +121,14 @@ class Textbox(object):
     FPS              = 30   # Minimum frames per second for Textbox
     OUTLINEWIDTH     = 2    # Defautl pixel width of box outline
     DEFAULTBOXWIDTH  = 10   # Default number characters displayable in textbox
-    DEFAUTLBOXHEIGHT = 100  # Default height of textbox in pixels
+    DEFAULTBOXHEIGHT = 100  # Default height of textbox in pixels
     DEFAULTOFFSET    = 6    # The maximum offset between original textbox
                             # and the text rendered inside it.
 
     # The default font is set to the one included with Pygame, just in case
     # there is no other accessible font.
     DEFAULTFONT      = 'freesansbold.ttf'
+    DEFAULTFONTSIZE  = 12
 
     FILTERDICT = { 'alpha'       : ALPHAFILTER,
                    'number'      : NUMERICALFILTER,
@@ -178,21 +180,21 @@ class Textbox(object):
         # Now, we shift control to the process_kwargs() method to change any
         # of the defaults that need to be modified.
         self.process_kwargs(kwargs)
-        
+
         # Once it returns, we need to set the character filter.
-        if self.charFilter in FILTERDICT:
-            self.filter = FILTERDICT[self.charFilter]
+        if self.charFilter in self.FILTERDICT:
+            self.filter = self.FILTERDICT[self.charFilter]
         else:
             raise KeyError("Character filter type {} is not a valid character filter.".format(self.charFilter))
         # Now, we need to set up the fonts this module uses.
         if self.boxFont in pygame.font.get_fonts():
-            self.boxFont = pygame.font.Font(self.boxFont, 12)
+            self.boxFont = pygame.font.Font(self.boxFont, self.fontSize)
         else:
-            self.boxFont = pygamt.font.Font(DEFAULTFONT, 12)
+            self.boxFont = pygame.font.Font(self.DEFAULTFONT, self.fontSize)
         if self.warningFont in pygame.font.get_fonts():
-            self.warningFont = pygame.font.Font(self.warnngFont, 12)
+            self.warningFont = pygame.font.Font(self.warningFont, self.fontSize)
         else:
-            self.warningFont = pygamt.font.Font(DEFAULTFONT, 12)
+            self.warningFont = pygame.font.Font(self.DEFAULTFONT, self.fontSize)
         
     def process_kwargs(self, kwargs):
         """
@@ -202,7 +204,7 @@ class Textbox(object):
         block for an explanation of these kwargs.
 
         The defaults are:
-            'id'            : None (Only used when 2+ Textboxes are needed)
+            'id'            : None (Used when textbox has to return a value)
             'command'       : None (Only used if the text is a game command)
             'active'        : True (False when the box cannot be used)
             'fillColor'     : WHITE (see color list above)
@@ -212,6 +214,7 @@ class Textbox(object):
             'activeColor'   : BLUE
             'inactiveColor' : GRAY
             'charFilter'    : 'any' (Converts to PRINTABLEFILTER)
+            'fontSize'      : DEFAULTFONTSIZE
             'boxFont'       : DEFAULTFONT
             'warningFont'   : DEFAULTFONT
             'warningColor'  : RED
@@ -224,22 +227,23 @@ class Textbox(object):
         defaults = {'id'            : None,
                     'command'       : None,
                     'active'        : True,
-                    'fillColor'     : WHITE,
-                    'fontColor'     : BLACK,
-                    'outlineColor'  : BLACK,
-                    'outlineWidth'  : OUTLINEWIDTH,
-                    'activeColor'   : BLUE,
-                    'inactiveColor' : GRAY,
+                    'fillColor'     : self.WHITE,
+                    'fontColor'     : self.BLACK,
+                    'outlineColor'  : self.BLACK,
+                    'outlineWidth'  : self.OUTLINEWIDTH,
+                    'activeColor'   : self.BLUE,
+                    'inactiveColor' : self.GRAY,
                     'charFilter'    : 'any',
-                    'boxFont'       : DEFAULTFONT,
-                    'warningFont'   : DEFAULTFONT,
-                    'warningColor'  : RED,
-                    'boxWidth'      : DEFAULTBOXWIDTH,
+                    'fontSize'      : self.DEFAULTFONTSIZE,
+                    'boxFont'       : self.DEFAULTFONT,
+                    'warningFont'   : self.DEFAULTFONT,
+                    'warningColor'  : self.RED,
+                    'boxWidth'      : self.DEFAULTBOXWIDTH,
                     'enterClears'   : False,
                     'enterDeactivates' : True }
         for kwarg in kwargs:
             if kwarg in defaults:
-                defaults[kwarg] = kwargs[default]
+                defaults[kwarg] = kwargs[kwarg]
             else:
                 raise KeyError("Textbox accepts no keyword {}.".format(kwarg))
         self.__dict__.update(defaults)
@@ -274,13 +278,13 @@ class Textbox(object):
             elif event.unicode in self.filter:
                 # The character is an acceptable one for this textbox. So,
                 # it is added to the buffer.
-                self.buffer.appenc(event.unicode)
+                self.buffer.append(event.unicode)
             elif event.unicode not in self.filter:
                 # In the case of an invalid character, like a digit for a
                 # alphabetical, or whitespace in alphanumberics only, we
                 # transfer control to the issueWarning method.
                 self.issueWarning(event.unicode)
-        elif event.type == MOUSEBBUTTONDOWN and event.button == 1:
+        elif event.type == MOUSEBUTTONDOWN and event.button == 1:
             # This event is a left button on the mouse was pressed. We need
             # to check if the position is inside the textbox or not. If so,
             # the textbox will become active.
@@ -297,15 +301,15 @@ class Textbox(object):
         if self.enterClears:
             self.buffer = []
 
-    def issueWarning(badChar):
+    def issueWarning(self, badChar):
         """
         This method creates the warning surfaces that warn users that they
         entered the wrong type(s) of characters.
         """
         if self.charFilter == 'any':
-            message = "{} is not a valid characters. Please use only printable characters.".format(badChar)
+            message = "{} is not a valid character. Please use only printable characters.".format(badChar)
         else:
-            message = "{} is not a valid characters. Please use only {} characters.".format(badChar, self.charFilter)
+            message = "{} is not a valid character. Please use only {} characters.".format(badChar, self.charFilter)
         self.warningSurf = self.warningFont.render(message, True, self.warningColor)
         self.warningRect = self.warningSurf.get_rect()
     
@@ -325,24 +329,24 @@ class Textbox(object):
             # We need update the finalbuffer contents and render it on screen.
             self.finalBuffer = newString
             self.textSurf = self.boxFont.render(self.finalBuffer, True, self.fontColor)
-            self.textRect = self.textSurf.get_rect(x = self.rect.x + OUTLINEWIDTH, centery = self.rect.centery)
+            self.textRect = self.textSurf.get_rect(x = self.rect.x + self.OUTLINEWIDTH, centery = self.rect.centery)
 
             # The next stanza handles the offset if the new width of the
             # textbox is bigger than the space allotted for it.
-            if self.textRect.width > self.rect.width - DEFAULTOFFSET:
+            if self.textRect.width > self.rect.width - self.DEFAULTOFFSET:
                 # The offset is sufficient that all characters in self.buffer
                 # cannot be rendeered inside the textbox. An offset is needed.
                 # pygame.Rect needs (left, top, width, height) as arguments.
                 # Here, left = offset, top = 0, width = self.rect [the width
                 # of the blank textbox], and height = the new textRect height.
-                offset = self.textRect.width - (self.rect.width - DEFAULTOFFSET)
-                self.screenRender = pygame.Rect(offset, 0, self.rect.width - DEFAULTOFFSET, self.textRect.height)
+                offset = self.textRect.width - (self.rect.width - self.DEFAULTOFFSET)
+                self.screenRender = pygame.Rect(offset, 0, self.rect.width - self.DEFAULTOFFSET, self.textRect.height)
             else:
                 # No offset is required yet.
                 self.screenRender = self.textSurf.get_rect(topleft = (0,0))
 
         # Now, we need to check if it is time to cycle the blinking behavior.
-        if pygame.time.get_ticks() - self.blinkTimer > BLINKSPEED:
+        if pygame.time.get_ticks() - self.blinkTimer > self.BLINKSPEED:
             # We need to flip self.blink and reset self.blinkTimeer.
             # self.blink is a boolean. self.blinkTimer is a float based on
             # time in milliseconds.
@@ -371,10 +375,11 @@ class Textbox(object):
         # If there is self.warningSurf, we need to render it as well. After
         # blitting it, we can destroy those objects.
         if self.warningSurf:
-            self.warningRect.center = (self.rect.centerx, self.rect.centery + DEFAUTLBOXHEIGHT)
+            self.warningRect.center = (self.rect.centerx, self.rect.centery + self.DEFAULTBOXHEIGHT)
             displaySurf.blit(self.warningSurf, self.warningRect)
             self.warningSurf = None
             self.warningRect = None
+            pygame.display.update()
         # Now, we need to blink the active textbox if it is active and it is
         # time to do so. self.blink = True means to blink it. self.active
         # indicates if this Textbox object is active. curse used to lay out

@@ -447,3 +447,12 @@ Casino (game): findPlayers: Created a function to find and attempt to read a sav
 Casino (game): writeSavedGame: Created a function to write player data to a saved game file on disk. It uses a default filename, like findPlayers does. There is a text block that will need to be removed after testing this.
 Casino (game): Print statements: Many diagnostic statements will remain in place in their respective functions until testing is fully completed. These messages will (eventually) be put into a log file.
 PygameTextboxClass: Still working toward the point of being able to test the class.
+
+12/15/17 03:45 Pushed to origin pygame
+
+Casino (game): createPlayers: Created this function to interact with users to get blackjack player names. This is a purely pygame interaction using Textbox objects. Added command = setupPlayer() to kwargs.
+Casino (game): pressSpaceToContinue: Created this function to wait for a key press or mouse button press event to indicate the player is ready for the next screen or phase of play. It also acts as a game pause.
+Casino (game): main: Defined additional fonts, INSTRUCTFONT, an 18pt font, to make the instructions easier to read. Converted LINESPACING to LINESPACING12 and added LINESPACING18 to accommodate the 18pt INSTRUCTFONT. Clarified comments on the original and new fonts accordingly.
+Casino (game): Added constant STARTINGBANK for starter players. Made listPlayers and listDealers global to make some aspects of building players easier.
+Casino (game): getTextboxEvents: Created this function to create a temporary event loop so that a name could be captured.
+Casino (game): setupPlayer(name): Created this function to create a player dictionary from a name (string) received via Textbox. And it works in combination with getTextboxEvents to add players to listPlayers.
