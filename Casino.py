@@ -79,6 +79,11 @@ DEALERSTATIONTOP  = WINCENTERY - int(TABLEHEIGHT / 2) - int(STATIONHEIGHT / 2)
 DEALERSTATIONLEFT = WINCENTERX - int(STATIONWIDTH / 2)
 DEALERSCARDS      = DEALERSTATIONTOP + STATIONHEIGHT + CARDSPACING
 
+# This tuple is used to find take the highest skill level of the user's
+# players and generate a tuple of the tables at which they will allowed to
+# play in the game.
+SKILLS = ('starter', 'normal', 'special', 'high')
+
 BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
 
@@ -245,10 +250,22 @@ def main(): # main game function
         if listPlayers == []:
             terminate()
 
-    # Now that a group of player is a available for the user, it is time ask
-    # to pick a table. There are 
+    # Now, we need to creat a list of the highest level of table that at
+    # which the user's players may play Blackjack at the Casino. The order
+    # of the skill levels is starter ---> normal ---> special event ---> high
+    # roller.
+    playerLevels = getTableSkillList(listPlayers)
 
+    # We need to pare down the list of dealers to only those who manage the
+    # comparable table types. We replace the list of dealers with the filtered
+    # list.
+    listDealers = getPermittedTables(playerLevels, listDealers)
 
+    # Now we prompt the user with a list of the tables they can play at.
+    # They can choose by Dealer's name for that table. The tableChoice is
+    # a dictionary with the Dealer's name, bank, and table type/skill level.
+    tableChoice = getTableChoice(listDealers)
+    
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
     # if savedGameSuccess:
@@ -260,6 +277,7 @@ def main(): # main game function
     
     pygame.display.update()
     FPSCLOCK.tick()
+    # end of main()
 
 def terminate():
     """
@@ -1187,9 +1205,7 @@ def createPlayers():
     to get player names from the user. listPlayers is a global variable, but
     this function can return the value as well.
     INPUTS: None
-    OUTPUTS: None. However, since listPlayers is global, it actually calls
-        setupPlayer() to add a name, set the skill to starter, and create a
-        bank between 50000, and 75000 in size.
+    OUTPUTS: A list of player dictionaries with the following structure:
         'name'   : player's name (string)
         'bank'   : player's money in chips (integer)
         'skill'  : player's skill ('high'|'starter'|'normal'|'special')
@@ -1236,9 +1252,9 @@ def createPlayers():
         nameTextboxRect = instTextRect.copy()
         nameTextboxRect.center = (WINCENTERX, posY)
         pNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = setupPlayer, charFilter = 'alpha', enterClears = True, enterDeactivates = True)
-        playerName   = getTextboxNameEvents(pNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)
+        playerName   = getTextboxNameEvents(pNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)        
 
-def getTextboxNameEvents(Textbox, promptSurf, promptRect, Surface):
+def getTextboxEvents(Textbox, promptSurf, promptRect, Surface):
     """
     This function takes a textbox as an argument and runs an event loop
     around it to capture the text entered into the textbox and return it to
@@ -1287,6 +1303,43 @@ def setupPlayer(id, name):
     listPlayers.append({ 'name'  : name,
                          'bank'  : bank,
                          'skill' : 'starter' })
+
+def getTableSkillList(listPlayers):
+    """
+    This function takes a list of players and returns a tuple listing all of
+    table types they can play at. It creates a set of their skill levels and
+    returns it to main. We use sets because they cannot store duplicat values.
+    INPUT: listPlayers, a list of player dictionaries
+    OUTPUT: tableTypes, a set of table types (see SKILLS constant for a full
+        list)
+    """
+    playersLevel = set()
+    for i in range(0, len(listPlayers)):
+        playerLevel.add(listPlayers[i]['skill'])
+    return playersLevel
+
+def getPermittedTables(playerLevels, listDealers):
+    """
+    This function takes the playerLevels (a set) and uses it to filter out
+    tables that are above the skill levels of the user's players.
+    INPUTS: playerLevels, a set of skill levels of the players, listDealers,
+        a list of dealer dictionaries
+    OUTPUTS: a new list of dealer dictionaries with those dealing to table
+        types above the player's skill level filtered out.
+    """
+    permittedTables = []
+    for dealer in listDealers:
+        if dealer['skill'] in playerLevels:
+            permittedTables.append(dealer)
+    return permittedTables
+
+def getTableChoice(listDealers):
+    """
+    This function takes the new list of dealers, lists them and their specs
+    for the user, and asks them to choose a dealer. The dictionary for the
+    user's choice is returned to main().
+    """
+
     
 if __name__ == '__main__':
     main()

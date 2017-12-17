@@ -462,3 +462,11 @@ Casino (game): setupPlayer(name): Created this function to create a player dicti
 Casino (game): createPlayers: Fleshed out player creation to all three starter players.
 Casino (game): setupPlayer: Randomly increases starter player's banks by up to 25000. Also cleaned up the main comment block.
 Casino (game): Renamed getTextboxEvents getTextboxNameEvents since it is only used for players' names.
+
+12/17/17
+
+Casino (game): Create a new constant, SKILLS = ('starter', 'normal', 'special', 'high') used to denote the levels (0, 1, 2, 3).
+Casino (game): getTableSkillList: Uses SKILLS and listPlayers to generate a list of table types they are allowed to use.
+Casino (game): getTableSkillList: Takes the listPlayers and returns a set of skill levels use to filter the list of tables for the players.
+Casino (game): getPermittedTables: Takes set of playersLevel and listDealers and returns the tables they can play at.
+Casino (game): getTableChoice: Placeholder with comments in place.
