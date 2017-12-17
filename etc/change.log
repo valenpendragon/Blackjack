@@ -456,3 +456,9 @@ Casino (game): main: Defined additional fonts, INSTRUCTFONT, an 18pt font, to ma
 Casino (game): Added constant STARTINGBANK for starter players. Made listPlayers and listDealers global to make some aspects of building players easier.
 Casino (game): getTextboxEvents: Created this function to create a temporary event loop so that a name could be captured.
 Casino (game): setupPlayer(name): Created this function to create a player dictionary from a name (string) received via Textbox. And it works in combination with getTextboxEvents to add players to listPlayers.
+
+12/16/17 Pushed to origin pygame
+
+Casino (game): createPlayers: Fleshed out player creation to all three starter players.
+Casino (game): setupPlayer: Randomly increases starter player's banks by up to 25000. Also cleaned up the main comment block.
+Casino (game): Renamed getTextboxEvents getTextboxNameEvents since it is only used for players' names.

@@ -244,7 +244,11 @@ def main(): # main game function
         createPlayers()
         if listPlayers == []:
             terminate()
-    
+
+    # Now that a group of player is a available for the user, it is time ask
+    # to pick a table. There are 
+
+
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
     # if savedGameSuccess:
@@ -1183,7 +1187,9 @@ def createPlayers():
     to get player names from the user. listPlayers is a global variable, but
     this function can return the value as well.
     INPUTS: None
-    OUTPUTS: A list of player dictionaries with the following structure:
+    OUTPUTS: None. However, since listPlayers is global, it actually calls
+        setupPlayer() to add a name, set the skill to starter, and create a
+        bank between 50000, and 75000 in size.
         'name'   : player's name (string)
         'bank'   : player's money in chips (integer)
         'skill'  : player's skill ('high'|'starter'|'normal'|'special')
@@ -1222,29 +1228,17 @@ def createPlayers():
     FPSCLOCK.tick()
     pressSpaceToContinue()
     posY = int(WINDOWHEIGHT/3)
-    playerOneText   = "What would you like to name Player #1?"
-    pOneTextSurf    = INSTRUCTFONT.render(playerOneText, True, TEXTCOLOR)
-    pOneTextRect    = pOneTextSurf.get_rect(centerx = WINCENTERX, centery = posY)
-    posY += LINESPACING18
-    pOneTextboxRect = pOneTextRect.copy()
-    pOneTextboxRect.center = (WINCENTERX, posY)
-    pOneName = Textbox((pOneTextboxRect), fontSize = 18, command = setupPlayer, charFilter = 'alpha', enterClears = True, enterDeactivates = True)
-    playerName = getTextboxEvents(pOneName, pOneTextSurf, pOneTextRect, DISPLAYSURF)
-    print("createPlayers: Received Player 1's name as {}.".format(playerName))
-    print("createPlayers: listPlayers = {}".format(listPlayers))
-    # playerTwoText   = "What would you like to name Player #2?"
-    # pTwoTextSurf    = INSTRUCTFONT.render(playerTwoText, True, TEXTCOLOR)
-    # pTwoTextRect    = pTwoTextSurf.get_rect(centerx = WINCENTERX, centery = posY)
-    # DISPLAYSURF.blit(pTwoTextSurf, pTwoTextRect)
-    # posY += 2 * LINESPACING18
-    # playerThreeText = "What would you like to name Player #3?"
-    # pThreeTextSurf  = INSTRUCTFONT.render(playerThreeText, True, TEXTCOLOR)
-    # pThreeTextRect  = pThreeTextSurf.get_rect(centerx = WINCENTERX, centery = posY)
-    # DISPLAYSURF.blit(pThreeTextSurf, pThreeTextRect)
-    # posY += 2 * LINESPACING18
-        
+    for i in range(1, 4):
+        playerText   = "What would you like to name Player #{}?".format(i)
+        instTextSurf = INSTRUCTFONT.render(playerText, True, TEXTCOLOR)
+        instTextRect = instTextSurf.get_rect(centerx = WINCENTERX, centery = posY)
+        posY += LINESPACING18
+        nameTextboxRect = instTextRect.copy()
+        nameTextboxRect.center = (WINCENTERX, posY)
+        pNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = setupPlayer, charFilter = 'alpha', enterClears = True, enterDeactivates = True)
+        playerName   = getTextboxNameEvents(pNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)
 
-def getTextboxEvents(Textbox, promptSurf, promptRect, Surface):
+def getTextboxNameEvents(Textbox, promptSurf, promptRect, Surface):
     """
     This function takes a textbox as an argument and runs an event loop
     around it to capture the text entered into the textbox and return it to
@@ -1280,17 +1274,18 @@ def getTextboxEvents(Textbox, promptSurf, promptRect, Surface):
 
 def setupPlayer(id, name):
     """
-    This method sets a player's name in listPlayers with the name extracted
-    by the Textbox. It uses the command attribute to pull this off.
-    to execute with its attribute buffer when RETURN or ENTER are pressed.
-    This is onl used when a new set of players has to be created. So, all
-    players are 'starter' skill and 
+    This function sets a player's name in listPlayers with the name extracted
+    by the Textbox.  When RETURN or ENTER is pressed inside the Textbox, its
+    command attribute executes this function with Textbox.buffer as an
+    argument.
+    This function  is only used when a new set of players has to be created.
+    So, all players are 'starter' skill and have a starting bank.
     INPUTS: None
     OUTPUT: None, all changes are made to global variables
     """
-    # pdb.set_trace()
+    bank = STARTINGBANK + (1000 * dieRoll(30, 5, 25, 4))
     listPlayers.append({ 'name'  : name,
-                         'bank'  : STARTINGBANK,
+                         'bank'  : bank,
                          'skill' : 'starter' })
     
 if __name__ == '__main__':
