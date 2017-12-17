@@ -254,17 +254,9 @@ def main(): # main game function
     # which the user's players may play Blackjack at the Casino. The order
     # of the skill levels is starter ---> normal ---> special event ---> high
     # roller.
-    playerLevels = getTableSkillList(listPlayers)
-
-    # We need to pare down the list of dealers to only those who manage the
-    # comparable table types. We replace the list of dealers with the filtered
-    # list.
-    listDealers = getPermittedTables(playerLevels, listDealers)
-
-    # Now we prompt the user with a list of the tables they can play at.
-    # They can choose by Dealer's name for that table. The tableChoice is
-    # a dictionary with the Dealer's name, bank, and table type/skill level.
-    tableChoice = getTableChoice(listDealers)
+    tablesPermitted = getTableSkillList(listPlayers)
+   
+        
     
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
@@ -277,7 +269,6 @@ def main(): # main game function
     
     pygame.display.update()
     FPSCLOCK.tick()
-    # end of main()
 
 def terminate():
     """
@@ -798,7 +789,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
     pygame.display.update()
     FPSCLOCK.tick()
 
-def generateTable(tableColor = OLIVE ):
+def generateTable(tableColor = OLIVE):
     """
     This function prints a basic table to the screen. It does not print the
     cards, nor any data on the players or dealers. That is done by other
@@ -1251,10 +1242,11 @@ def createPlayers():
         posY += LINESPACING18
         nameTextboxRect = instTextRect.copy()
         nameTextboxRect.center = (WINCENTERX, posY)
-        pNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = setupPlayer, charFilter = 'alpha', enterClears = True, enterDeactivates = True)
-        playerName   = getTextboxNameEvents(pNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)        
+        pNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = setupPlayer,
+                               charFilter = 'alpha', enterClears = True, enterDeactivates = True)
+        playerName   = getTextboxNameEvents(pNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)            
 
-def getTextboxEvents(Textbox, promptSurf, promptRect, Surface):
+def getTextboxNameEvents(Textbox, promptSurf, promptRect, Surface):
     """
     This function takes a textbox as an argument and runs an event loop
     around it to capture the text entered into the textbox and return it to
@@ -1306,7 +1298,7 @@ def setupPlayer(id, name):
 
 def getTableSkillList(listPlayers):
     """
-    This function takes a list of players and returns a tuple listing all of
+    This function takes a list of players and returns a set listing all of
     table types they can play at. It creates a set of their skill levels and
     returns it to main. We use sets because they cannot store duplicat values.
     INPUT: listPlayers, a list of player dictionaries
@@ -1339,7 +1331,6 @@ def getTableChoice(listDealers):
     for the user, and asks them to choose a dealer. The dictionary for the
     user's choice is returned to main().
     """
-
     
 if __name__ == '__main__':
     main()
