@@ -88,7 +88,8 @@ BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
 
 def main(): # main game function
-    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, listPlayers, listDealers, tableChoice
+    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT
+    global listPlayers, listDealers, tableChoice
 
     # Pygame initialization.
     pygame.init()
@@ -233,7 +234,6 @@ def main(): # main game function
     # cardImagesDiagnosticPrint()
 
     listDealers = generateDealerList()
-    # print(listDealers)
 
     # Now, we need to see if a saved game exists. If so, it will import it
     # into listPlayers, a list of player objects. Players include a name
@@ -263,19 +263,21 @@ def main(): # main game function
     # Initialize tableChoice and call offerTableChoice to get the user's
     # choice of dealer. The while loop ensures we actually get a name that
     # matches a dealer. Capitalization does not matter.
-    tableChoice = {}
     offerTableChoices(listDealers)
-    print("main: tableChoice is {}".format(tableChoice))
-    while tableChoice == ():
+    print("main: tableChoice is {0}".format(tableChoice))
+    while tableChoice == {}:
         instText = "Dealer's name was not a valid choice. Please try again."
         instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
-        instRext = instSurf.get_rect(center = (WINCENTERX, WINCENTERY))
+        instRect = instSurf.get_rect(center = (WINCENTERX, WINCENTERY))
         DISPLAYSURF.fill(BLACK)
         DISPLAYSURF.blit(instSurf, instRect)
         pressSpaceToContinue()
         offerTableChoices(listDealers)
-        print("main: tableChoice is {}".format(tableChoice))
+        print("main: tableChoice is {0}".format(tableChoice))
 
+    # Now, we need to generate a CasinoTable object. This object needs to be
+    # populated from listPlayers and tableChoice.
+    
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
     # if savedGameSuccess:
@@ -1429,7 +1431,8 @@ def offerTableChoices(listDealers):
     nameTextboxRect.topleft = (posX, posY)
     dNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = getTableChoice,
                             charFilter = 'alpha', enterClears = True, enterDeactivates = True)
-    dealerName   = getTableChoiceEvents(dNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)            
+    dealerName   = getTableChoiceEvents(dNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)
+    return
 
 def getTableChoiceEvents(Textbox, promptSurf, promptRect, Surface):
     """
@@ -1459,8 +1462,7 @@ def getTableChoiceEvents(Textbox, promptSurf, promptRect, Surface):
         Surface.blit(promptSurf, promptRect)
         pygame.display.update()
         FPSCLOCK.tick()
-        # Now, we check to see if tableChoice contains data. If so, we
-        # can break out of the loop.
+    return
         
 def getTableChoice(id, name):
     """
@@ -1473,6 +1475,8 @@ def getTableChoice(id, name):
     NOTE: The tableChoice is another global variable due to some limitations
         of pygame's GUI libraries.
     """
+    global tableChoice
+    tableChoice = {}
     # We need to find the dealer with a matching name and set tableChoice
     # equal to that object. Using the lower() string methods eliminates
     # capitalization problems.
@@ -1481,8 +1485,7 @@ def getTableChoice(id, name):
             tableChoice = listDealers[i]
             print("getTableChoice: User's choice is {0}, which points to dealer {1}.".format(name, tableChoice))
             break
-        
-    
+    return
     
 if __name__ == '__main__':
     main()

@@ -487,3 +487,8 @@ Casino (game): filterDealers: Filters listDealers for the dealers who match the 
 PygameTextboxClass: Removed issueWarning() method because it flashes by too quickly. The filters actually keep bad characters out of the buffer without it.
 PygameTextboxClass: Updated the content of the main comments block on the methods updateBox() and drawBox().
 PygameTextboxClass: getEvent: Made this method return a boolean value, True only when ENTER or RETURN was pressed, False otherwise. This allows the class to communicate back to the calling event loop that it can stop watching for events.
+
+12/18/17 06:14 Pushed to origin pygame
+
+Casino (game): main(). Fixed typos that caused the loop that is supposed to keep spinning until tableChoice is set to be skipped or malfunction. Removed the initialization and that moved it into the global arena. Tested that the dealer choice loop also works for bad and good names.
+Casino (game); getTableChoice: Included global declaration for tableChoice. Now, main() sees it.
