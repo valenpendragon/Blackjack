@@ -88,7 +88,7 @@ BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
 
 def main(): # main game function
-    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, listPlayers, listDealers
+    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, listPlayers, listDealers, tableChoice
 
     # Pygame initialization.
     pygame.init()
@@ -243,21 +243,39 @@ def main(): # main game function
     listPlayers = []
     tempListPlayers = findPlayers()
     if tempListPlayers != None:
-        listPlayers = deepcopy(tempListPlayers)
+        listPlayers = copy.deepcopy(tempListPlayers)
     if listPlayers == []:
         print("main: No saved data could be found.")
         createPlayers()
         if listPlayers == []:
             terminate()
 
+    # print("main: Player list is {}".format(listPlayers))
     # Now, we need to creat a list of the highest level of table that at
     # which the user's players may play Blackjack at the Casino. The order
     # of the skill levels is starter ---> normal ---> special event ---> high
     # roller.
     tablesPermitted = getTableSkillList(listPlayers)
-   
-        
+    print("main: tablePermitted set to {}".format(tablesPermitted))
+    listDealers = filterDealers(tablesPermitted, listDealers)
+    print("main: Dealer list after filtering: {}".format(listDealers))
     
+    # Initialize tableChoice and call offerTableChoice to get the user's
+    # choice of dealer. The while loop ensures we actually get a name that
+    # matches a dealer. Capitalization does not matter.
+    tableChoice = {}
+    offerTableChoices(listDealers)
+    print("main: tableChoice is {}".format(tableChoice))
+    while tableChoice == ():
+        instText = "Dealer's name was not a valid choice. Please try again."
+        instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
+        instRext = instSurf.get_rect(center = (WINCENTERX, WINCENTERY))
+        DISPLAYSURF.fill(BLACK)
+        DISPLAYSURF.blit(instSurf, instRect)
+        pressSpaceToContinue()
+        offerTableChoices(listDealers)
+        print("main: tableChoice is {}".format(tableChoice))
+
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
     # if savedGameSuccess:
@@ -1212,7 +1230,7 @@ def createPlayers():
     DISPLAYSURF.blit(welcomeSurf, welcomeRect)
     leftEdgeY += LINESPACING18
     instructionMessages = []
-    instructionMessages.append("You  will be prompted for the names of three")
+    instructionMessages.append("You will be prompted for the names of three")
     instructionMessages.append("players who will help you beat the bank. Since")
     instructionMessages.append("you are starting a new game, all players will be")
     instructionMessages.append("'starter' in skill. Starter tables often have")
@@ -1259,12 +1277,12 @@ def getTextboxNameEvents(Textbox, promptSurf, promptRect, Surface):
     OUTPUTS: string, Textbox.buffer contents
     """
     finishUp = False
-    numPlayers = len(listPlayers)
     while not finishUp:
         for event in pygame.event.get():
             if event.type == QUIT:
                 finishUp = True
-            Textbox.getEvent(event)
+            # This line ensures that pressing return ends the event loop.
+            finishUp = Textbox.getEvent(event)
         # Update Textbox with any changes the "event" required.
         Textbox.updateBox()
         # Render the Textbox with the user prompt. Clear the screen as part
@@ -1274,10 +1292,6 @@ def getTextboxNameEvents(Textbox, promptSurf, promptRect, Surface):
         Surface.blit(promptSurf, promptRect)
         pygame.display.update()
         FPSCLOCK.tick()
-        # Now, we test to see if a new player has been added listPlayers.
-        # If so, we can stop executing this event loop.
-        if numPlayers != len(listPlayers):
-            finishUp = True
         
 
 def setupPlayer(id, name):
@@ -1288,7 +1302,9 @@ def setupPlayer(id, name):
     argument.
     This function  is only used when a new set of players has to be created.
     So, all players are 'starter' skill and have a starting bank.
-    INPUTS: None
+    INPUTS: two arguments
+        id, the id of the Textbox object
+        name, a string captured from Textbox.finalBuffer
     OUTPUT: None, all changes are made to global variables
     """
     bank = STARTINGBANK + (1000 * dieRoll(30, 5, 25, 4))
@@ -1305,32 +1321,168 @@ def getTableSkillList(listPlayers):
     OUTPUT: tableTypes, a set of table types (see SKILLS constant for a full
         list)
     """
-    playersLevel = set()
+    playerLevels = set()
     for i in range(0, len(listPlayers)):
-        playerLevel.add(listPlayers[i]['skill'])
-    return playersLevel
+        playerLevels.add(listPlayers[i]['skill'])
+    print("getTableSkillList: Players's skills are {}".format(playerLevels))
+    # Now that we have players levels, we need to find the max table type they
+    # can attend. We use slicing to do that.
+    tableTypes = set()
+    for level in playerLevels:
+        newElements = []
+        skillIndex = SKILLS.index(level)
+        newElements.extend(SKILLS[:skillIndex + 1])
+        for element in newElements:
+            tableTypes.add(element)
+    return tableTypes
 
-def getPermittedTables(playerLevels, listDealers):
+def filterDealers(tableTypes, listDealers):
     """
-    This function takes the playerLevels (a set) and uses it to filter out
-    tables that are above the skill levels of the user's players.
-    INPUTS: playerLevels, a set of skill levels of the players, listDealers,
-        a list of dealer dictionaries
-    OUTPUTS: a new list of dealer dictionaries with those dealing to table
-        types above the player's skill level filtered out.
+    This function filters out the dealers who operate tables beyond the skills
+    of the players in the user's list. This function uses a set, dealerIndexes
+    to find all of the dealers that match skill/table types. Once identified,
+    it creates a new list of dealers from that list.
+    INPUT: two arguments
+        tableTypes, set with the table types matching the players' skills
+        listDealers, the full list of Dealer dictionaries
+    OUTPUT: filtered list of dealer dictionaries
     """
-    permittedTables = []
-    for dealer in listDealers:
-        if dealer['skill'] in playerLevels:
-            permittedTables.append(dealer)
-    return permittedTables
+    dealerIndexes = set()
+    for tableType in tableTypes:
+        for i in range(0, len(listDealers)):
+            if tableType == listDealers[i]['type']:
+                dealerIndexes.add(i)
+    # Now, we have all of the indexes for the proper dealers, we need to build
+    # the new list.
+    filteredDealers = []
+    for index in dealerIndexes:
+        filteredDealers.append(listDealers[index])
+    return filteredDealers
 
-def getTableChoice(listDealers):
+def offerTableChoices(listDealers):
     """
     This function takes the new list of dealers, lists them and their specs
     for the user, and asks them to choose a dealer. The dictionary for the
-    user's choice is returned to main().
+    user's choice is returned to main().  There are a number of "constants"
+    used for data formatting:
+        COLUMNSPACING: the distance in pixels between data columns
+    INPUTS: listDealer, a list of dealer dictionary objects
+    OUTPUTS: tableChoice, a dealer dictionary object based on name choice,
+        not actually returned directly, since tableChoice is a global
     """
+    COLUMNSPACING = 150
+    # Clear the screen.
+    DISPLAYSURF.fill(BGCOLOR)
+    # First, we print the columns headers.
+    posX = LEFTMARGIN
+    posY = int(WINDOWHEIGHT / 4)
+    nameHeader      = "Dealer's Name"
+    nameHeaderSurf  = BASICFONT.render(nameHeader, True, TEXTCOLOR)
+    nameHeaderRect  = nameHeaderSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(nameHeaderSurf, nameHeaderRect)
+    posX += COLUMNSPACING
+    bankHeader      = "Dealer's Current Bank"
+    bankHeaderSurf  = BASICFONT.render(bankHeader, True, TEXTCOLOR)
+    bankHeaderRect  = bankHeaderSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(bankHeaderSurf, bankHeaderRect)
+    posX += COLUMNSPACING
+    skillHeader      = "Dealer's Table Type"
+    skillHeaderSurf  = BASICFONT.render(skillHeader, True, TEXTCOLOR)
+    skillHeaderRect  = skillHeaderSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(skillHeaderSurf, skillHeaderRect)
+
+    # Now, we print the information on the dealers.
+    for i in range(0, len(listDealers)):
+        posX = LEFTMARGIN
+        posY += LINESPACING12
+        nameSurf   = BASICFONT.render(listDealers[i]['name'], True, TEXTCOLOR)
+        nameRect   = nameSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(nameSurf, nameRect)
+        posX += COLUMNSPACING
+        bankAmt = "{:,}".format(listDealers[i]['bank'])
+        bankSurf   = BASICFONT.render(bankAmt, True, TEXTCOLOR)
+        bankRect   = bankSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(bankSurf, bankRect)
+        posX += COLUMNSPACING
+        if listDealers[i]['type'] == 'special':
+            skillValue = 'special events'
+        elif listDealers[i]['type'] == 'high':
+            skillValue = 'high rollers'
+        else:
+            skillValue = listDealers[i]['type']
+        skillSurf   = BASICFONT.render(skillValue, True, TEXTCOLOR)
+        skillRect   = skillSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(skillSurf, skillRect)
+    pygame.display.update()
+    FPSCLOCK.tick()
+
+    # Now that that data has been printed, we need to setup the prompt for
+    # user input, create the Textbox object for this input, and call
+    # getTableChoiceEvents to get the name.
+    posX = LEFTMARGIN
+    posY += LINESPACING18
+    playerText   = "Which dealer would you like to challenge?"
+    instTextSurf = INSTRUCTFONT.render(playerText, True, TEXTCOLOR)
+    instTextRect = instTextSurf.get_rect(topleft = (posX, posY))
+    posY += LINESPACING18
+    nameTextboxRect = instTextRect.copy()
+    nameTextboxRect.topleft = (posX, posY)
+    dNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = getTableChoice,
+                            charFilter = 'alpha', enterClears = True, enterDeactivates = True)
+    dealerName   = getTableChoiceEvents(dNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)            
+
+def getTableChoiceEvents(Textbox, promptSurf, promptRect, Surface):
+    """
+    While this function may appear to be a repeat of getTextboxNameEvents(),
+    the code is somewhat different. That loop was designed to breat out when
+    it detected that listPlayers added a new item. It also cleared the screen
+    between prompts. This one has to produce a single prompt after a data
+    output is printed on screen by its calling function.
+    INPUTS: five arguments
+        Textbox (a Textbox class object)
+        promptSurf (a user prompt rendered text Surface)
+        promptRect (the rect object for promptSurf)
+        Surface (the surface to render prompts and Textbox on)
+    OUTPUTS: string, Textbox.buffer contents
+    """
+    finishUp = False
+    while not finishUp:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                finishUp = True
+            # This line ensures that pressing return ends the event loop.
+            finishUp = Textbox.getEvent(event)
+        # Update Textbox with any changes the "event" required.
+        Textbox.updateBox()
+        # Render the Textbox with the user prompt.
+        Textbox.drawBox(Surface)
+        Surface.blit(promptSurf, promptRect)
+        pygame.display.update()
+        FPSCLOCK.tick()
+        # Now, we check to see if tableChoice contains data. If so, we
+        # can break out of the loop.
+        
+def getTableChoice(id, name):
+    """
+    This function is executed by the Textbox.command attribute. It returns
+    the name of the dealer the user wants to pit the players against.
+    INPUTS: two arguments
+        id, the id of the Textbox object
+        name, a string captured from Textbox.finalBuffer
+    OUTPUTS: name, a string with the player's choice of dealer
+    NOTE: The tableChoice is another global variable due to some limitations
+        of pygame's GUI libraries.
+    """
+    # We need to find the dealer with a matching name and set tableChoice
+    # equal to that object. Using the lower() string methods eliminates
+    # capitalization problems.
+    for i in range(0, len(listDealers)):
+        if name.lower() == listDealers[i]['name'].lower():
+            tableChoice = listDealers[i]
+            print("getTableChoice: User's choice is {0}, which points to dealer {1}.".format(name, tableChoice))
+            break
+        
+    
     
 if __name__ == '__main__':
     main()

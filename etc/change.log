@@ -472,3 +472,18 @@ Casino (game): getPermittedTables: Takes set of playersLevel and listDealers and
 Casino (game): getTableChoice: Placeholder with comments in place.
 Special push to origin pygame after several instances of changes to this game were found reversed on the primary development system. This was discovered by checking an offline clone.
 
+12/18/17 04:00 Pushed to origin pygame
+
+Casino (game): Tested previous changes to make sure that everything still works. Some old debugging had to be repeated.
+Casino (game): Repurposed getTableChoice as the command executed by the Textbox object.
+Casino (game): Corrected bad comments in setupPlayer.
+Casino (game): offerTableChoices: Created this function to print out the data on the permitted tables that players may attend and create the Textbox object to get the user's answer.
+Casino (game): getTableChoiceEvents: This function captures user events to get the name chosen. It uses Textbox.getEvent's return value to end the event loop.
+Casino (game): getTextboxNameEvents: This function now uses the boolean return value from Textbox.getEvents to terminate the loop.
+Casino (game): Created tableChoice as a global variable to capture the user's choice of dealer for this game.
+Casino (game): createPlayers: Corrected a spacing problem with one line of instruction text.
+Casino (game): getTableSkillsList: Fixed a problem with function that had it returning a bad list of skill/type options.
+Casino (game): filterDealers: Filters listDealers for the dealers who match the skills of the players.
+PygameTextboxClass: Removed issueWarning() method because it flashes by too quickly. The filters actually keep bad characters out of the buffer without it.
+PygameTextboxClass: Updated the content of the main comments block on the methods updateBox() and drawBox().
+PygameTextboxClass: getEvent: Made this method return a boolean value, True only when ENTER or RETURN was pressed, False otherwise. This allows the class to communicate back to the calling event loop that it can stop watching for events.

@@ -100,11 +100,10 @@ class Textbox(object):
         getEvent: This method looks for KEYDOWNs and MOUSEBUTTONDOWN events
             that need to be acted on by the textbox.
         executeCommand: Sends the command back to the calling program.
-        issueWarning: Creates a warning text that the charcter entered is
-            not acceptable under the current filter.
-        clearBox
-        updateBox
-        drawBox
+        updateBox: This method keeps the contents of the textbox in sync with
+            the user's typing.
+        drawBox: This method keeps redrawing the textbox with updates from
+            updateBox.
     """
     # Class order attributes.
     # The first set are filters for the characters allowed in the Textbox
@@ -262,7 +261,12 @@ class Textbox(object):
         pressed), and MOUSEBUTTONDOWN (mouse buttons pressed inside the entry
         box). The KEYDOWN needs to be an acceptable one from the character
         filter on the input or an exit event, which runs the terminate()
-        method.
+        method. The boolean return value controls the calling pygame.event
+        loop that was scanning for pygame events, telling the loop to end.
+        INPUTS: event, a pygame.event
+        OUTPUTS: boolean
+            False: event was not pressing RETURN or ENTER
+            True: event was pressing RETURN or ENTER
         """
         if event.type == KEYDOWN and self.active:
             if event.key in (K_RETURN, K_KP_ENTER):
@@ -270,6 +274,7 @@ class Textbox(object):
                 # control to executeCommand to see if this Textbox is
                 # sending a command to the game that called it.
                 self.executeCommand()
+                return True
             elif event.key == K_BACKSPACE:
                 # If the key was a backspace, we need to remove a character
                 # from the buffer.
@@ -279,18 +284,15 @@ class Textbox(object):
                 # The character is an acceptable one for this textbox. So,
                 # it is added to the buffer.
                 self.buffer.append(event.unicode)
-            elif event.unicode not in self.filter:
-                # In the case of an invalid character, like a digit for a
-                # alphabetical, or whitespace in alphanumberics only, we
-                # transfer control to the issueWarning method.
-                self.issueWarning(event.unicode)
         elif event.type == MOUSEBUTTONDOWN and event.button == 1:
             # This event is a left button on the mouse was pressed. We need
             # to check if the position is inside the textbox or not. If so,
             # the textbox will become active.
             self.active = self.rect.collidepoint(event.pos)
+        return False
 
     def executeCommand(self):
+        # pdb.set_trace()
         if self.command:
             self.command(self.id, self.finalBuffer)
         # We need to change the status of the textbox if enterDeactivates is
@@ -301,18 +303,6 @@ class Textbox(object):
         if self.enterClears:
             self.buffer = []
 
-    def issueWarning(self, badChar):
-        """
-        This method creates the warning surfaces that warn users that they
-        entered the wrong type(s) of characters.
-        """
-        if self.charFilter == 'any':
-            message = "{} is not a valid character. Please use only printable characters.".format(badChar)
-        else:
-            message = "{} is not a valid character. Please use only {} characters.".format(badChar, self.charFilter)
-        self.warningSurf = self.warningFont.render(message, True, self.warningColor)
-        self.warningRect = self.warningSurf.get_rect()
-    
     def updateBox(self):
         """
         This method updates the content of the textbox. As the user adds
