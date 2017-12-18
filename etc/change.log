@@ -492,3 +492,11 @@ PygameTextboxClass: getEvent: Made this method return a boolean value, True only
 
 Casino (game): main(). Fixed typos that caused the loop that is supposed to keep spinning until tableChoice is set to be skipped or malfunction. Removed the initialization and that moved it into the global arena. Tested that the dealer choice loop also works for bad and good names.
 Casino (game); getTableChoice: Included global declaration for tableChoice. Now, main() sees it.
+
+12/18/17 09:07 Pushed to origin master
+
+Casino (game): main: Added a call to CasinoTable to generate a CasinoTable object.
+BlackjackClasses: CasinoTable.__init__: Fixing ordinal problem with the generic table creation.
+BlackjackClasses: CasinoTable.__init__: Dropping ordinals (since we can only fit 3 players around the current tables) and using 'left', 'middle', 'right' instead.
+Casino (game): main() and  diagnosticPrint: Added a required object, tableObject and used that variable to instantiate the CasinoTable object in main().
+HUGE BUG: diagnostic_print methods are not working in CasinoTable with the structural changes.

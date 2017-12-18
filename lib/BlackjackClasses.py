@@ -1207,7 +1207,7 @@ class CasinoTable(object):
     This class simulates an actual casino table.
     
     Class Order Attributes:
-        None currently
+        tableSeats: maps players number to a table seat.
     
     Attributes:
         blackjack_multiplier: tuple storing ('ratio', float multiplier)
@@ -1288,11 +1288,18 @@ class CasinoTable(object):
             least one player remains, False otherwise.
         
     """
+    # Class Order Attributes:
+    # The tableSeats CAO handles a conversion of a number to a left, middle,
+    # or right seating. This seating limitation has to do with the game
+    # resolution limiting it to three players per table currently.
+    tableSeats = { '0' : 'left', '1' : 'middle', '2' : 'right'}
+
+    
     def __init__(self,
                  playerNames          = list({'name' : 'Fred', 'bank' : 50000}),
                  blackjack_multiplier = ('3:2', 1.50),
-                 name = 'Sarah',
-                 bank = 100000):
+                 dealerName = 'Sarah',
+                 dealerBank = 100000):
         '''
         This method requires several arguments from the calling program, even
         though it has clear defaults for each one. These inputs are:
@@ -1305,17 +1312,15 @@ class CasinoTable(object):
                 text ratio equivalent to the value of the float (the value used
                 calculate player blackjack instant wins.
                 Default: ('3:2', 1.50)
-            name: string, the name of the dealer for this table
+            dealerName: string, the name of the dealer for this table
                 Default: 'Sarah'
-            bank: integer, the initial bank for this table's dealer
+            dealerBank: integer, the initial bank for this table's dealer
                 Default: 100,000
 
         This method will generate the following attributes from its input:
             tableDealer: a Dealer class object
-            players:     a dict object mapping 'seat ordinal' to playerObject
+            players:     a list of playerObjects
             table_size:  maximum number of players seatable at the table
-            tableSeats:  dictionary of seat number to 'seat ordinal', using
-                         dict comprehensions
             deck:        a CardShoe object (6 full 52 card decks shuffled
                          together)            
         '''
@@ -1325,20 +1330,27 @@ class CasinoTable(object):
         
         # The Dealer object is created by calling the class with the name and
         # bank amount provided in the arguments.
-        self.tableDealer   = Dealer(name, bank)
+        self.tableDealer = Dealer(dealerName, dealerBank)
         self.dealerLosses  = 0
 
+        self.blackjack_multiplier = blackjack_multiplier
+
         # The ordinale dictionary is created with a dictionary comprehension.
-        self.tableSeats    = {x: str(x) + inflection.ordinal(x) for x in range(1, self.table_size + 1)}
+        # Removed to keep the code smoother.
+        # self.tableSeats    = {x: str(x) + inflection.ordinal(x) for x in range(0, self.table_size)}
 
         # Now, we need a for loop to create the player objects from the list
         # supplied in playerNames. Player.__init__() also has a default bank
-        # in case one is not specified. We have to use the numbers to call the
-        # ordinals we need. seat below is an integer, while ordinal it the
-        # orginal number, e.g. 1st, 2nd, etc.
+        # in case one is not specified. Due to graphical limitations in pygame,
+        # the table is limited to 3 seats ('left', 'middle', 'right'), and a
+        # dealer's station.
         self.players = {}
-        for seat, ordinal in self.tableSeats.iteritems():
-            self.players[ordinal] = Player(playerNames[seat]['name'], playerNames[seat]['bank'])            
+        self.players = {'left'   : Player(playerNames[0]['name'], playerNames[0]['bank']),
+                        'middle' : Player(playerNames[1]['name'], playerNames[1]['bank']),
+                        'right'  : Player(playerNames[2]['name'], playerNames[2]['bank'])}
+
+        # Finally, we need to create a deck using the CardShoe library.
+        deck = CardShoe()
         return
     
     def __str__(self):

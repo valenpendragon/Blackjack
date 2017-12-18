@@ -277,7 +277,12 @@ def main(): # main game function
 
     # Now, we need to generate a CasinoTable object. This object needs to be
     # populated from listPlayers and tableChoice.
-    
+    tableObject = CasinoTable(listPlayers,
+                              tableChoice['blackjack multiplier'],
+                              tableChoice['name'],
+                              tableChoice['bank'])
+    print("main: The object type for tableObject after instantiation is {}.".format(type(tableObject)))
+    diagnosticPrint(tableObject, output = 'v')
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
     # if savedGameSuccess:
@@ -318,7 +323,7 @@ def cardImagesDiagnosticPrint(adjX=0, adjY=0):
         pygame.display.update()
         FPSCLOCK.tick()
 
-def diagnosticPrint(output = ''):
+def diagnosticPrint(tableObject, output = ''):
     """
     This function checks for and prints out the following objects classes:
         CasinoTable
@@ -336,7 +341,9 @@ def diagnosticPrint(output = ''):
     five player objects that manage their hands, banks, and betting options.
     Since this is partly a diagnostic function, we cannot assume that any of
     these objects exist.
-    INPUT: option 'v' or 'verbose' argument (all other strings are ignored)
+    INPUT: two arguments
+        tableObject, a CasinoTable object
+        optional 'v' or 'verbose' argument (all other strings are ignored)
     OUTPUT: A quick visual printout of the contents of the active objects in
         the current game. If the verbose option is requested, it will also
         issue the dianostic_print() methods for the classes CasinoTable,
@@ -348,7 +355,7 @@ def diagnosticPrint(output = ''):
     posY = LINESPACING12
     
     # See if a table object exists.
-    if tableObject and type(tableObject) == 'CasinoTable':
+    if tableObject and str(type(tableObject)) == "<class 'lib.BlackjackClasses.CasinoTable'>":
         tableObjectInfoSurf = BASICFONT.render('A CasinoTable object exists', True, TEXTCOLOR)
         tableObjectInfoRect = tableObjectInfoSurf.get_rect()
         tableObjectInfoRect.center = (WINCENTERX, posY)
