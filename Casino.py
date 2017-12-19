@@ -25,6 +25,7 @@ PURPLE       = (128,   0, 128)
 TEAL         = (  0, 128, 128)
 NAVY         = (  0,   0, 128)
 PERU         = (205, 133,  63)
+SADDLEBROWN  = (139,  69,  19)
 
 
 # Pygame Constants. All of these values are in pixels
@@ -282,6 +283,7 @@ def main(): # main game function
                               tableChoice['name'],
                               tableChoice['bank'])
     print("main: The object type for tableObject after instantiation is {}.".format(type(tableObject)))
+    print("main: The object type for tableDealer after instantiation is {}.".format(type(tableObject.tableDealer)))
     diagnosticPrint(tableObject, output = 'v')
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
@@ -352,38 +354,45 @@ def diagnosticPrint(tableObject, output = ''):
     """
     # First, clear the screen.
     DISPLAYSURF.fill(BGCOLOR)
-    posY = LINESPACING12
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
     
     # See if a table object exists.
-    if tableObject and str(type(tableObject)) == "<class 'lib.BlackjackClasses.CasinoTable'>":
+    if tableObject:
         tableObjectInfoSurf = BASICFONT.render('A CasinoTable object exists', True, TEXTCOLOR)
         tableObjectInfoRect = tableObjectInfoSurf.get_rect()
-        tableObjectInfoRect.center = (WINCENTERX, posY)
+        tableObjectInfoRect.topleft = (posX, posY)
         DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
         posY += LINESPACING12
         if output == 'v' or output == 'verbose':
             tableObject.diagnostic_print()
-        if tableObject.tableDealer and type(tableObject.tableDealer) == 'Dealer':
+        if tableObject.tableDealer != None:
             tableObjectInfoSurf = BASICFONT.render('A Dealer object was found inside the CasinoTable', True, TEXTCOLOR)
             tableObjectInfoRect = tableObjectInfoSurf.get_rect()
-            tableObjectInfoRect.center = (WINCENTERX, posY)
+            tableObjectInfoRect.topleft = (posX, posY)
             DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
             posY += LINESPACING12
-            tableDealer = print(tableObject.tableDealer)
+            tableDealer = tableObject.tableDealer.extract_data()
             printTableDealer(tableDealer, 'diagnostic')
+            generateTable(tableChoice['table color'])
 
         if tableObject.players:
             numOfPlayers = len(tableObject.players)
             tableObjectInfoSurf = BASICFONT.render('%s players have been found inside the CasinoTable' % (numOfPlayers), True, TEXTCOLOR)
+            tableObjectInfoRect = tableObjectInfoSurf.get_rect()
+            tableObjectInfoRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
+            # Note: We need the index to go from 1 to 3 inclusive.
             for i in xrange(1, numOfPlayers + 1):
-                playerObj = print(tableObject.players[i])
-                printTablePlayer(playerObj, i, 'diagnostic')
+                ordinal = tableObject.TABLESEATS[str(i)]
+                playerObj = tableObject.players[ordinal].extract_data()
+                printTablePlayer(playerObj, ordinal, 'diagnostic')
             
 
     else: # tableObject is not defined.
         tableObjectInfoSurf = BASICFONT.render('No CasinoTable object found', True, TEXTCOLOR)
         tableObjectInfoRect = tableObjectInfoSurf.get_rect()
-        tableObjectInfoRect.center = (WINCENTERX, posY)
+        tableObjectInfoRect.topleft = (posX, posY)
         DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
         posY += LINESPACING12
 
@@ -434,7 +443,8 @@ def printTableDealer(tableDealer, output = 'player turn'):
     dealerNameRect.center = (WINCENTERX, posY)
     DISPLAYSURF.blit(dealerNameSurf, dealerNameRect)
     posY += LINESPACING12
-    dealerBankSurf = BASICFONT.render("Dealer's Bank: %s" % (tableDealer['bank']), True, TEXTCOLOR)
+    dealerBankString = "Dealer's Bank: ${:,}.".format(tableDealer['bank'])
+    dealerBankSurf = BASICFONT.render(dealerBankString, True, TEXTCOLOR)
     dealerBankRect = dealerBankSurf.get_rect()
     dealerBankRect.center = (WINCENTERX, posY)
     DISPLAYSURF.blit(dealerBankSurf, dealerBankRect)
@@ -568,9 +578,9 @@ def printTableDealer(tableDealer, output = 'player turn'):
 
 def printTablePlayer(playerObj, ordinal, output = 'normal'):
     '''
-    This method prints on screen the full data for each players. This data
-    is pulled from the CasinoTable.players.__str__() method, which returns
-    a dictionary of the form below:
+    This method prints on screen the full data for a player. This data
+    is pulled from the Player.extract_data method, which returns a dictionary
+    of the form below:
         'name'                  : player's name
         'bank'                  : player's bank
         'hand'                  : player's regular hand or None
@@ -582,13 +592,15 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         'regular bet'           : bet amount on regular hand or None
         'split hand bet'        : bet amount on split hand or None
         'insurance bet'         : bet amount on dealer blackjack or None
+
     "hands" are set to None if they do not exist, including split_hand.  The
     split_flag is used to check for the latter. Bets and scores are set to
     None if they are zero in this dictionary.
     Note: This method assumes that player being printed has been found in a
     CasinoTable class object.
     INPUTS: playerObj : dict object, see above
-            ordinal   : integer, player number, valid for 1, 2, 3
+            ordinal   : ordinal string 'left' 'middle' 'right' corresponding
+                to seat 1, 2, 3
             output    : string determining the output of this function
                 'diagnostic' : prints everything about the player, putting in
                                messages for None items
@@ -604,7 +616,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
     # the same for the both the regular and split hands. We need all three
     # sets of coordinates for the score data and both hands of cards, as they
     # all printing independently of each other.
-    if ordinal == 1:
+    if ordinal == 'left':
         # The player is the left one. posX will be on the screen margin,
         # while regHandX and splitHandX will on the left margin of the green
         # area of the table.
@@ -612,7 +624,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         regHandX   = TABLELEFTMARGIN
         splitHandX = regHandX
 
-    elif ordinal == 2:
+    elif ordinal == 'middle':
         # The player is the center one. posX moves the output under the center
         # of the table, but it will be lined up there. Likewise, regHandX moves
         # there as well. We set the pointer to place the first two cards of
@@ -622,7 +634,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         regHandX   = WINCENTERX - (2 * (CARDWIDTH + CARDSPACING)) + (int((CARDSPACING + CARDWIDTH)/ 2))
         splitHandX = regHandX
 
-    elif ordinal == 3:
+    else:
         # The player is the right one. posX will be on the screen margin, with
         # an adjustment width of the score data rectangle. regHandX will on the
         # left margin of the green area of the table, less the width of four
@@ -639,7 +651,8 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
     splitHandY = regHandY - (CARDHEIGHT + CARDSPACING)
 
     if playerObj['insurance bet']:
-        insBetSurf = SCOREFONT.render("Insurance Bet: $%s" % (playerObj['insurance bet']), True, TEXTCOLOR)
+        insBetString = "Insurance Bet: ${:,}.".format(playerObj['insurance bet'])
+        insBetSurf = SCOREFONT.render(insBetString, True, TEXTCOLOR)
         insBetRect = insBetSurf.get_rect()
         insBetRect.topleft = (posX, posY)
         DISPLAYSURF.blit(insBetSurf, insBetRect)
@@ -653,6 +666,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
             posY -= LINESPACING12
 
     if playerObj['split hand bet']:
+        splitBetString = "Bet on split hand: ${:,}.".format(playerObj['split hand bet'])
         splitBetSurf = SCOREFONT.render("Bet on split hand: $%s" % (playerObj['split hand bet']), True, TEXTCOLOR)
         splitBetRect = splitBetSurf.get_rect()
         splitBetRect.topleft = (posX, posY)
@@ -667,7 +681,8 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
             posY -= LINESPACING12
 
     if playerObj['regular bet']:
-        regBetSurf = SCOREFONT.render("Bet on regular hand: $%s" % (playerObj['regular bet']), True, TEXTCOLOR)
+        regBetString = "Bet on regular hand: ${:,}.".format(playerObj['regular bet'])
+        regBetSurf = SCOREFONT.render(regBetString, True, TEXTCOLOR)
         regBetRect = regBetSurf.get_rect()
         regBetRect.topleft = (posX, posY)
         DISPLAYSURF.blit(regBetSurf, regBetRect)
@@ -753,7 +768,8 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         posY -= LINESPACING12
 
     if playerObj['bank']:
-        playerBankSurf = SCOREFONT.render("Bank: $%s" % (playerObj['bank']), True, TEXTCOLOR)
+        playerBankString = "Bank: ${:,}.".format(playerObj['bank'])
+        playerBankSurf = SCOREFONT.render(playerBankString, True, TEXTCOLOR)
         playerBankRect = playerBankSurf.get_rect()
         playerBankRect.topleft = (posX, posY)
         DISPLAYSURF.blit(playerBankSurf, playerBankRect)
@@ -833,21 +849,22 @@ def generateTable(tableColor = OLIVE):
     
     tableOuterRectLeft = WINCENTERX - int(TABLEWIDTH / 2)
     tableOuterRectTop  = WINCENTERY - int(TABLEHEIGHT / 2)
-    tableOuterRect = pygame.Rect((tableOuterRectLeft, tableOuterRectTop), (TABLEWIDTH, TABLEHEIGHT))
+    tableOuterRect = pygame.Rect((tableOuterRectLeft, tableOuterRectTop),
+                                 (TABLEWIDTH, TABLEHEIGHT))
 
     tableInnerRectLeft = WINCENTERX - int((TABLEWIDTH - TABLERIM) / 2)
     tableInnerRectTop  = WINCENTERY - int((TABLEHEIGHT - TABLERIM) / 2)
-    tableInnerRect = pygame.Rect((tableInnerRectLeft, tableInnerRectTop), (TABLEWIDTH - TABLERIM, TABLEHEIGHT - TABLERIM))
+    tableInnerRect = pygame.Rect((tableInnerRectLeft, tableInnerRectTop),
+                                 (TABLEWIDTH - TABLERIM, TABLEHEIGHT - TABLERIM))
     
     dealerStationRectTop  = DEALERSTATIONTOP
     dealerStationRectLeft = DEALERSTATIONLEFT
-    dealerStationRect = pygame.Rect((dealerStationRectLeft, dealerStationRectTop), (STATIONWIDTH, STATIONHEIGHT))
+    dealerStationRect = pygame.Rect((dealerStationRectLeft, dealerStationRectTop),
+                                    (STATIONWIDTH, STATIONHEIGHT))
 
-    # pygame.draw.ellipse(DISPLAYSURF, OLIVE, tableOuterRect)
-    # pygame.draw.ellipse(DISPLAYSURF, LIME,  tableInnerRect)
-    pygame.draw.rect(DISPLAYSURF, tableColor, tableOuterRect)
-    pygame.draw.rect(DISPLAYSURF, LIME,       tableInnerRect)
-    pygame.draw.rect(DISPLAYSURF, BLACK,      dealerStationRect)
+    pygame.draw.rect(DISPLAYSURF, SADDLEBROWN, tableOuterRect)
+    pygame.draw.rect(DISPLAYSURF, tableColor,  tableInnerRect)
+    pygame.draw.rect(DISPLAYSURF, BLACK,       dealerStationRect)
 
     pygame.display.update()
     FPSCLOCK.tick()

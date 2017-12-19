@@ -500,3 +500,19 @@ BlackjackClasses: CasinoTable.__init__: Fixing ordinal problem with the generic 
 BlackjackClasses: CasinoTable.__init__: Dropping ordinals (since we can only fit 3 players around the current tables) and using 'left', 'middle', 'right' instead.
 Casino (game): main() and  diagnosticPrint: Added a required object, tableObject and used that variable to instantiate the CasinoTable object in main().
 HUGE BUG: diagnostic_print methods are not working in CasinoTable with the structural changes.
+
+12/19/17 05/:23 Pushed to origin pygame
+
+BlackjackClasses: diagnosticPrint: Updating it with the changes to the structure of the CasinoTable attributes.
+BlackjackClasses: Class Order Attributes: Moved tableSeats to TABLESEATS and table_size to TABLESIZE as a constants. Change has been propagated throughout the class.
+BlackjackClasses: Comment Block: Updated the comments to reflect new changes.
+BlackjackClasses: __init__: 'Seats' players counter clockwise up to the total number (which can be less than TABLESIZE of 3).
+BlackjackClasses: Changed table_index to numPlayers throughout the class.
+Casino (game): diagnosticPrint: Fixed bugs that caused Dealer objects to be misidentified.
+Casino (game): diagnosticPrint: Fixed a key mismatch bug on the playerObject print loop.
+BlackjackClasses: Due to TypeError, all __str__() in CardShoe, Player, and Dealer classes have been restored to their original form in branch master. This includes dealer_print.
+Casino (game): All print calls and dealer_print calls must be changed to the new methods, extract_data.
+Casino (game): diagnosticPrint: Debugged problems with the table output. Added back into that stanza printing Players some missing lines. To reduce clutter, the 'objects found' messages use the upper left corner instead of center (where the Dealer data prints out). It also prints the table with the correct color.
+Casino (game): printDealer: Now prints out the Dealer's bank with commas every 3 digits.
+Casino (game): printTablePlayer: Dropped the integer ordinal and made it the actual ordinal (left, middle, right) values. Now prints out Player's banks and bets with commas every 3 digits.
+Casino: Constants: Added color saddle brown to use as the table border.

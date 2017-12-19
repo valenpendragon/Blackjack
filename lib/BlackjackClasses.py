@@ -1,6 +1,7 @@
 from __future__ import print_function
 import random, os, pygame, inflection
 from pygame.locals import *
+import pdb
 
 # from abc import ABCMeta, abstractmethod
 
@@ -204,9 +205,11 @@ class Player(object):
     Methods:
         __init__: Creates the player object, initializing all of the
             attributes. The bank has a default value of 10,000 dollars.
-        __str__: This method originally printed out the basic data on a Player's
-            bets, hands, and scores. As of the Pygame coversion, it now returns
-            a dict object containing the following:
+        __str__: this prints out the full data on a Player in a readable
+            format. If the split_flag is True, it adds split hand data.
+        extract_data: This method originally printed out the basic data on a
+            Player's bets, hands, and scores. This is new in the pygame
+            conversion. It returns a dict object containing the following:
                 'name'            : player's name
                 'bank'            : player's bank
                 'hand'            : player's regular hand or None
@@ -321,7 +324,37 @@ class Player(object):
     
     def __str__(self):
         '''
-        This method returns the full data on a player in dict data format.
+        This method prints out the full data on a Player in a readable format. If
+        the split_flag is True, it adds the data for a split hand as well.
+        '''
+        print("Player:\t", self.name)
+        print("Chips:\t${0}".format(self.bank))
+        
+        if len(self.hand) != 0:       
+            print("\n\tCurrent Hand: ", end='')
+            # This suppresses the linefeed and flushes the buffer to make the ouput
+            # look like a single line of code.                                                      
+            for rank, suit in self.hand:
+                print("{0}-{1}  ".format(rank,suit), end='')
+            print("\n\tSoft score for this hand: ", self.soft_hand_score)
+            print("\tHard score for this hand: ", self.hard_hand_score)
+            print("\n\tBet on this hand: $", self.bet)
+        if (self.split_flag == True) and (len(self.split_hand) != 0):
+            print("\n\tSplit Hand: ", end='')
+            for rank, suit in self.split_hand:
+                print("{0}-{1}  ".format(rank,suit), end='')
+            print("\n\tSoft score for this hand: ", self.soft_split_score)
+            print("\tHard score for this hand: ", self.hard_split_score)
+            print("\n\tBet on this hand: $", self.split_bet)
+        print("\nInsurance against Dealer Blackjack: $", self.insurance)
+        return "Player " + self.name + '\n'
+
+    def extract_data(self):
+        '''
+        This method has been created for the pygame conversion. All other
+        print functions remain intact. Where a print(object) would be used
+        in a text-based game, use this method to extract the data that
+        needs to be printed out.
         The layout of the data is:
             'name'            : player's name
             'bank'            : player's bank
@@ -394,13 +427,22 @@ class Player(object):
     
     def print_split(self):
         '''
-        This method replicates __str___() method. It originally printed only
-        the split hand data, but that need changed with the switch to a pygame
-        interface.
+        This method prints the player data in a format similar to __str__, but it leaves out
+        the regular hand. It accepts no arguments.
         '''
-        playerData = self.__str__()
-        return playerData
-    
+        if self.split_flag == False:
+            print("Player {0} does not have a split hand.".format(self.name))
+            return False
+        print("Player:\t", self.name)
+        print("Chips:\t${0}.00".format(self.bank))
+        print("\n\tSplit Hand: ", end='')
+        for rank, suit in self.split_hand:
+            print("{0}-{1}  ".format(rank,suit), end='')
+        print("\n\tSoft score for this hand: ", self.soft_split_score)
+        print("\tHard score for this hand: ", self.hard_split_score)
+        print("\n\tBet on this hand: $", self.split_bet)
+        return
+
     def total_bets(self):
         '''
         This method returns a total of all bets placed by the player. It
@@ -948,11 +990,12 @@ class Dealer(Player):
         __init__: initializes the attributes specific to dealer objects. Will 
             accept an integer to set dealer's starting bank to a value other
             than 100,000 default.
-        __str__: This method originally printed out the name "Dealer" a "face
-            down" card, a single revealed card for the Dealer, and the
-            score(s) for that card. It was only used during player turns. As
-            of the Pygame coversion, it now returns a dict object containing
-            the following:
+        __str__: This method prints out the Dealer's info, concealing the
+            facedown card and its score.
+        extract_data: This method was created for the pygame conversion and
+            should be used whenever a print(object) is needed. That includes
+            dealer_print.
+            It extracts the following data as a dict object:
                 'name'               : dealer's name (aka "Dealer")
                 'bank'               : dealer's bank
                 'hand'               : dealer's hand or None (a list)
@@ -962,10 +1005,10 @@ class Dealer(Player):
                 'soft score'         : soft score for dealers's hand or None
                 'hard score'         : hard score for dealers's hand or None
                 'dealer turn'        : set to None
-        dealer_print: This method originally printed out the dealer's fully
-            revealed hand and changing hand scores during the Dealer's turn.
-            Now, this method calls __str__, then changes the following item:
-                'dealer turn'        : set to True
+            'dealer turn' set to True is a way to see that it is the dealer's
+            turn, changing the GUI printout.
+        dealer_print: This method is used during the dealer's turn to print
+            out the full hand and hand scores.
         add_card_to_hand: adds a card to the dealer's hand, updates 
             visible_card (a hand) and its scores on second deal, updates
             the actual hand scores,  sets the blackjack_flag for the right
@@ -1012,21 +1055,41 @@ class Dealer(Player):
         self.visible_card = []
         self.visible_soft_score = self.visible_hard_score = 0
         self.blackjack_flag = False
-        return        
-    
+        return
+
     def __str__(self):
         '''
-        This method originally printed out the Dealer's name ("Dealer"), a
-        face down card, a visible card (self.visible_card), and the score(s)
-        for the visible card (self.visible_soft_score and
-        self.visible_hard_score). This method was used during the player
-        turns.
-
-        The dealer_print method actually printed out the dealer's full hand
-        and the scores for that hand as the Dealer player its hand during the
-        Dealer's turn.
-
-        In the Pygame conversion, it returns the following dict object:
+        This method prints out the Dealer's info, concealing the facedown
+        card and its score. It is used to show this derived class during
+        the player turns so that a separate method would not be needed to
+        print the table out. Another method, Dealer.dealer_print() prints
+        out the full Dealer data during the dealer's turn. Note: These
+        methods are for text-only games and for diagnostic purposes in GUIs.
+        '''
+        print("Dealer")
+        print("Dealer's Bank:\t${0}".format(self.bank))
+        
+        if self.hard_hand_score != 0:
+            print("\n\tDealer shows: ", end='')
+            # This suppresses the line feed.
+            if len(self) >= 1:
+                print("Facedown", end='')
+            if len(self) >= 2:
+                (rank,suit) = self.visible_card[0]
+                print("  {0}-{1}".format(rank, suit), end='')
+            if self.visible_soft_score == self.visible_hard_score:
+                print("\n\tDealer has {0} showing".format(self.visible_hard_score))
+            else:
+                print("\n\tDealer has a hard {0} or a soft {1} showing".format(self.visible_hard_score, self.visible_soft_score))
+        return "Dealer"
+    
+    def extract_data(self, dealer_turn = False):
+        '''
+        This method has been created for the pygame conversion. All other
+        print functions remain intact. Where a print(object) would be used
+        in a text-based game, use this method to extract the data that
+        needs to be printed out.
+        This method returns the following dict object:
                 'name'               : dealer's name (aka "Dealer")
                 'bank'               : dealer's bank
                 'hand'               : dealer's hand or None (a list)
@@ -1035,7 +1098,7 @@ class Dealer(Player):
                 'visible card'       : a tuple of the hand[1] or None
                 'visible soft score  : soft score of the visible card
                 'visible hard score  : hard score of the visible card
-                'dealer turn'        : set to None
+                'dealer turn'        : set to None, unless dealer_turn is True
 
         The method dealer_print also calls this method to create the dict
         object, but then changes 'dealer turn' before returning the object.        
@@ -1067,23 +1130,30 @@ class Dealer(Player):
             dealerData['visible soft score'] = None
             dealerData['visible hard score'] = None
 
-        # 'dealer turn' is always None from this method.
-        dealerData['dealer turn'] = None
+        # The value of dealer's turn depends on the optional argument,
+        # dealer's turn.
+        if dealer_turn == True:
+            dealerData['dealer turn'] = True
+        else:
+            dealerData['dealer turn'] = None
         return dealerData
 
     def dealer_print(self):
         '''
-        This method originally printed out full data on the Dealer, its hand,
-        and the scores on that hand during the Dealer's turn.
-
-        With the Pygame conversion, this method calls self.__str__() to
-        create the dealerData dict object (see above), then it changes
-        the following value:
-            'dealer turn'   : set to True
+        This method is used during the dealer's turn to print out the full hand and
+        hand scores.
         '''
-        dealerData = self.__str__()
-        dealerData['dealer turn'] = True
-        return dealerData
+        print("Player:\t", self.name)
+        print("Bank:\t${0}".format(self.bank))
+        print("\n\tCurrent Hand: ", end='')
+        # This suppresses the linefeed and flushes the buffer to make the ouput
+        # look like a single line of code.
+                                                      
+        for rank, suit in self.hand:
+            print("{0}-{1}  ".format(rank,suit), end='')
+        print("\n\tSoft score for this hand: ", self.soft_hand_score)
+        print("\tHard score for this hand: ", self.hard_hand_score)
+        return "Data on "+ self.name + " is complete"
      
     def add_card_to_hand(self, card):
         '''
@@ -1207,7 +1277,10 @@ class CasinoTable(object):
     This class simulates an actual casino table.
     
     Class Order Attributes:
-        tableSeats: maps players number to a table seat.
+        TABLESEATS: maps players number to a table seat.
+        TABLESIZE:  TABLESIZE: integer, max number of players seatable at
+            the table, currently 3 at 1024x768 resolution
+
     
     Attributes:
         blackjack_multiplier: tuple storing ('ratio', float multiplier)
@@ -1216,27 +1289,27 @@ class CasinoTable(object):
             multiplier is a floating point two decimal approximation of the
                 ratio used to calculate the actual winnings
             This tuple is used to store and manage the table mulitiplier
-        table_size: integer indicating the max number of players (other than
-            dealer) for this table object (3 or 5, normally)
-        tableSeats: ordinal dictionary for seat number to ordinal (to reduce
-            CPU overhead calculating it all the time)
         deck: a CardShoe object that can be recreated via replace_cardshoe()
             method
         tableDealer: a Dealer object, initialized by a name and starting
             bank amount
         dealerLosses: helps track losses during a round
         players: a dict object of the form {'seat ordinal': playerObj},
-            where seat ordinal is literall 1st, 2nd, ... up to the table_size
-            and playerObject is the player object created from a name and bank
+            where seat ordinal is 'left', 'middle', or 'right' and 
+            playerObject is the player object created from a name and bank
+        numPlayers: the actual number of players the user has for this game.
+        NOTE: The user loses when all the players bust their banks. The 
+            user wins when the players break the dealer's bank.
     
     Methods:
         __init__: Accepts several arguments that have defaults (playerNames,
             blackjack_multiplier, dealer's name, and dealer's bank. From this
-            data, it creates a CasinoTable object: generates a tableDealer,
-            a CardShoe (312 card random deck), calculates table_size, generates
-            playerObjects for all human players, and builds tableSeats (an
-            ordinal dictionary for seating).
-        __str__: Returns the CasinoTable object. Assumes an upstream function
+            data, it creates a CasinoTable object: generates a tableDealer
+            object, a CardShoe object (312 card random deck), and generates
+            playerObjects for the user's players.
+        __str__: calls the print methods for the CardShoe, Player, and Dealer
+            objects.
+        extract_data: Returns the CasinoTable object. Assumes an upstream function
             or method will render the contents in Pygame.
         diagnostic_print: prints out all attributes to assist with code
             debugging (unchanged in Pygame version)
@@ -1289,11 +1362,13 @@ class CasinoTable(object):
         
     """
     # Class Order Attributes:
-    # The tableSeats CAO handles a conversion of a number to a left, middle,
+    # The TABLESEATS CAO handles a conversion of a number to a left, middle,
     # or right seating. This seating limitation has to do with the game
     # resolution limiting it to three players per table currently.
-    tableSeats = { '0' : 'left', '1' : 'middle', '2' : 'right'}
+    TABLESEATS = { '1' : 'left', '2' : 'middle', '3' : 'right'}
 
+    # This resolution restriction also restricts the TABLESIZE to 3 as well.
+    TABLESIZE = 3
     
     def __init__(self,
                  playerNames          = list({'name' : 'Fred', 'bank' : 50000}),
@@ -1318,16 +1393,17 @@ class CasinoTable(object):
                 Default: 100,000
 
         This method will generate the following attributes from its input:
-            tableDealer: a Dealer class object
-            players:     a list of playerObjects
-            table_size:  maximum number of players seatable at the table
-            deck:        a CardShoe object (6 full 52 card decks shuffled
+            tableDealer  a Dealer class object
+            numPlayers   number of actual players (which can be less than 3)
+            players      a dictionary of playerObjects from inputs
+            deck         a CardShoe object (6 full 52 card decks shuffled
                          together)            
         '''
-        # The table_size attribute can be built by using len on the
-        # playerNames list.
-        self.table_size    = len(playerNames)
-        
+        # self.TABLESIZE  and self.TABLESEATS are constants in this library,
+        # but the number of players depends on whether or not any of the
+        # user's players washed out.
+        self.numPlayers = len(playerNames)
+
         # The Dealer object is created by calling the class with the name and
         # bank amount provided in the arguments.
         self.tableDealer = Dealer(dealerName, dealerBank)
@@ -1335,25 +1411,38 @@ class CasinoTable(object):
 
         self.blackjack_multiplier = blackjack_multiplier
 
-        # The ordinale dictionary is created with a dictionary comprehension.
-        # Removed to keep the code smoother.
-        # self.tableSeats    = {x: str(x) + inflection.ordinal(x) for x in range(0, self.table_size)}
-
-        # Now, we need a for loop to create the player objects from the list
-        # supplied in playerNames. Player.__init__() also has a default bank
-        # in case one is not specified. Due to graphical limitations in pygame,
-        # the table is limited to 3 seats ('left', 'middle', 'right'), and a
-        # dealer's station.
+        # We are limited to 3 seats, but there can be fewer players in the
+        # user's team. TABLESEATS still allows us to use numbers when we
+        # need to by converting the ordinal into a string. The comment
+        # below this loop shows where we want the players situated.
+        # Note: playerNames is a list with an index [0, 1, 2], but the seats
+        # map 1, 2, 3 to left, middle, right. So we need the ordinals for 
+        # i + 1, not i.
         self.players = {}
-        self.players = {'left'   : Player(playerNames[0]['name'], playerNames[0]['bank']),
-                        'middle' : Player(playerNames[1]['name'], playerNames[1]['bank']),
-                        'right'  : Player(playerNames[2]['name'], playerNames[2]['bank'])}
+        for i in xrange(0, self.numPlayers):
+            ordinal = self.TABLESEATS[str(i + 1)]
+            self.players[ordinal] = Player(playerNames[i]['name'], playerNames[i]['bank'])
+        # self.players = {'left'   : Player(playerNames[0]['name'], playerNames[0]['bank']),
+                        # 'middle' : Player(playerNames[1]['name'], playerNames[1]['bank']),
+                        # 'right'  : Player(playerNames[2]['name'], playerNames[2]['bank'])}
 
-        # Finally, we need to create a deck using the CardShoe library.
-        deck = CardShoe()
+        # Finally, we need to create a deck using the CardShoe class.
+        self.deck = CardShoe()
         return
     
     def __str__(self):
+        '''
+        This method prints out the table. It is used after deals; so, all
+        players can see their cards as they receive them. print(object)
+        in a GUI environment shoud use the extract_data() method instead.
+        '''
+        print(self.deck)
+        for i in xrange(0, self.table_index):
+            print(self.players[i])
+        print(tableDealer)
+        return 'Table complete'
+
+    def extract_data(self):
         '''
         This method returns the CasinoTable object.
         '''
@@ -1364,13 +1453,16 @@ class CasinoTable(object):
         This method prints out every attribute for debugging purposes, calling
         the same named method in the classes for each object.
         '''
+        print("Table Attributes:")
+        print("Dealer's Name: ", self.tableDealer.name)
         print("Blackjack multiplier: ", self.blackjack_multiplier)
-        print("Starting bank: ", self.starting_bank)
-        print("Maximum Number of Human Players (table size): ", self.table_size)
-        print("Actual Number of Players (table index): ", self.table_index)
+        print("Dealer's Bank: ", self.tableDealer.bank)
+        print("Table seating (TABLESIZE): ", self.TABLESIZE)
+        print("Actual Number of Players (numPlayers): ", self.numPlayers)
         self.deck.diagnostic_print()
-        for i in xrange(0, self.table_index):
-            self.players[i].diagnostic_print()
+        for i in xrange(1, self.numPlayers + 1):
+            ordinal = self.TABLESEATS[str(i)]
+            self.players[ordinal].diagnostic_print()
         print("Completed diagnostic print of CasinoTable.")
         return
     
@@ -1397,7 +1489,7 @@ class CasinoTable(object):
         
         There is no return value from this method.
         '''
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             print("Dealing a card to ", self.players[i].name)
             card = self.deck.remove_top()
             # These blocks were used to test the player blackjack payout or splitting hands.
@@ -1424,7 +1516,7 @@ class CasinoTable(object):
             rank, suit = card
             print("Dealer received a {0}-{1}".format(rank, suit))
             print("Players wishing to place an insurance bet for a Dealer Blackjack may do so now.")
-            for i in xrange(1, self.table_index):
+            for i in xrange(1, self.numPlayers):
                 answer = raw_input("{0}, would you like to make an insurance bet? (y/n)".format(self.players[i].name))
                 if answer[0].lower() == 'y':
                     while True:
@@ -1455,7 +1547,7 @@ class CasinoTable(object):
         '''
         print("Please place your initial bet. This will serve as a maximum raise amount after")
         print("the cards have been dealt.")
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # The CasinoTable.end_round() method checks to see if any player's bank busted
             # or if they have insufficient funds to meet the table minimum. They should be
             # eliminated already.
@@ -1483,7 +1575,7 @@ class CasinoTable(object):
         
         This method also needs arguments for min_bet and max_bet.
         '''
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # This conditional covers the  possibility of a player blackjack. Blackjack methods
             # clear up the player's hand as a signal to other methods that nothing needs to be
             # done with that player.
@@ -1536,7 +1628,7 @@ class CasinoTable(object):
         
         After all player's bets have been updated, it prints the CasinoTable again.
         '''
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # This checks the regular hand and offers a double down bet.
             self.players[i].double_down(self.players[i].hand, False)
             if self.players[i].split_flag == True:
@@ -1573,7 +1665,7 @@ class CasinoTable(object):
         '''
         # This will increment as playable hands survive the players turn.
         playable_hands = 0
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # First, we need to check the hand. An non-empty hand will be playable after being dealt two
             # cards. Empty hands already collected their blackjack winnings. A blackjack has no split
             # hand either.
@@ -1655,7 +1747,7 @@ class CasinoTable(object):
         # This ends the players turn.
         print("The player turn is complete. The table stands at:")
         print(self)
-        if self.table_index == 0:
+        if self.numPlayers == 0:
             print("No players remain in the game. The house wins.")
             return 'none'
         if playable_hands == 0:
@@ -1682,18 +1774,18 @@ class CasinoTable(object):
         ignores any removed hands. It looks at the soft_hand_score, which is the highest playable score a
         hand of Blackjack can have.
         
-        If self.table_index < 2, no human players remain in the game. It will return (0,0) as an error.
+        If self.numPlayers < 2, no human players remain in the game. It will return (0,0) as an error.
         
         It returns a tuple in the form (max, min).
         '''
         max_score = min_score = 0
-        if self.table_index < 2 :
+        if self.numPlayers < 2 :
             # No human players remain in the game.
             return (max_score, min_score)
         # At least one human player remains in the game. We need the scores off of one of their hands.
         
         # print("Max: {0}.   Min: {1}".format(max_score, min_score))
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # print(self.players[i])
             if (len(self.players[i]) != 0):
                 if self.players[i].soft_hand_score > max_score:
@@ -1769,7 +1861,7 @@ class CasinoTable(object):
             # their hand.
             dealer_stand = True
             print("Dealer has a blackjack. All remaning hands lose, regardless of score.")
-            for i in xrange(1, self.table_index):
+            for i in xrange(1, self.numPlayers):
                 # Skip resolved hands and non-existent hands.
                 if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
                     continue
@@ -1790,7 +1882,7 @@ class CasinoTable(object):
                 print("Dealer busted with a hard score of {0}".format(self.players[0].hard_hand_score))
                 dealer_bust = True
                 dealer_stand = True
-                for i in xrange(1, self.table_index):
+                for i in xrange(1, self.numPlayers):
                     # Skip resolved hands and non-existent hands.
                     if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
                         continue
@@ -1824,7 +1916,7 @@ class CasinoTable(object):
         # Remember also that soft scores are always the highest playable score that a hand can have,
         # regardless of the cards dealt.
         if (dealer_blackjack == False) and (dealer_bust == False):
-            for i in xrange(1, self.table_index):
+            for i in xrange(1, self.numPlayers):
                 # Again, skip resolved and non-existent hands.
                 if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
                     continue
@@ -1855,7 +1947,7 @@ class CasinoTable(object):
         # automatically returns the right results. True means the player is still in the game, False,
         # they broke their bank and will be eliminated in the end_round.
         if self.players[0].blackjack_flag == True:
-            for i in xrange(1, self.table_index):
+            for i in xrange(1, self.numPlayers):
                 if dealer_blackjack == False:
                     dealer_winnings += self.players[i].insurance
                     print("Player {0}: You have lost your insurance bet of {1}.".format(self.players[i].name, self.players[i].insurance))
@@ -1927,7 +2019,7 @@ class CasinoTable(object):
         conditions end the game. It uses the end_game boolean to signal that.
         '''
         end_game = False
-        for i in xrange(0, self.table_index):
+        for i in xrange(0, self.numPlayers):
             self.players[i].end_round()
             
         if self.players[0].bank <= min_bet:
@@ -1935,7 +2027,7 @@ class CasinoTable(object):
             print("The Dealer has been eliminated from the game. The player with the highest bank wins.")
             name = self.players[0].name
             high_bank = self.players[0].bank
-            for i in xrange(1, self.table_index - 1):
+            for i in xrange(1, self.numPlayers - 1):
                 if high_bank < self.players[i].bank:
                     name = self.players[i].name
                     high_bank = self.players[i].bank
@@ -1948,11 +2040,11 @@ class CasinoTable(object):
                 if self.players[i].bank <= min_bet:
                     print("Eliminating Player {0} because their bank is unable to make the minimum bet.".format(self.players[i].name))
                     del(self.players[i])
-                    self.table_index -= 1
+                    self.numPlayers -= 1
                 else:
                     print("Player {0} is still solvent with ${1} remaining in their bank.".format(self.players[i].name, self.players[i].bank))
                     i += 1
-                if i == self.table_index:
+                if i == self.numPlayers:
                     # The index has reached the end of the players list.
                     break
                 else:
@@ -2013,13 +2105,13 @@ class CasinoTable(object):
         False if not.
         '''
         print("Now, each player needs to decide if they want to stay or cash out.")
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             failsafe = 0
             while True:
                 # The following statements ensure that this does not become a continuous loop should input errors
                 # persist.
                 failsafe += 1
-                if failsafe > self.table_size :
+                if failsafe > self.TABLESIZE :
                     break
                 try:
                     answer = raw_input("Player {0}, would you like to stay in the game? (y/n)".format(self.players[i].name))
@@ -2033,11 +2125,11 @@ class CasinoTable(object):
                     elif answer[0].lower() == 'n':
                         print("It was a pleasure. Please stop by the bank windows to cash out.")
                         del(self.players[i])
-                        self.table_index -= 1
+                        self.numPlayers -= 1
                     else:
                         print("Thank you.")
                     break
-        if self.table_index <= 1:
+        if self.numPlayers <= 1:
             print("That ends the game. Thank you for playing.")
             return False
         else:
