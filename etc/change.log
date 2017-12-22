@@ -516,3 +516,10 @@ Casino (game): diagnosticPrint: Debugged problems with the table output. Added b
 Casino (game): printDealer: Now prints out the Dealer's bank with commas every 3 digits.
 Casino (game): printTablePlayer: Dropped the integer ordinal and made it the actual ordinal (left, middle, right) values. Now prints out Player's banks and bets with commas every 3 digits.
 Casino: Constants: Added color saddle brown to use as the table border.
+
+12/22/17 07:52 Pushed to origin pygame
+
+Casino (game): playBlackjack: This is the game playing function. It contains the actual game loop and event handler loop. This loop is incomplete until the notes say otherwise.
+Created a second rules file in main/etc describing the breaking the bank rules and how to navigate the playing screen GUI.
+Casino (game): checkForQuit: Created this function to watch for quit events. Unlike some other event checks, this one puts back any queues of events it scans. That keeps KEYUP and KEYDOWN events from being accidentally purged from the event lists. This function verifies that the user wants to terminate without saving.
+Casino (game): checkForYesNo: This function performs the event loop check for Y/N answers, returning True for Y, False for No.

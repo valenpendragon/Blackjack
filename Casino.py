@@ -282,9 +282,9 @@ def main(): # main game function
                               tableChoice['blackjack multiplier'],
                               tableChoice['name'],
                               tableChoice['bank'])
-    print("main: The object type for tableObject after instantiation is {}.".format(type(tableObject)))
-    print("main: The object type for tableDealer after instantiation is {}.".format(type(tableObject.tableDealer)))
-    diagnosticPrint(tableObject, output = 'v')
+    # diagnosticPrint(tableObject, output = 'v')
+    playBlackjack(tableObject, listPlayers)
+    
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
     # if savedGameSuccess:
@@ -1510,6 +1510,182 @@ def getTableChoice(id, name):
             print("getTableChoice: User's choice is {0}, which points to dealer {1}.".format(name, tableChoice))
             break
     return
+
+def checkForQuit(tableObj):
+    """
+    This function looks for QUIT events. It also checks KEYDOWN/KEYUP events
+    for ESCAPE events. It will confirm any such events before calling the
+    terminate() function. The booleans, endGame and verifyChoice are used to
+    tell Python, respecitively, to terminate() or to verify that the user
+    really wants to end without saving. If not, it will ask if the player
+    wants to save and exit. saveGame carries that decision.
+    """
+    endGame = False
+    verifyChoice = False
+    saveGame = None
+    # Get all QUIT events.
+    for event in pygame.event.get(QUIT):
+        verifyChoice = True
+        # verifyChoice means to check for exit.
+    # Now, we need to check to see if ESCAPE was pressed or released. To
+    # keep these event queues separate, we need to check them individualy.
+    # We do this so that we can put all other KEYUPs and KEYDOWNs back into
+    # their respective queues.
+    for event in pygame.event.get(KEYUP):
+        if event.key == K_ESCAPE:
+            verifyChoice = True
+        pygame.event.post(event)
+    for event in pygame.event.get(KEYDOWN):
+        if event.key == K_ESCAPE:
+            verifyChoice = True
+        pygame.event.post(event)
+
+    # Now, we verify the choice.
+    if verifyChoice == True:
+        DISPLAYSURF.fill(BLACK)
+        posX, posY = (WINCENTERX, WINCENTERY)
+        instText = "Are you sure you want to exit?(Y/N)"
+        instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
+        instRect = instSurf.get_rect(center = (posX, posY))
+        DISPLAYSURF.blit(instSurf, instRect)
+        pyggame.display.update()
+        FPSCLOCK.tick()
+        answer = checkForYesNo()
+        # answer will be True is Y was pressed, False if N is pressed.
+        # True means the player wants to exit, but they may not want to
+        # save their progress if the game did not go well. So, we set the
+        # save boolean to False for now. If the answer was No, we return
+        # to the calling function.
+        if answer == True:
+            endGame = True
+            saveGame = False
+        else:
+            return
+        # At this point, the player wants to exit, but they may want to save
+        # their game after all.
+        DISPLAYSURF.fill(BLACK)
+        instText = "Do you want to save before exiting?(Y/N)"
+        instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
+        instRect = instSurf.get_rect(center = (posX, posY))
+        DISPLAYSURF.blit(instSurf, instRect)
+        pyggame.display.update()
+        FPSCLOCK.tick()
+        saveGame = checkForYesNo()
+        if saveGame == True:
+            # Note, this function does not care if players were eliminated or
+            # were pulled from the game. Other function or methods would have
+            # pulled or removed elimiated players at other times in the game.
+            for i in xrange(1, MAXPLAYERS):
+                try:
+                    ordinal = TABLESEATS[str(i)]
+                    checkName = tableObj.players[ordinal].name
+                except:
+                    # That ordinal (table position) was eliminated.
+                    continue
+                else:
+                    for j in xrange(0, len(listPlayers)):
+                        # If the names match, copy the bank amount to listPlayers.
+                        if checkName == listPlayers[i]['name']:
+                            listPlayers[i]['bank'] = tableObj.players[ordinal].bank
+            writeSavedGame(listPlayers)
+        terminate()
+    return # checkForQuit
+
+def checkForYesNo():
+    """
+    This function watches for Y or N to be pressed.
+    INPUTS: Input comes from pygame.events.
+    OUTPUTS: True if Y was pressed, False is N was pressed.
+    """
+    while True:  # event loop
+        # In the lower right corner, print this message.
+        textSurf = DATAFONT.render("Press Y or N to respond.", True, TEXTCOLOR)
+        textRect = textSurf.get_rect()
+        textRect.bottomright = (RIGHTMARGIN, BOTTOMMARGIN)
+        DISPLAYSURF.blit(textSurf, textRect)
+        for event in pygame.event.get(QUIT): # get all QUIT events
+            terminate()                      # terminate if any QUIT events are present
+        for event in pygame.event.get(KEYUP):# get all KEYUP events
+            if event.key == K_ESCAPE:        # ESCAPE is also a 'quit' event
+                terminate()
+
+        for event in pygame.event.get(KEYDOWN):
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:    # These are also QUIT events.
+                    terminate()
+                elif event.key == K_y:
+                    return True
+                elif event.key == K_n:
+                    return False
+        pygame.display.update()
+        FPSCLOCK.tick()
+
+
+def playBlackjack(tableObj, listPlayers):
+    """
+    This is the game loop for playing Blackjack at the user's choice of table.
+    The tableObj takes care of the game play, thanks in no small part to the
+    BlackjackClasses. Much of the functionality comes from those sources.
+    The roundCounter actually determines if a player has played long enough
+    to 'level up' in the game. The pattern for this is:
+        STARTER = 50
+        NORMAL  = 75
+        SPECIAL = 100
+    Once that number of rounds has been completed in a single game without
+    busting, the player can move to the next level. The user can opt to pull
+    a character with a dwindling bank instead of allowing them to bust. They
+    won't be removed from the game that way.
+    
+    These constants indicate the number of rounds the player must finish in
+    single game to move from that skill level to the next level. So, a
+    STARTER player can move to the next level if they leave the game having
+    played at least 50 rounds without breaking their bank. Once a player
+    leaves a round, they cannot return to the game until the user has all
+    remaining players bust or leave the table. This is how a player can level
+    up without breaking the bank at a table.
+    
+    INPUTS: two arguments
+        tableObj, a CasinoTable object
+        listPlayers. the global list of player dictionaries which must be
+            updated as the game progresses
+    OUTPUT: listPlayers, updated with new bank amounts, removal of players who
+        busted, and new table options (represented by the player's skill level)
+    """
+    # Here are the leveling constants.
+    STARTER = 50
+    NORMAL  = 75
+    SPECIAL = 100
+    roundCounter = 0
+    endGame = False
+    while not endGame:  # This is the actual game loop. main() sets it up.
+        generateTable()
+        roundCounter += 1
+        # Offer to print the rules of Blackjack on round one or whenever the
+        # user presses i for information
+        posX = LEFTMARGIN
+        posY = LINESPACING12
+        if roundCounter == 1:
+            questionText = "Would like to see the rules of Casino Blackjack and this game (Y/N)?"
+            questionSurf = BASICFONT.render(questionText, True, TEXTCOLOR)
+            questionRect = questionSurf.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(questionSurf, questionRect)
+            posY += LINESPACING18
+            instText     = "Press the 'Y' or 'N' to answer"
+            instSurf     = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
+            instRect     = instSurf.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(instSurf, instRect)
+            pygame.display.update()
+            FPSCLOCK.tick()
+            answer = checkForYesNo()
+            while True: # Quick event loop for rules printout.
+                if 
+            
+
+        endRound = False
+        while not endRound:  # This is the primary event loop for the game.
+
+            pygame.display.update()  # This pair of commands ends the game's
+            FPSCLOCK.tick()          # event loop by refreshing the screen.
     
 if __name__ == '__main__':
     main()
