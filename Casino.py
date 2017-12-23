@@ -88,6 +88,11 @@ SKILLS = ('starter', 'normal', 'special', 'high')
 BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
 
+# This is the number of milliseconds that the game pauses as it scrolls
+# instruction text on screen.
+SCROLLSPEED = 1200
+
+
 def main(): # main game function
     global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT
     global listPlayers, listDealers, tableChoice
@@ -1621,6 +1626,108 @@ def checkForYesNo():
         FPSCLOCK.tick()
 
 
+def scrollText(filename):
+    """
+    This function displays scrolling text from a file one disk. If the file
+    is not found, it will display an error message on screen instead.
+    INPUTS: filename,a text file in etc.
+    OUTPUTS: all outputs are on screen
+    """
+    installError = False
+    # Clear the screen.
+    DISPLAYSURF.fill(BLACK)
+    # We have no way of knowing if the program is installed correctly or if
+    # that are any potiential rights issues that might crop up. So, we are
+    # going to "try" to open the file for reading. The installError is a flag
+    # we flip if something goes wrong reading the file.
+    try:
+        f = open(filename, 'r')
+    except:
+        installError = True
+    if installError == True:
+        instText = "scrollText: File {} not found or is not readable. Check installation of Casino Blackjack.".format(filename)
+        instSurf = DATAFONT.render(instText, True, TEXTCOLOR)
+        instRect = instSurf.get_rect(center = (WINCENTERX, WINCENTERY))
+        DISPLAYSURF.blit(instSurf, instRect)
+        pygame.display.update()
+        pressSpaceToContinue()
+        return
+    # So, the file was found and is readable. We need to create a series of
+    # lines of text which start out empty. As we read a line of text, it begin
+    # at the bottom of the screen and scroll up by reducing swapping the text
+    # to higher lines on the screen. That will make the text will scroll
+    # upward, scrolling off eventually. It really shouuld not matter how many
+    # lines are in the file either.
+    
+    # First, create the blanklines. LINESPACING for instruction text is 18pt
+    # making the maximum number of lines on a 1024 screen 40. The text is so
+    # large, barely 30 lines fit on screen.
+    MAXLINESONSCREEN = 28
+    # Now, we need a list of dictionary objects to make this easier to work
+    # with. The format of each dictionary will be:
+    #   'text'    : text content of the line
+    #   'surface' : the surface object holding it
+    #   'rect'    : the rect object containg the surface
+    # We cannot include posX, posY in this dictionary because the positions
+    # of the surfaces have to change on a regular cycle until the last line
+    # of the file is read and printed on screen.
+    textLines = []
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    for i in xrange(0, MAXLINESONSCREEN):
+        textLine     = " ".format(i)
+        textLineSurf = INSTRUCTFONT.render(textLine, True, TEXTCOLOR)
+        textLineRect = textLineSurf.get_rect(topleft = (posX, posY))
+        textLines.append({ 'text'    : textLine,
+                           'surface' : textLineSurf,
+                           'rect'    : textLineRect })
+        DISPLAYSURF.blit(textLineSurf, textLineRect)
+        if i < (MAXLINESONSCREEN - 1):
+            posY += LINESPACING18
+    lastLine = (posX, posY)
+    pygame.display.update()
+    FPSCLOCK.tick()
+    # We now have some empty lines on screen. We need to start pulling in
+    # a line of text and replacing lines to make it scroll up. The loop
+    # shifts all of the lines up one position.
+    for fileLine in f:
+        # Clear the screen before each iteration.
+        DISPLAYSURF.fill(BLACK)
+        # Reset posY. posX is effectively a constant here.
+        posY = TOPMARGIN
+        for i in xrange(0, MAXLINESONSCREEN - 1):
+            # We have to move the surface up one line. That means
+            # changing the coordinates of the rect.topleft after
+            # we copy the contents over.
+            nextIndex = i + 1
+            # print("scrollText: textLines[i] equals {}.".format(textLines[i]))
+            textLines[i] = textLines[nextIndex]
+            textLines[i]['rect'].topleft = (posX, posY)
+            # print("scrollText: textLines[i] equals {}.".format(textLines[i]))
+            # print("scrollText: Blitting text {} on screen.".format(textLines[i]['text']))
+            DISPLAYSURF.blit(textLines[i]['surface'], textLines[i]['rect'])
+            posY += LINESPACING18
+        # Before we import the line from the file, we need to drop the newline
+        # character at the end of the line.
+        # fileLineCleaned = filter(lambda x: x in string.printable, fileLine)
+        fileLineCleaned = string.rstrip(fileLine)
+        # Now, we need to import the line of text from the file and create
+        # irs initial surface and rect object. It will use lastLine as its
+        # position. We also need to blit to the screen.
+        fileLineSurf = INSTRUCTFONT.render(fileLineCleaned, True, TEXTCOLOR)
+        fileLineRect = fileLineSurf.get_rect(topleft = (lastLine))
+        DISPLAYSURF.blit(fileLineSurf, fileLineRect)
+        # This removes the last line so we can append new data in its place.
+        textLines.pop()
+        textLines.append({  'text'    : fileLineCleaned,
+                            'surface' : fileLineSurf,
+                            'rect'    : fileLineRect })
+        # We need to update the screen with these new text surfaces. We also
+        # insert a pause to make is easier to read.
+        pygame.display.update()
+        pygame.time.wait(SCROLLSPEED)
+        
+
 def playBlackjack(tableObj, listPlayers):
     """
     This is the game loop for playing Blackjack at the user's choice of table.
@@ -1656,36 +1763,45 @@ def playBlackjack(tableObj, listPlayers):
     NORMAL  = 75
     SPECIAL = 100
     roundCounter = 0
-    endGame = False
-    while not endGame:  # This is the actual game loop. main() sets it up.
-        generateTable()
-        roundCounter += 1
+    #  Clear the screen.
+    DISPLAYSURF.fill(BGCOLOR)
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    questionText = "Would like to see the rules of Casino Blackjack and this game (Y/N)?"
+    questionSurf = BASICFONT.render(questionText, True, TEXTCOLOR)
+    questionRect = questionSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(questionSurf, questionRect)
+    posY += LINESPACING18
+    instText     = "Press the 'Y' or 'N' to answer"
+    instSurf     = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
+    instRect     = instSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(instSurf, instRect)
+    pygame.display.update()
+    FPSCLOCK.tick()
+    answer = checkForYesNo()
+    if answer == True:
+        scrollText('./etc/BlackJack-Rules.txt')
+        pressSpaceToContinue()
+        scrollText('./etc/Break-The-Bank-Rules.txt')
+        pressSpaceToContinue()
+
+    # Clear the screen again.
+    DISPLAYSURF.fill(BGCOLOR)
+    # endGame = False
+    # while not endGame:  # This is the actual game loop. main() sets it up.
+        # generateTable()
+        # roundCounter += 1
         # Offer to print the rules of Blackjack on round one or whenever the
         # user presses i for information
-        posX = LEFTMARGIN
-        posY = LINESPACING12
-        if roundCounter == 1:
-            questionText = "Would like to see the rules of Casino Blackjack and this game (Y/N)?"
-            questionSurf = BASICFONT.render(questionText, True, TEXTCOLOR)
-            questionRect = questionSurf.get_rect(topleft = (posX, posY))
-            DISPLAYSURF.blit(questionSurf, questionRect)
-            posY += LINESPACING18
-            instText     = "Press the 'Y' or 'N' to answer"
-            instSurf     = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
-            instRect     = instSurf.get_rect(topleft = (posX, posY))
-            DISPLAYSURF.blit(instSurf, instRect)
-            pygame.display.update()
-            FPSCLOCK.tick()
-            answer = checkForYesNo()
-            while True: # Quick event loop for rules printout.
-                if 
+        # posX = LEFTMARGIN
+        # posY = LINESPACING12
             
 
-        endRound = False
-        while not endRound:  # This is the primary event loop for the game.
+        # endRound = False
+        # while not endRound:  # This is the primary event loop for the game.
 
-            pygame.display.update()  # This pair of commands ends the game's
-            FPSCLOCK.tick()          # event loop by refreshing the screen.
+            # pygame.display.update()  # This pair of commands ends the game's
+            # FPSCLOCK.tick()          # event loop by refreshing the screen.
     
 if __name__ == '__main__':
     main()

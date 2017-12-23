@@ -1315,6 +1315,8 @@ class CasinoTable(object):
             debugging (unchanged in Pygame version)
         rules: Returns the contents of the Blackjack-rules.txt file or an
             error message if the file is not found.
+        rulesGUI: Returns the contents of the rules file for the pygame GUI
+            version of Blackjack, Break-The-Bank-Rules.txt.
         deal_round: Deals a round of cards to each player, printing out the table when 
             completed. It checks for player blackjacks and pays them out. it also checks
             the dealer's blackjack_flag and offers insurance bets.
@@ -1468,7 +1470,7 @@ class CasinoTable(object):
     
     def rules(self):
         '''
-        Pulls a copy of the rules from a Blackjack-Rules.txt and returns the
+        Pulls a copy of the rules from Blackjack-Rules.txt and returns the
         copy. If this file is not found, it returns an error message.
         '''
         if os.path.exists('./etc/BlackJack-Rules.txt'):
@@ -1477,7 +1479,21 @@ class CasinoTable(object):
             f.close()
             return contents
         else:
-            return 'File, BlackJack-Rules.txt, was not found. Check installation of Blackjack.'
+            return 'rules: BlackJack-Rules.txt, was not found. Check installation of Blackjack.'
+        return
+
+    def rulesGUI(self):
+        '''
+        Pulls a copy of the rules from Break-The-Bank-Rules.txt and returns the
+        copy. If this file is not found, it returns an error message.
+        '''
+        if os.path.exists('./etc/Break-The-Bank-Rules.txt'):
+            f = open('./etc/Break-The-Bank-Rules.txt', 'r')
+            contents = f.read()
+            f.close()
+            return contents
+        else:
+            return 'rulesGUI: Break-The-Bank-Rules.txt, was not found. Check installation of Blackjack.'
         return
 
     def deal_round(self):

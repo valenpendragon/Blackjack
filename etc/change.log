@@ -523,3 +523,9 @@ Casino (game): playBlackjack: This is the game playing function. It contains the
 Created a second rules file in main/etc describing the breaking the bank rules and how to navigate the playing screen GUI.
 Casino (game): checkForQuit: Created this function to watch for quit events. Unlike some other event checks, this one puts back any queues of events it scans. That keeps KEYUP and KEYDOWN events from being accidentally purged from the event lists. This function verifies that the user wants to terminate without saving.
 Casino (game): checkForYesNo: This function performs the event loop check for Y/N answers, returning True for Y, False for No.
+
+12/23/17 07:40 Pushed to origin pygame
+
+CasinoTable: rules: Updated the comments and error message it returns for a missing file. Updated main comment block as well.
+CasinoTable: rulesGUI: Created this method to return the rules for the pygame GUI version this game, including GUI navigation. Updated the main comments block for the class as well.
+Casino (game): scrollText: Created this function to slowly scroll text files, like the rules and GUI text files, for the user to read. It uses the new constant SCROLLSPEED to control how fast the lines scroll up.
