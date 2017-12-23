@@ -529,3 +529,7 @@ Casino (game): checkForYesNo: This function performs the event loop check for Y/
 CasinoTable: rules: Updated the comments and error message it returns for a missing file. Updated main comment block as well.
 CasinoTable: rulesGUI: Created this method to return the rules for the pygame GUI version this game, including GUI navigation. Updated the main comments block for the class as well.
 Casino (game): scrollText: Created this function to slowly scroll text files, like the rules and GUI text files, for the user to read. It uses the new constant SCROLLSPEED to control how fast the lines scroll up.
+
+12/23/17 07:$5 Addendum Pushed to origin pygame
+
+Casino (game): playBlackjack: Still under construction. Currently, it is able to ask if the user wants to see the rules at the beginning of the game.
