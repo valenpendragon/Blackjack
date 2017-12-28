@@ -27,6 +27,10 @@ NAVY         = (  0,   0, 128)
 PERU         = (205, 133,  63)
 SADDLEBROWN  = (139,  69,  19)
 
+BGCOLOR   = DIMGRAY
+TEXTCOLOR = WHITE
+BUTTONOUTLINE   = BLACK
+BUTTONTEXTCOLOR = BLACK
 
 # Pygame Constants. All of these values are in pixels
 FPS = 30
@@ -46,7 +50,10 @@ STATIONWIDTH  =  250                    # width of dealer's station
 STATIONHEIGHT =   60                    # height of dealer's station
 MAXPLAYERS    =    3                    # board space limits players to 3
 SCOREWIDTH    =  200                    # width of all players' score text
-STARTINGBANK  =50000                    # Bank for 'starter' players
+BUTTONWIDTH   =  100                    # width of action buttons
+BUTTONHEIGHT  =   50                    # height of action buttons
+BUTTONSPACING =   75                    # Spacing between action buttons
+OUTLINEWIDTH  =    5                    # width of the outlines of butttons
 
 # These four items are the edges of printable area in game window.
 LEFTMARGIN    =   10                    
@@ -82,11 +89,16 @@ DEALERSCARDS      = DEALERSTATIONTOP + STATIONHEIGHT + CARDSPACING
 
 # This tuple is used to find take the highest skill level of the user's
 # players and generate a tuple of the tables at which they will allowed to
-# play in the game.
-SKILLS = ('starter', 'normal', 'special', 'high')
+# play in the game. The number of rounds a player must complete at a table
+# of their current skill level to increase it below that.
+SKILLS  = ('starter', 'normal', 'special', 'high')
+STARTER = 50
+NORMAL  = 75
+SPECIAL = 100
 
-BGCOLOR   = DIMGRAY
-TEXTCOLOR = WHITE
+
+# Bank for 'starter' players
+STARTINGBANK = 50000
 
 # This is the number of milliseconds that the game pauses as it scrolls
 # instruction text on screen.
@@ -94,8 +106,8 @@ SCROLLSPEED = 1200
 
 
 def main(): # main game function
-    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT
-    global listPlayers, listDealers, tableChoice
+    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, BUTTONFONT
+    global listPlayers, listDealers, tableChoice, tableObj
 
     # Pygame initialization.
     pygame.init()
@@ -143,6 +155,15 @@ def main(): # main game function
     except:
         # FreeMonoBold.ttf could not be found or could not be used.
         INSTRUCTFONT = pygame.font.Font('freesansbold.ttf', 18)
+
+    # The next stanza sets BUTTONFONT, used for action buttons. It is an
+    # 24pt font instead of a 12pt or 14pt font. It is setup the same way
+    # as the previous fonts. It uses LINESPACING18 for specing.
+    try:
+        BUTTONFONT = pygame.font.Font('etc/FreeMonoBold.ttf', 24)
+    except:
+        # FreeMonoBold.ttf could not be found or could not be used.
+        BUTTONFONT = pygame.font.Font('freesansbold.ttf', 24)
 
     # Next, we need to build the BLANKCARD and CARDIMAGES dictionaries.
     # We need to initialize the dictionaries that store card images and
@@ -283,12 +304,12 @@ def main(): # main game function
 
     # Now, we need to generate a CasinoTable object. This object needs to be
     # populated from listPlayers and tableChoice.
-    tableObject = CasinoTable(listPlayers,
-                              tableChoice['blackjack multiplier'],
-                              tableChoice['name'],
-                              tableChoice['bank'])
-    # diagnosticPrint(tableObject, output = 'v')
-    playBlackjack(tableObject, listPlayers)
+    tableObj = CasinoTable(listPlayers,
+                           tableChoice['blackjack multiplier'],
+                           tableChoice['name'],
+                           tableChoice['bank'])
+    # diagnosticPrint(tableObj, output = 'v')
+    playBlackjack(tableObj, listPlayers)
     
     # This is a test block to test saving games to disk.
     # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
@@ -330,7 +351,7 @@ def cardImagesDiagnosticPrint(adjX=0, adjY=0):
         pygame.display.update()
         FPSCLOCK.tick()
 
-def diagnosticPrint(tableObject, output = ''):
+def diagnosticPrint(tableObj, output = ''):
     """
     This function checks for and prints out the following objects classes:
         CasinoTable
@@ -343,13 +364,13 @@ def diagnosticPrint(tableObject, output = ''):
             by the table multiplier, if better)
         listDealers : list of the Dealers in the casino and the type of table
             they deal at (normal, special event, high rollar, beginner)
-    When player(s) pick a table to play at, a tableObject is created. Before
-    that, it does not exist. The tableObject has a Dealer object and up to
-    five player objects that manage their hands, banks, and betting options.
+    When player(s) pick a table to play at, a table object is created. Before
+    that, it does not exist. The tableObj has a Dealer object and up to
+    three player objects that manage their hands, banks, and betting options.
     Since this is partly a diagnostic function, we cannot assume that any of
     these objects exist.
     INPUT: two arguments
-        tableObject, a CasinoTable object
+        tableObj, a CasinoTable object
         optional 'v' or 'verbose' argument (all other strings are ignored)
     OUTPUT: A quick visual printout of the contents of the active objects in
         the current game. If the verbose option is requested, it will also
@@ -363,42 +384,42 @@ def diagnosticPrint(tableObject, output = ''):
     posY = TOPMARGIN
     
     # See if a table object exists.
-    if tableObject:
-        tableObjectInfoSurf = BASICFONT.render('A CasinoTable object exists', True, TEXTCOLOR)
-        tableObjectInfoRect = tableObjectInfoSurf.get_rect()
-        tableObjectInfoRect.topleft = (posX, posY)
-        DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
+    if tableObj:
+        tableObjInfoSurf = BASICFONT.render('A CasinoTable object exists', True, TEXTCOLOR)
+        tableObjInfoRect = tableObjInfoSurf.get_rect()
+        tableObjInfoRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(tableObjInfoSurf, tableObjInfoRect)
         posY += LINESPACING12
         if output == 'v' or output == 'verbose':
-            tableObject.diagnostic_print()
-        if tableObject.tableDealer != None:
-            tableObjectInfoSurf = BASICFONT.render('A Dealer object was found inside the CasinoTable', True, TEXTCOLOR)
-            tableObjectInfoRect = tableObjectInfoSurf.get_rect()
-            tableObjectInfoRect.topleft = (posX, posY)
-            DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
+            tableObj.diagnostic_print()
+        if tableObj.tableDealer != None:
+            tableObjInfoSurf = BASICFONT.render('A Dealer object was found inside the CasinoTable', True, TEXTCOLOR)
+            tableObjInfoRect = tableObjInfoSurf.get_rect()
+            tableObjInfoRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(tableObjInfoSurf, tableObjInfoRect)
             posY += LINESPACING12
-            tableDealer = tableObject.tableDealer.extract_data()
+            tableDealer = tableObj.tableDealer.extract_data()
             printTableDealer(tableDealer, 'diagnostic')
             generateTable(tableChoice['table color'])
 
-        if tableObject.players:
-            numOfPlayers = len(tableObject.players)
-            tableObjectInfoSurf = BASICFONT.render('%s players have been found inside the CasinoTable' % (numOfPlayers), True, TEXTCOLOR)
-            tableObjectInfoRect = tableObjectInfoSurf.get_rect()
-            tableObjectInfoRect.topleft = (posX, posY)
-            DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
+        if tableObj.players:
+            numOfPlayers = len(tableObj.players)
+            tableObjInfoSurf = BASICFONT.render('%s players have been found inside the CasinoTable' % (numOfPlayers), True, TEXTCOLOR)
+            tableObjInfoRect = tableObjInfoSurf.get_rect()
+            tableObjInfoRect.topleft = (posX, posY)
+            DISPLAYSURF.blit(tableObjInfoSurf, tableObjInfoRect)
             # Note: We need the index to go from 1 to 3 inclusive.
             for i in xrange(1, numOfPlayers + 1):
-                ordinal = tableObject.TABLESEATS[str(i)]
-                playerObj = tableObject.players[ordinal].extract_data()
+                ordinal = tableObj.TABLESEATS[str(i)]
+                playerObj = tableObj.players[ordinal].extract_data()
                 printTablePlayer(playerObj, ordinal, 'diagnostic')
             
 
-    else: # tableObject is not defined.
-        tableObjectInfoSurf = BASICFONT.render('No CasinoTable object found', True, TEXTCOLOR)
-        tableObjectInfoRect = tableObjectInfoSurf.get_rect()
-        tableObjectInfoRect.topleft = (posX, posY)
-        DISPLAYSURF.blit(tableObjectInfoSurf, tableObjectInfoRect)
+    else: # tableObj is not defined.
+        tableObjInfoSurf = BASICFONT.render('No CasinoTable object found', True, TEXTCOLOR)
+        tableObjInfoRect = tableObjInfoSurf.get_rect()
+        tableObjInfoRect.topleft = (posX, posY)
+        DISPLAYSURF.blit(tableObjInfoSurf, tableObjInfoRect)
         posY += LINESPACING12
 
 
@@ -581,7 +602,7 @@ def printTableDealer(tableDealer, output = 'player turn'):
     FPSCLOCK.tick()
     return # printTableDealer
 
-def printTablePlayer(playerObj, ordinal, output = 'normal'):
+def printTablePlayer(playerObj, playerPosition, output = 'normal'):
     '''
     This method prints on screen the full data for a player. This data
     is pulled from the Player.extract_data method, which returns a dictionary
@@ -621,7 +642,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
     # the same for the both the regular and split hands. We need all three
     # sets of coordinates for the score data and both hands of cards, as they
     # all printing independently of each other.
-    if ordinal == 'left':
+    if playerPosition == 'left':
         # The player is the left one. posX will be on the screen margin,
         # while regHandX and splitHandX will on the left margin of the green
         # area of the table.
@@ -629,7 +650,7 @@ def printTablePlayer(playerObj, ordinal, output = 'normal'):
         regHandX   = TABLELEFTMARGIN
         splitHandX = regHandX
 
-    elif ordinal == 'middle':
+    elif playerPosition == 'middle':
         # The player is the center one. posX moves the output under the center
         # of the table, but it will be lined up there. Likewise, regHandX moves
         # there as well. We set the pointer to place the first two cards of
@@ -1516,22 +1537,27 @@ def getTableChoice(id, name):
             break
     return
 
-def checkForQuit(tableObj):
+def checkForQuit():
     """
     This function looks for QUIT events. It also checks KEYDOWN/KEYUP events
     for ESCAPE events. It will confirm any such events before calling the
     terminate() function. The booleans, endGame and verifyChoice are used to
     tell Python, respecitively, to terminate() or to verify that the user
-    really wants to end without saving. If not, it will ask if the player
-    wants to save and exit. saveGame carries that decision.
+    really wants to end without saving. If not, it will ask if the user
+    wants to save and exit. saveGame carries that decision. If the user
+    wants to save, it will copy any remaining player data in tableObj over to
+    listPlayers, then write listPlayers to a save file.
+    INPUTS: none, listPlayers and tableObj are both global variable.
     """
+    # pdb.set_trace()
     endGame = False
     verifyChoice = False
-    saveGame = None
+    saveGame = False
     # Get all QUIT events.
     for event in pygame.event.get(QUIT):
         verifyChoice = True
         # verifyChoice means to check for exit.
+        
     # Now, we need to check to see if ESCAPE was pressed or released. To
     # keep these event queues separate, we need to check them individualy.
     # We do this so that we can put all other KEYUPs and KEYDOWNs back into
@@ -1544,7 +1570,20 @@ def checkForQuit(tableObj):
         if event.key == K_ESCAPE:
             verifyChoice = True
         pygame.event.post(event)
-
+        
+    # Now, we need to check for the case in which there are no players
+    # remaining at the game table. In this case, it is possible that another
+    # QUIT or ESCAPE event took place before the tableObj was created. So,
+    # we will use try to make sure it exists first.
+    try:
+        type(tableObj)
+    except:
+        # There is no tableObj or it is corrupt.
+        verifyChoice = True
+    else:
+        if tableObj.numPlayers == 0:
+            verifyChoice = True
+    
     # Now, we verify the choice.
     if verifyChoice == True:
         DISPLAYSURF.fill(BLACK)
@@ -1553,9 +1592,10 @@ def checkForQuit(tableObj):
         instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
         instRect = instSurf.get_rect(center = (posX, posY))
         DISPLAYSURF.blit(instSurf, instRect)
-        pyggame.display.update()
-        FPSCLOCK.tick()
-        answer = checkForYesNo()
+        pygame.display.update()
+        posY += LINESPACING18
+        answer = checkForYesNo(posX, posY, 'center')
+        posY += LINESPACING18
         # answer will be True is Y was pressed, False if N is pressed.
         # True means the player wants to exit, but they may not want to
         # save their progress if the game did not go well. So, we set the
@@ -1573,9 +1613,9 @@ def checkForQuit(tableObj):
         instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
         instRect = instSurf.get_rect(center = (posX, posY))
         DISPLAYSURF.blit(instSurf, instRect)
-        pyggame.display.update()
-        FPSCLOCK.tick()
-        saveGame = checkForYesNo()
+        pygame.display.update()
+        posY += LINESPACING18
+        saveGame = checkForYesNo(posX, posY, 'center')
         if saveGame == True:
             # Note, this function does not care if players were eliminated or
             # were pulled from the game. Other function or methods would have
@@ -1596,18 +1636,31 @@ def checkForQuit(tableObj):
         terminate()
     return # checkForQuit
 
-def checkForYesNo():
+def checkForYesNo(posX = RIGHTMARGIN, posY = BOTTOMMARGIN, rectLocation = 'bottomright'):
     """
     This function watches for Y or N to be pressed.
-    INPUTS: Input comes from pygame.events.
+    INPUTS: 3 optional arguments
+        two optional positional arguments that control where the text
+            instruction prints, default is bottom right corner
+        rectLocation, string, indicates which of four possible paraments to
+            use: topleft, topright, bottomleft, bottomright
+        Note: There is also input from pygame.events.KEYDOWN events.
     OUTPUTS: True if Y was pressed, False is N was pressed.
     """
     while True:  # event loop
         # In the lower right corner, print this message.
         textSurf = DATAFONT.render("Press Y or N to respond.", True, TEXTCOLOR)
         textRect = textSurf.get_rect()
-        textRect.bottomright = (RIGHTMARGIN, BOTTOMMARGIN)
+        if rectLocation == 'topleft':
+            textRect.topleft = (posX, posY)
+        elif rectLocation == 'topright':
+            textRect.topright = (posX, posY)
+        elif rectLocation == 'bottomleft':
+            textRect.bottomleft = (posX, posY)
+        else: # rectLocation == 'bottomright', the default value.
+            textRect.bottomright = (posX, posY)
         DISPLAYSURF.blit(textSurf, textRect)
+        
         for event in pygame.event.get(QUIT): # get all QUIT events
             terminate()                      # terminate if any QUIT events are present
         for event in pygame.event.get(KEYUP):# get all KEYUP events
@@ -1710,7 +1763,7 @@ def scrollText(filename):
         # Before we import the line from the file, we need to drop the newline
         # character at the end of the line.
         # fileLineCleaned = filter(lambda x: x in string.printable, fileLine)
-        fileLineCleaned = string.rstrip(fileLine)
+        fileLineCleaned = string.strip(fileLine)
         # Now, we need to import the line of text from the file and create
         # irs initial surface and rect object. It will use lastLine as its
         # position. We also need to blit to the screen.
@@ -1758,27 +1811,23 @@ def playBlackjack(tableObj, listPlayers):
     OUTPUT: listPlayers, updated with new bank amounts, removal of players who
         busted, and new table options (represented by the player's skill level)
     """
-    # Here are the leveling constants.
-    STARTER = 50
-    NORMAL  = 75
-    SPECIAL = 100
     roundCounter = 0
     #  Clear the screen.
     DISPLAYSURF.fill(BGCOLOR)
     posX = LEFTMARGIN
-    posY = TOPMARGIN
-    questionText = "Would like to see the rules of Casino Blackjack and this game (Y/N)?"
-    questionSurf = BASICFONT.render(questionText, True, TEXTCOLOR)
-    questionRect = questionSurf.get_rect(topleft = (posX, posY))
-    DISPLAYSURF.blit(questionSurf, questionRect)
+    posY = TOPMARGIN + LINESPACING12
+    rulesText = "Would like to see the rules of Casino Blackjack and this game (Y/N)?"
+    rulesSurf = BASICFONT.render(rulesText, True, TEXTCOLOR)
+    rulesRect = rulesSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(rulesSurf, rulesRect)
     posY += LINESPACING18
-    instText     = "Press the 'Y' or 'N' to answer"
-    instSurf     = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
-    instRect     = instSurf.get_rect(topleft = (posX, posY))
-    DISPLAYSURF.blit(instSurf, instRect)
+    # instText     = "Press the 'Y' or 'N' to answer"
+    # instSurf     = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
+    # instRect     = instSurf.get_rect(topleft = (posX, posY))
+    # DISPLAYSURF.blit(instSurf, instRect)
     pygame.display.update()
-    FPSCLOCK.tick()
-    answer = checkForYesNo()
+    answer = checkForYesNo(posX, posY, 'topleft')
+    # pdb.set_trace()
     if answer == True:
         scrollText('./etc/BlackJack-Rules.txt')
         pressSpaceToContinue()
@@ -1786,22 +1835,169 @@ def playBlackjack(tableObj, listPlayers):
         pressSpaceToContinue()
 
     # Clear the screen again.
-    DISPLAYSURF.fill(BGCOLOR)
-    # endGame = False
-    # while not endGame:  # This is the actual game loop. main() sets it up.
-        # generateTable()
-        # roundCounter += 1
-        # Offer to print the rules of Blackjack on round one or whenever the
-        # user presses i for information
-        # posX = LEFTMARGIN
-        # posY = LINESPACING12
-            
-
-        # endRound = False
-        # while not endRound:  # This is the primary event loop for the game.
-
+    DISPLAYSURF.fill(BLACK)
+    pygame.display.update()
+    endGame = False
+    while not endGame:  # This is the actual game loop. main() sets it up.
+        roundCounter += 1
+        # The following variables control the behavior of the game in the
+        # event loop. Their purposes are as follows:
+        #   endRound : boolean, True tells the event while loop to exit
+        #   hitChosen : None or player's name, indicates the user wants the
+        #       current player to take a card, has to be reset between cards
+        #       requested by the players and between players in the round
+        #   standChosen : None or player's name, indicates the user wants the
+        #       player to 'stand', overrides hitChosen
+        #   insBet : None or player's name, indicates that the user wants the
+        #       player to make an insurance bet when offered
+        #   doubleDown : None or player's name, indicates that the users wants
+        #       the player to double down on a bet
+        #   splitHand : None or player's name, indicates that the user wants
+        #       the player split their hand
+        #   leaveTable : boolean, True indicates that the user wants to pull
+        #       all players and leave the game
+        #   pullPlayer : None or the player's name, indicates that user wants
+        #       the player to leave the table and "settle up", this removes
+        #       the player from the current game but not permanently eliminated
+        #   partOfRound : 'ante', 'deal', 'left', 'middle', 'right', 'dealer',
+        #       indicates which part of the round play is at turn it is
+        #           'ante'   : collecting initial bets from players
+        #           'deal'   : dealing the cards
+        #           'left'   : left player's turn (must be one)
+        #           'middle' : middle player's turn (if there is one)
+        #           'right'  : right player's turn (if there is one)
+        #           'dealer' : dealer's turn
+        #   activeHitStand: boolean, tells Python that the hitButton and
+        #       standButton are active and to look for mouse click events
+        #   infoButtonPressed : boolean, tells Python that the user needs to
+        #       see the Break The Bank rules again.
+        endRound    = False
+        hitChosen   = None
+        standChosen = None
+        insBet      = None
+        doubleDown  = None
+        splitHand   = None
+        leaveTable  = False
+        pullPlayer  = None
+        activeHitStand    = False
+        infoButtonPressed = False
+        partOfRound = 'ante'
+        while not endRound:  # This is the primary event loop for the game.
+            # First, we print the table, the dealer, and the players.
+            DISPLAYSURF.fill(BGCOLOR)
+            generateTable(tableChoice['table color'])
+            if partOfRound != 'dealer':
+                printTableDealer(tableObj.tableDealer.extract_data())
+            else:
+                printTableDealer(tableObj.tableDealer.extract_data(), output = 'dealer turn')
+            for playerPosition in ('left', 'middle', 'right'):
+                # Some player positions may be empty.
+                try:
+                    name = tableObj.players[playerPosition].name
+                except:
+                    # This player has been removed or eliminated.
+                    continue
+                printTablePlayer(tableObj.players[playerPosition].extract_data(), playerPosition)
+                print("playBlackjack: tableObj contains {}".format(tableObj))
+            # Before a round starts, the user may pull any player out of the
+            # game to keep them from being eliminated, including all three.
+            posX = LEFTMARGIN
+            posY = TOPMARGIN
+            leaveText = "Would you like to withdraw any players before this round starts?"
+            leaveSurf = BASICFONT.render(leaveText, True, TEXTCOLOR)
+            leaveRect = leaveSurf.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(leaveSurf, leaveRect)
+            posY += LINESPACING12
+            pygame.display.update()
+            # Clear the answer before resetting.
+            answer = checkForYesNo(posX, posY, 'topleft')
+            if answer == True:
+                # We need to ask about each player that still remains in the
+                # game.
+                # print("playBlackjack: tableObj is {}.".format(tableObj))
+                posY += LINESPACING12
+                for playerPosition in ('left', 'middle', 'right'):
+                    # Some player positions may be empty.
+                    try:
+                        playerName = tableObj.players[playerPosition].name
+                    except:
+                        # Player position is empty. Skip it.
+                        print("playBlackjack: No player at playerPosition {}. Skipping it.".format(playerPosition))
+                        continue
+                    withdrawText = "Would like to withdraw {}?".format(tableObj.players[playerPosition].name)
+                    withdrawSurf = BASICFONT.render(withdrawText, True, TEXTCOLOR)
+                    withdrawRect = withdrawSurf.get_rect(topleft = (posX, posY))
+                    DISPLAYSURF.blit(withdrawSurf, withdrawRect)
+                    pygame.display.update()
+                    posY += LINESPACING12
+                    answer = checkForYesNo(posX, posY, 'topleft')
+                    if answer == True:
+                        # This function alters the tableObj.
+                        removeActivePlayer(playerPosition, roundCounter)
+                        print("playBlackjack: tableObj is now {0}. Number of players remaining: {1}.".format(tableObj, tableObj.numPlayers))
+                    posY += LINESPACING12
+                    
+                # We need to offer the user a chance to save their players'
+                # progress if they pulled all of their players from the table.
+                if tableObj.numPlayers == 0:
+                    DISPLAYSURF.fill(BLACK)
+                    pygame.display.update()
+                    checkForQuit()
+                    print("playBlackjack: checkForQuit() completed.")
+                    # Even if the user does not want to quit, control must be
+                    # returned to main() to start a new game.
+                    return
             # pygame.display.update()  # This pair of commands ends the game's
-            # FPSCLOCK.tick()          # event loop by refreshing the screen.
+            # pygame.time.wait(33)     # event loop by refreshing the screen.
+            # FPSCLOCK.tick()          # 33ms wait = 30fps.
+
+def removeActivePlayer(playerPosition, rounds):
+    """
+    This function removes a player from the table object, but updates their
+    bank in listPlayers. This function is used with the player wants to
+    withdraw a player between rounds.
+    INPUTS: three arguments (listPlayers and tableObj are global objects)
+        tableObj, a CasinoTable class object (global)
+        playerPosition, string, the player's seat at the table
+        rounds, integer, the number of rounds the player played before
+            being pulled from the table
+    OUTPUTS: none
+    Note: This function changes global object, tableObj, by removing a player.
+    It also updates listPlayers with the player's bank.
+    """
+    # We need to match their name. The playerObj should have it. We need to
+    # update the bank for that player once found. If they played sufficient
+    # rounds, the player's skill should be updated as well.
+    # pdb.set_trace()
+    playerObj = tableObj.players[playerPosition]
+    for i in range(0, len(listPlayers)):
+        if listPlayers[i]['name'] == playerObj.name:
+            # Update the player's bank.
+            listPlayers[i]['bank'] = playerObj.bank
+            # Check to see if they played enough rounds to advance their skill.
+            if listPlayers[i]['skill'] == 'starter' and rounds >= STARTER:
+                listPlayers[i]['skill'] = 'normal'
+            elif listPlayers[i]['skill'] == 'normal' and rounds >= NORMAL:
+                listPlayers[i]['skill'] = 'special'
+            elif listPlayers[i]['skill'] == 'special' and rounds >= SPECIAL:
+                listPlayers[i]['skill'] = 'high'
+    # Now, we need to remove that player from the tableObj. We also need to
+    # reduce the number of players by 1. The only problem is that CasinoTable
+    # objects do not easily delete items.
+    newPlayerDict = {}
+    for playerSeat in ('left', 'middle', 'right'):
+        try:
+            name = tableObj.players[playerSeat].name
+        except:
+            # This player no longer exists. Skip it.
+            print("removeActivePlayer: No player at playerPosition {}. Skipping it.".format(playerPosition))
+            continue
+        if playerSeat != playerPosition:
+            newPlayerDict[playerSeat] = tableObj.players[playerSeat]
+        # It will skip the player with the matching seat.
+    tableObj.players = newPlayerDict            
+    tableObj.numPlayers -= 1
+    return
     
 if __name__ == '__main__':
     main()

@@ -1066,7 +1066,7 @@ class Dealer(Player):
         out the full Dealer data during the dealer's turn. Note: These
         methods are for text-only games and for diagnostic purposes in GUIs.
         '''
-        print("Dealer")
+        print("Dealer:\t", self.name)
         print("Dealer's Bank:\t${0}".format(self.bank))
         
         if self.hard_hand_score != 0:
@@ -1143,7 +1143,7 @@ class Dealer(Player):
         This method is used during the dealer's turn to print out the full hand and
         hand scores.
         '''
-        print("Player:\t", self.name)
+        print("Dealer:\t", self.name)
         print("Bank:\t${0}".format(self.bank))
         print("\n\tCurrent Hand: ", end='')
         # This suppresses the linefeed and flushes the buffer to make the ouput
@@ -1439,9 +1439,9 @@ class CasinoTable(object):
         in a GUI environment shoud use the extract_data() method instead.
         '''
         print(self.deck)
-        for i in xrange(0, self.table_index):
-            print(self.players[i])
-        print(tableDealer)
+        for player in self.players:
+            print(self.players[player])
+        print(self.tableDealer)
         return 'Table complete'
 
     def extract_data(self):

@@ -533,3 +533,50 @@ Casino (game): scrollText: Created this function to slowly scroll text files, li
 12/23/17 07:$5 Addendum Pushed to origin pygame
 
 Casino (game): playBlackjack: Still under construction. Currently, it is able to ask if the user wants to see the rules at the beginning of the game.
+
+12/24/17 11:21 Pushed to origin pygame
+
+Casino (game): checkForQuit: Added a new option to save remaining players before exiting.
+Casino (game): main: Added BUTTONFONT (24pt), BUTTONTEXTCOLOR (BLACK), BUTTONPASSIVEFILL and BUTTONSPACING to make the hit/stand buttons easier to see and read.
+Casino (game): playBlackjack: Considering dropping the event loop for most part. It could be allowed to check it once in a while, but almost all interaction takes place via specific Y/N or H/S, followed by Textbox for bets or bet increases.
+Casino (game): playBlackjack: Uses variables with following functions:
+	endGame: closes the main game loop
+	endRound : boolean, True tells the event while loop to exit
+	hitChosen : None or player's name, indicates the user wants the
+        current player to take a card, has to be reset between cards
+        requested by the players and between players in the round
+    standChosen : None or player's name, indicates the user wants the
+        player to 'stand', overrides hitChosen
+    insBet : None or player's name, indicates that the user wants the
+        player to make an insurance bet when offered
+    doubleDown : None or player's name, indicates that the users wants
+        the player to double down on a bet
+    splitHand : None or player's name, indicates that the user wants
+        the player split their hand
+    leaveTable : boolean, True indicates that the user wants to pull
+		all players and leave the game
+    pullPlayer : None or the player's name, indicates that user wants
+        the player to leave the table and "settle up", this removes
+        the player from the current game but not permanently eliminated
+	partOfRound : 'ante', 'deal', 'left', 'middle', 'right', 'dealer',
+        indicates which part of the round play is at turn it is
+	activeHitStand: boolean, tells Python that the hitButton and
+        standButton are active and to look for mouse click events
+    infoButtonPressed : boolean, tells Python that the user needs to
+        see the Break The Bank rules again.
+
+12/28/17 18:20 Pushed to origin pygame
+
+Casino (game): playBlackjack: Removed (and saved) the event loop and hit/stand button code. I have come to the conclusion that is is better to simply prompt the user for input when it is needed, since I already have checkForYesNo that looks for y/n answers.
+Casino (game): checkForHitStand: Created this function to watch for h/s key press events.
+Break-The-Bank-Rules.txt: Edited to reflect the removal of the pygame event loop.
+Casino (game): playBlackjack: Changed questionText, questionSurf, and questionRect to rulesText, rulesSurf, and rulesRect to avoid confusion with later question prompts.
+Casino (game): playBlackjack: Added leaveText, leaveSurf, and leaveRect to prompt the user to decide if they want to remove a player from the current game; <position>LeaveText, <position>LeaveSurf, and <position>LeaveRect for each player position to prompt the user about withdrawing a player between rounds.
+Casino (game): removeActivePlayer: Created this function to remove players from the game, but preserve their current bank and skill level in listPlayers. (Oddly, Python really did not like calling this one pullPlayer.)
+Casino (game): Moved leveling constants, STARTER, NORMAL, and SPECIAL, up to global constants.
+Casino (game): checkForYesNo: Added optional posX, posY, rectLocation arguments, with defaults set to the lower right corner along the game screen edge.
+CasinoTable: __str__: Changed attribute table_index to new numPlayers. Fixed print out problems with this method following some of major data object changes.
+Dealer: __str__: Added dealer's name to the print out.
+Casino (game): Converted tableObj into a global variable after it started coming back as a NoneType object in function calls. Changed all references to it in the code, including functions.
+Casino (game): diagnosticPrint: Fixed a comment that suggested there could be five players at a CasinoTable object.
+Casino (game): checkForQuit: Added check for an empty list of players as an added condition to verifyChoice. Removed the argument since tableObj and listPlayers are global variables.
