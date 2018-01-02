@@ -580,3 +580,25 @@ Dealer: __str__: Added dealer's name to the print out.
 Casino (game): Converted tableObj into a global variable after it started coming back as a NoneType object in function calls. Changed all references to it in the code, including functions.
 Casino (game): diagnosticPrint: Fixed a comment that suggested there could be five players at a CasinoTable object.
 Casino (game): checkForQuit: Added check for an empty list of players as an added condition to verifyChoice. Removed the argument since tableObj and listPlayers are global variables.
+
+1/1/18 20:50 Pushed to origin pygame
+
+Casino (game): Constants: Added STATUSBLOCKWIDTH and STATUSBLOCKHEIGHT constants, used to create and print in the upper left corner when the player provides erroneous info. added PHASEBLOCKWIDTH and PHASEBLOCKHEIGHT to constants to clear and print in the upper right corner.
+Casino (game): main: Changed BASICFONT to FreeSerif, SCOREFONT to FreeSerifItalic, and INSTRUCTFONT to FreeSerifBold due to how badly FreeSans and FreeMonoBold are rendered at 12 and 18 point. Added PROMPTFONT set 14pt FreeSerif for Textbox prompts.
+PygameTextboxClass: __init__: Altered boxFont creation to look for a font file in ./etc before looking for system fonts. Also, removed the warning content since that is not needed with the character filters.
+CasinoTable: Attributes: Added phase and seat because it does not appear possible to pass it through the Textbox calls to the 'command' function of the Textbox. There are also problems keeping these updated as variables. These are accessed in Casino and assigned to partOfRound and playerPosition respectively.
+Casino (game): playBlackjack: Added stanzas calling for initial bets. Moved table printing routines to a new function to clean up the code. Corrected some comments on partOfRound variable.
+Casino (game): refreshTable: Refreshes the table printout with the cards in place, bet, bank, and other data. It calls other functions to perform these actions. The purpose is to reduce duplication of code. seat (for playerPosition), phase (for partOfRound), and rounds (for roundCounter) are used to avoid using global variables whenever possible.
+Casino (game): isPlayerStillThere: Created this function to check if a player occupies a particular seat. Return True, if so, False otherwise.
+Casino (game): getBet: Created this function to generate Textbox objects to take player initial bets as the round starts.
+Casino (game): getBetEvents: Created this function to handle the event loop required to capture Textbox-related events.
+Casino (game): handleBet: This function is called by other functions called by Textboxes that accept integer inputs to get initial or updated bets. The other functions actually pass a specific parameter, split, that the Textbox cannot directly pass to handleBet.
+Casino (game): handleRegBet: Wrapper function for handleBet() that passes it split = False.
+Casino (game): handleSplitBet: Wrapper function for handleBet() that passes it split = True.
+Casino (game): removeActivePlayer: Converted its internal checks for 'seated players' to use isPlayerStillThere.
+Casino (game): offerTableChoices: Added in printouts of the Dealer's min/max bet amounts.
+CasinoTable: __init__: Added optional attributes for min/max bets with defaults. These values are also added to the CasinoTable attributes as min_bet, max_bet.
+Casino (game): Reduced the minimum bet for starter tables to 5. Added an extra phase of each round, 'raise' for doubling down, to remove it from the 'deal' phase. This required changes to refreshTable, 
+Casino (game): pressSpaceToContinue: Added optional parameters to print the press spacebar message at another location besides the corner.
+Casino (game): getTableChoiceEvents: Renamed to getTextboxEvents since the code has proven to be reusable to collect bets.
+Player: extract_data: Fixed a bug that ensures that bets will appear in the extracted data even though hands do not exist yet.

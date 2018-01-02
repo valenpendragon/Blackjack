@@ -403,6 +403,17 @@ class Player(object):
             playerData['hard score split hand'] = None
             playerData['split hand bet']        = None
 
+        # Checking on bets requires a second test. They can exist before 
+        # the hand is dealt. For split hands, the flag will be set before
+        # the cards are separated and the hand created. So, a non-zero bet
+        # needs to be carried over to playerData. It should also happen if
+        # the split flag is True while the hand is in the process of being
+        # separated.
+        if self.bet != 0:
+            playerData['regular bet'] = self.bet
+        if (self.split_flag == True) or (self.split_bet != 0):
+            playerData['split bet'] = self.split_bet
+        
         # Check for an insurance bet.
         if self.insurance != 0:
             playerData['insurance bet'] = self.insurance
@@ -1293,11 +1304,28 @@ class CasinoTable(object):
             method
         tableDealer: a Dealer object, initialized by a name and starting
             bank amount
+        min_bet: The minimum acceptable ante bet for the Dealer's Table.
+        max_bet: The maximum acceptable ante bet for the Dealer's Table.
         dealerLosses: helps track losses during a round
         players: a dict object of the form {'seat ordinal': playerObj},
             where seat ordinal is 'left', 'middle', or 'right' and 
             playerObject is the player object created from a name and bank
         numPlayers: the actual number of players the user has for this game.
+        phase: This is the current phase of the game round. There are several
+            values for this variable:
+               'pregame': indicates that the game has not started.
+               'start'  : allows the user to withdraw players before ante
+               'ante'   : collecting initial bets from players
+               'deal'   : dealing the cards, split hands and insurance bets
+               'raise'  : option to raise bets
+               'left'   : left player's turn (must be one)
+               'middle' : middle player's turn (if there is one)
+               'right'  : right player's turn (if there is one)
+               'dealer' : dealer's turn
+        seat: This is the current player position, indicating which player is
+            the focus of the game. Valid values are: None, 'left', middle',
+            'right', or 'dealer'
+
         NOTE: The user loses when all the players bust their banks. The 
             user wins when the players break the dealer's bank.
     
@@ -1376,7 +1404,9 @@ class CasinoTable(object):
                  playerNames          = list({'name' : 'Fred', 'bank' : 50000}),
                  blackjack_multiplier = ('3:2', 1.50),
                  dealerName = 'Sarah',
-                 dealerBank = 100000):
+                 dealerBank = 100000,
+                 min_bet = 5,
+                 max_bet = 100):
         '''
         This method requires several arguments from the calling program, even
         though it has clear defaults for each one. These inputs are:
@@ -1393,13 +1423,19 @@ class CasinoTable(object):
                 Default: 'Sarah'
             dealerBank: integer, the initial bank for this table's dealer
                 Default: 100,000
+            min_bet: integer, the minimum allowed ante bet
+                Default: 5
+            max_bet: integer, the maximum allowed ante bet
+                Default: 100
 
         This method will generate the following attributes from its input:
             tableDealer  a Dealer class object
             numPlayers   number of actual players (which can be less than 3)
             players      a dictionary of playerObjects from inputs
             deck         a CardShoe object (6 full 52 card decks shuffled
-                         together)            
+                         together) 
+            min_bet      min bet players can make
+            max_bet      max bet players can make
         '''
         # self.TABLESIZE  and self.TABLESEATS are constants in this library,
         # but the number of players depends on whether or not any of the
@@ -1409,6 +1445,8 @@ class CasinoTable(object):
         # The Dealer object is created by calling the class with the name and
         # bank amount provided in the arguments.
         self.tableDealer = Dealer(dealerName, dealerBank)
+        self.min_bet = min_bet
+        self.max_bet = max_bet
         self.dealerLosses  = 0
 
         self.blackjack_multiplier = blackjack_multiplier
@@ -1427,6 +1465,11 @@ class CasinoTable(object):
         # self.players = {'left'   : Player(playerNames[0]['name'], playerNames[0]['bank']),
                         # 'middle' : Player(playerNames[1]['name'], playerNames[1]['bank']),
                         # 'right'  : Player(playerNames[2]['name'], playerNames[2]['bank'])}
+        
+        # Now, we need to set two attributes used to manage player positions
+        # and phase of rounds:
+        self.phase = 'pregame'
+        self.seat  = None
 
         # Finally, we need to create a deck using the CardShoe class.
         self.deck = CardShoe()

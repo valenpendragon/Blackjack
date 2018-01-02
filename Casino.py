@@ -34,26 +34,31 @@ BUTTONTEXTCOLOR = BLACK
 
 # Pygame Constants. All of these values are in pixels
 FPS = 30
-WINDOWWIDTH   = 1024                    # Width of game window
-WINDOWHEIGHT  =  768                    # Height of game window
-WINCENTERX    = int(WINDOWWIDTH / 2)    # X coordinate of window's center
-WINCENTERY    = int(WINDOWHEIGHT / 2)   # Y coordinate of winwow's center
-CARDWIDTH     =   30                    # Width of a card image
-CARDSPACING   =    4                    # Spacing between cards (both axes)
-CARDHEIGHT    =   60                    # Height of a card image
-LINESPACING12 =   15                    # Spacing between 12pt text Rect objects
-LINESPACING18 =   25                    # Spacing between 18pt text Rect objects
-TABLEWIDTH    =  700                    # width of playing table
-TABLEHEIGHT   =  400                    # height of playing table
-TABLERIM      =   40                    # width of band around table
-STATIONWIDTH  =  250                    # width of dealer's station
-STATIONHEIGHT =   60                    # height of dealer's station
-MAXPLAYERS    =    3                    # board space limits players to 3
-SCOREWIDTH    =  200                    # width of all players' score text
-BUTTONWIDTH   =  100                    # width of action buttons
-BUTTONHEIGHT  =   50                    # height of action buttons
-BUTTONSPACING =   75                    # Spacing between action buttons
-OUTLINEWIDTH  =    5                    # width of the outlines of butttons
+WINDOWWIDTH        = 1024  # Width of game window
+WINDOWHEIGHT       =  768  # Height of game window
+WINCENTERX         = int(WINDOWWIDTH / 2)    # X coordinate of window's center
+WINCENTERY         = int(WINDOWHEIGHT / 2)   # Y coordinate of winwow's center
+CARDWIDTH          =   30  # Width of a card image
+CARDSPACING        =    4  # Spacing between cards (both axes)
+CARDHEIGHT         =   60  # Height of a card image
+LINESPACING12      =   15  # Spacing between 12pt text Rect objects
+LINESPACING18      =   25  # Spacing between 18pt text Rect objects
+TABLEWIDTH         =  700  # width of playing table
+TABLEHEIGHT        =  400  # height of playing table
+TABLERIM           =   40  # width of band around table
+STATIONWIDTH       =  250  # width of dealer's station
+STATIONHEIGHT      =   60  # height of dealer's station
+MAXPLAYERS         =    3  # board space limits players to 3
+SCOREWIDTH         =  200  # width of all players' score text
+BUTTONWIDTH        =  100  # width of action buttons
+BUTTONHEIGHT       =   50  # height of action buttons
+BUTTONSPACING      =   75  # Spacing between action buttons
+OUTLINEWIDTH       =    5  # width of the outlines of butttons
+STATUSBLOCKWIDTH   =  200  # width of the status block (upper left corner)
+STATUSBLOCKHEIGHT  =  150  # height of the status block (upper left corner)
+PHASEBLOCKWIDTH    =  100  # width of round phase block (upper right corner)
+PHASEBLOCKHEIGHT   =  100  # height of round phase block (upper right corner)
+
 
 # These four items are the edges of printable area in game window.
 LEFTMARGIN    =   10                    
@@ -106,7 +111,7 @@ SCROLLSPEED = 1200
 
 
 def main(): # main game function
-    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, BUTTONFONT
+    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, PROMPTFONT
     global listPlayers, listDealers, tableChoice, tableObj
 
     # Pygame initialization.
@@ -120,25 +125,25 @@ def main(): # main game function
     pygame.display.set_caption('Casino Blackjack')
     DISPLAYSURF.fill(BGCOLOR)
 
-    # The next stanza sets the default text font for the game to GNU Free Sans
+    # The next stanza sets the default text font for the game to GNU Free Serif
     # TTF. If it is not found in etc, it defaults to freesansbold.ttf which is
     # part of Pygame. 12pt and 14pt fonts use LINESPACING12 to separate lines.
     try:
-        BASICFONT = pygame.font.Font('etc/FreeSans.ttf', 12)
+        BASICFONT = pygame.font.Font('etc/FreeSerif.ttf', 12)
     except:
         # FreeSans.ttf could not be found or could not be used.
         BASICFONT = pygame.font.Font('freesansbold.ttf', 12)        
 
-    # The next stanza sets the SCOREFONT for the game to GNU Free Serif TTF.
-    # If it is not found in etc, it defaults to freesansbold.ttf which is
+    # The next stanza sets the SCOREFONT for the game to GNU Free Serif Italics
+    # TTF. If it is not found in etc, it defaults to freesansbold.ttf which is
     # part of Pygame. 12pt and 14pt fonts use LINESPACING12 to separate lines.
     try:
-        SCOREFONT = pygame.font.Font('etc/FreeSerif.ttf', 12)
+        SCOREFONT = pygame.font.Font('etc/FreeSerifItalic.ttf', 12)
     except:
         # FreeSerif.ttf could not be found or could not be used.
         SCOREFONT = pygame.font.Font('freesansbold.ttf', 12)
     
-    # The next stanza sets the DATAFONT for the game to GNU Free Serif TTF.
+    # The next stanza sets the DATAFONT for the game to GNU Free Monotype TTF.
     # If it is not found in etc, it defaults to freesansbold.ttf which is
     # part of Pygame. 12pt and 14pt fonts use LINESPACING12 to separate lines.
     try:
@@ -151,19 +156,18 @@ def main(): # main game function
     # 18pt font instead of a 12pt or 14pt font. It is setup the same way
     # as the previous fonts. It uses LINESPACING18 for specing.
     try:
-        INSTRUCTFONT = pygame.font.Font('etc/FreeMonoBold.ttf', 18)
+        INSTRUCTFONT = pygame.font.Font('etc/FreeSerifBold.ttf', 18)
     except:
         # FreeMonoBold.ttf could not be found or could not be used.
         INSTRUCTFONT = pygame.font.Font('freesansbold.ttf', 18)
 
-    # The next stanza sets BUTTONFONT, used for action buttons. It is an
-    # 24pt font instead of a 12pt or 14pt font. It is setup the same way
-    # as the previous fonts. It uses LINESPACING18 for specing.
+    # The next stanza sets PROMPTFONT, which is used for Textbox prompts. It is
+    # a 14pt font. It uses LINESPACING18 for specing.
     try:
-        BUTTONFONT = pygame.font.Font('etc/FreeMonoBold.ttf', 24)
+        PROMPTFONT = pygame.font.Font('etc/FreeSerif.ttf', 14)
     except:
         # FreeMonoBold.ttf could not be found or could not be used.
-        BUTTONFONT = pygame.font.Font('freesansbold.ttf', 24)
+        PROMPTFONT = pygame.font.Font('freesansbold.ttf', 14)
 
     # Next, we need to build the BLANKCARD and CARDIMAGES dictionaries.
     # We need to initialize the dictionaries that store card images and
@@ -303,25 +307,32 @@ def main(): # main game function
         print("main: tableChoice is {0}".format(tableChoice))
 
     # Now, we need to generate a CasinoTable object. This object needs to be
-    # populated from listPlayers and tableChoice.
+    # populated from listPlayers and tableChoice. Note, 'table bets' is the
+    # key to a tuple (min_bet, max_bet).
     tableObj = CasinoTable(listPlayers,
                            tableChoice['blackjack multiplier'],
                            tableChoice['name'],
-                           tableChoice['bank'])
-    # diagnosticPrint(tableObj, output = 'v')
+                           tableChoice['bank'],
+                           tableChoice['table bets'][0],
+                           tableChoice['table bets'][1])
+    # Note: The following turn controls are also initialized with tableObj:
+    # tableObj.phase: string indicating the current phase of the round of
+    #       play. There are several values. This is a global variable.
+    #           'pregame': indicates that the game has not started.
+    #           'start'  : allows the user to withdraw players before ante
+    #           'ante'   : collecting initial bets from players
+    #           'deal'   : dealing the cards, split hands and insurance bets
+    #           'raise'  : option to raise bets
+    #           'left'   : left player's turn (must be one)
+    #           'middle' : middle player's turn (if there is one)
+    #           'right'  : right player's turn (if there is one)
+    #           'dealer' : dealer's turn
+    # tableObj.seat: string indicating the seat of the player, used to
+    #       indicate which player turn it is and as a dictionary key to get
+    #       player data out of the tableObj.player dictionary. Valid values
+    #       are None, 'left', 'middle', or 'right'.
+    # Out of __init__, phase = 'pregame' and seat = None
     playBlackjack(tableObj, listPlayers)
-    
-    # This is a test block to test saving games to disk.
-    # savedGameSuccess = writeSavedGame(listPlayers, './etc/savedgame2.txt')
-    # if savedGameSuccess:
-        # print("main: Successfully saved game.")
-    # else:
-        # print("main: Unable to save game to disk.")
-    # terminate()
-
-    
-    pygame.display.update()
-    FPSCLOCK.tick()
 
 def terminate():
     """
@@ -602,7 +613,7 @@ def printTableDealer(tableDealer, output = 'player turn'):
     FPSCLOCK.tick()
     return # printTableDealer
 
-def printTablePlayer(playerObj, playerPosition, output = 'normal'):
+def printTablePlayer(playerObj, seat, output = 'normal'):
     '''
     This method prints on screen the full data for a player. This data
     is pulled from the Player.extract_data method, which returns a dictionary
@@ -642,7 +653,7 @@ def printTablePlayer(playerObj, playerPosition, output = 'normal'):
     # the same for the both the regular and split hands. We need all three
     # sets of coordinates for the score data and both hands of cards, as they
     # all printing independently of each other.
-    if playerPosition == 'left':
+    if seat == 'left':
         # The player is the left one. posX will be on the screen margin,
         # while regHandX and splitHandX will on the left margin of the green
         # area of the table.
@@ -650,7 +661,7 @@ def printTablePlayer(playerObj, playerPosition, output = 'normal'):
         regHandX   = TABLELEFTMARGIN
         splitHandX = regHandX
 
-    elif playerPosition == 'middle':
+    elif seat == 'middle':
         # The player is the center one. posX moves the output under the center
         # of the table, but it will be lined up there. Likewise, regHandX moves
         # there as well. We set the pointer to place the first two cards of
@@ -795,28 +806,28 @@ def printTablePlayer(playerObj, playerPosition, output = 'normal'):
 
     if playerObj['bank']:
         playerBankString = "Bank: ${:,}.".format(playerObj['bank'])
-        playerBankSurf = SCOREFONT.render(playerBankString, True, TEXTCOLOR)
+        playerBankSurf = BASICFONT.render(playerBankString, True, TEXTCOLOR)
         playerBankRect = playerBankSurf.get_rect()
         playerBankRect.topleft = (posX, posY)
         DISPLAYSURF.blit(playerBankSurf, playerBankRect)
         posY -= LINESPACING12
     else:
         if output == 'diagnostic':
-            playerBankSurf = SCOREFONT.render("No bank for this player was found", True, TEXTCOLOR)
+            playerBankSurf = BASICFONT.render("No bank for this player was found", True, TEXTCOLOR)
             playerBankRect = playerBankSurf.get_rect()
             playerBankRect.topleft = (posX, posY)
             DISPLAYSURF.blit(playerBankSurf, playerBankRect)
             posY -= LINESPACING12
 
     if playerObj['name']:
-        playerNameSurf = SCOREFONT.render("Name: %s" % (playerObj['name']), True, TEXTCOLOR)
+        playerNameSurf = BASICFONT.render("Name: %s" % (playerObj['name']), True, TEXTCOLOR)
         playerNameRect = playerNameSurf.get_rect()
         playerNameRect.topleft = (posX, posY)
         DISPLAYSURF.blit(playerNameSurf, playerNameRect)
         posY -= LINESPACING12
     else:
         if output == 'diagnostic':
-            playerNameSurf = SCOREFONT.render("No name for the player was found", True, TEXTCOLOR)
+            playerNameSurf = BASICFONT.render("No name for the player was found", True, TEXTCOLOR)
             playerNameRect = playerNameSurf.get_rect()
             playerNameRect.topleft = (posX, posY)
             DISPLAYSURF.blit(playerNameSurf, playerNameRect)
@@ -936,7 +947,7 @@ def generateDealerList():
                 4) 7:4, 1.75
                 5) 5:3, 1.67
                 6) 3:2, 1.50
-            'table bets' : (tableMin = 50, tableMax = 100)
+            'table bets' : (tableMin = 5, tableMax = 100)
             
         'high' : High Roller Tables
             'bank': $1m + (d100 * $25k)
@@ -1015,7 +1026,7 @@ def generateDealerList():
                 listDealers[i]['blackjack multiplier'] = ('5:3', 1.67)
             elif  multiplierChoice == 6:
                 listDealers[i]['blackjack multiplier'] = ('3:2', 1.50)
-            listDealers[i]['table bets'] = (25, 100)
+            listDealers[i]['table bets'] = (5, 100)
             
         elif listDealers[i]['type'] == 'normal':
             listDealers[i]['table color'] = BLUE
@@ -1233,17 +1244,25 @@ def writeSavedGame(listPlayers, filename = './etc/savedgame.txt'):
                 savedGame.write(lineOut)
         return True
 
-def pressSpaceToContinue():
+def pressSpaceToContinue(posX = WINDOWWIDTH, posY = WINDOWHEIGHT):
     """
     This function actually pauses the game so that the user can read the
     screen. It basically halts any progress until a key is pressed. It
     grabs all events, and terminates on QUIT events.
+    Normally, this function prints the text on the edge of the bottom right
+    of the game screen, but this can be overridden by specifying where you
+    want the bottomright of the rect object to be.
+    INPUTS: posX (pixel x-coordinate of bottomright corner of rect object)
+                Default: bottom corner of the screen
+            posY (pixel y-coordinate of bottomright corner of rect object)
+                Default: bottom corner of the screen
+    OUTPUTS: All outputs are to the screen.
     """
     while True:
         # In the lower right corner, print this message.
-        textSurf = DATAFONT.render("Press spacebar when you are ready to continue.", True, TEXTCOLOR)
+        textSurf = BASICFONT.render("Press spacebar to continue.", True, TEXTCOLOR)
         textRect = textSurf.get_rect()
-        textRect.bottomright = (WINDOWWIDTH, WINDOWHEIGHT)
+        textRect.bottomright = (posX, posY)
         DISPLAYSURF.blit(textSurf, textRect)
         for event in pygame.event.get(QUIT): # get all QUIT events
             terminate()                      # terminate if any QUIT events are present
@@ -1442,6 +1461,12 @@ def offerTableChoices(listDealers):
     skillHeaderSurf  = BASICFONT.render(skillHeader, True, TEXTCOLOR)
     skillHeaderRect  = skillHeaderSurf.get_rect(topleft = (posX, posY))
     DISPLAYSURF.blit(skillHeaderSurf, skillHeaderRect)
+    posX += COLUMNSPACING
+    betHeader     = "Min and Max Bets"
+    betHeaderSurf = BASICFONT.render(betHeader, True, TEXTCOLOR)
+    betHeaderRect = betHeaderSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(betHeaderSurf, betHeaderRect)
+    
 
     # Now, we print the information on the dealers.
     for i in range(0, len(listDealers)):
@@ -1465,12 +1490,19 @@ def offerTableChoices(listDealers):
         skillSurf   = BASICFONT.render(skillValue, True, TEXTCOLOR)
         skillRect   = skillSurf.get_rect(topleft = (posX, posY))
         DISPLAYSURF.blit(skillSurf, skillRect)
+        posX += COLUMNSPACING
+        minBet, maxBet = listDealers[i]['table bets']
+        betAmountsText = "${:3d}/${:4d}".format(minBet, maxBet)
+        betAmountsSurf = BASICFONT.render(betAmountsText, True, TEXTCOLOR)
+        betAmountsRect = betAmountsSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(betAmountsSurf, betAmountsRect)
+        
     pygame.display.update()
     FPSCLOCK.tick()
 
     # Now that that data has been printed, we need to setup the prompt for
     # user input, create the Textbox object for this input, and call
-    # getTableChoiceEvents to get the name.
+    # getTextboxEvents to get the name.
     posX = LEFTMARGIN
     posY += LINESPACING18
     playerText   = "Which dealer would you like to challenge?"
@@ -1481,16 +1513,17 @@ def offerTableChoices(listDealers):
     nameTextboxRect.topleft = (posX, posY)
     dNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = getTableChoice,
                             charFilter = 'alpha', enterClears = True, enterDeactivates = True)
-    dealerName   = getTableChoiceEvents(dNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)
+    dealerName   = getTextboxEvents(dNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)
     return
 
-def getTableChoiceEvents(Textbox, promptSurf, promptRect, Surface):
+def getTextboxEvents(Textbox, promptSurf, promptRect, Surface):
     """
     While this function may appear to be a repeat of getTextboxNameEvents(),
-    the code is somewhat different. That loop was designed to breat out when
+    the code is somewhat different. That loop was designed to break out when
     it detected that listPlayers added a new item. It also cleared the screen
-    between prompts. This one has to produce a single prompt after a data
-    output is printed on screen by its calling function.
+    between prompts. This function takes a user prompt, a Textbox, and the
+    display Surface and renders the Textbox on screen, capturing the events
+    the Textbox is set to filter for. It uses pressing Enter to exit.
     INPUTS: five arguments
         Textbox (a Textbox class object)
         promptSurf (a user prompt rendered text Surface)
@@ -1821,10 +1854,6 @@ def playBlackjack(tableObj, listPlayers):
     rulesRect = rulesSurf.get_rect(topleft = (posX, posY))
     DISPLAYSURF.blit(rulesSurf, rulesRect)
     posY += LINESPACING18
-    # instText     = "Press the 'Y' or 'N' to answer"
-    # instSurf     = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
-    # instRect     = instSurf.get_rect(topleft = (posX, posY))
-    # DISPLAYSURF.blit(instSurf, instRect)
     pygame.display.update()
     answer = checkForYesNo(posX, posY, 'topleft')
     # pdb.set_trace()
@@ -1859,46 +1888,27 @@ def playBlackjack(tableObj, listPlayers):
         #   pullPlayer : None or the player's name, indicates that user wants
         #       the player to leave the table and "settle up", this removes
         #       the player from the current game but not permanently eliminated
-        #   partOfRound : 'ante', 'deal', 'left', 'middle', 'right', 'dealer',
-        #       indicates which part of the round play is at turn it is
-        #           'ante'   : collecting initial bets from players
-        #           'deal'   : dealing the cards
-        #           'left'   : left player's turn (must be one)
-        #           'middle' : middle player's turn (if there is one)
-        #           'right'  : right player's turn (if there is one)
-        #           'dealer' : dealer's turn
         #   activeHitStand: boolean, tells Python that the hitButton and
         #       standButton are active and to look for mouse click events
         #   infoButtonPressed : boolean, tells Python that the user needs to
         #       see the Break The Bank rules again.
         endRound    = False
-        hitChosen   = None
-        standChosen = None
-        insBet      = None
-        doubleDown  = None
-        splitHand   = None
-        leaveTable  = False
-        pullPlayer  = None
-        activeHitStand    = False
-        infoButtonPressed = False
-        partOfRound = 'ante'
+        # hitChosen   = None
+        # standChosen = None
+        # insBet      = None
+        # doubleDown  = None
+        # splitHand   = None
+        # leaveTable  = False
+        # pullPlayer  = None
+        # activeHitStand    = False
+        # infoButtonPressed = False
+        tableObj.phase = 'start'
         while not endRound:  # This is the primary event loop for the game.
             # First, we print the table, the dealer, and the players.
             DISPLAYSURF.fill(BGCOLOR)
-            generateTable(tableChoice['table color'])
-            if partOfRound != 'dealer':
-                printTableDealer(tableObj.tableDealer.extract_data())
-            else:
-                printTableDealer(tableObj.tableDealer.extract_data(), output = 'dealer turn')
-            for playerPosition in ('left', 'middle', 'right'):
-                # Some player positions may be empty.
-                try:
-                    name = tableObj.players[playerPosition].name
-                except:
-                    # This player has been removed or eliminated.
-                    continue
-                printTablePlayer(tableObj.players[playerPosition].extract_data(), playerPosition)
-                print("playBlackjack: tableObj contains {}".format(tableObj))
+            refreshTable(tableObj.phase, roundCounter)
+            print("playBlackjack: tableObj contains {}".format(tableObj))
+            print("playBlackjack: Current Status: phase = ".format(tableObj.phase))
             # Before a round starts, the user may pull any player out of the
             # game to keep them from being eliminated, including all three.
             posX = LEFTMARGIN
@@ -1913,29 +1923,24 @@ def playBlackjack(tableObj, listPlayers):
             answer = checkForYesNo(posX, posY, 'topleft')
             if answer == True:
                 # We need to ask about each player that still remains in the
-                # game.
-                # print("playBlackjack: tableObj is {}.".format(tableObj))
+                # game. Note, we use seat here because we do not want to
+                # use the global variable, seat that will be very
+                # important in the player turns.
                 posY += LINESPACING12
-                for playerPosition in ('left', 'middle', 'right'):
-                    # Some player positions may be empty.
-                    try:
-                        playerName = tableObj.players[playerPosition].name
-                    except:
-                        # Player position is empty. Skip it.
-                        print("playBlackjack: No player at playerPosition {}. Skipping it.".format(playerPosition))
-                        continue
-                    withdrawText = "Would like to withdraw {}?".format(tableObj.players[playerPosition].name)
-                    withdrawSurf = BASICFONT.render(withdrawText, True, TEXTCOLOR)
-                    withdrawRect = withdrawSurf.get_rect(topleft = (posX, posY))
-                    DISPLAYSURF.blit(withdrawSurf, withdrawRect)
-                    pygame.display.update()
-                    posY += LINESPACING12
-                    answer = checkForYesNo(posX, posY, 'topleft')
-                    if answer == True:
-                        # This function alters the tableObj.
-                        removeActivePlayer(playerPosition, roundCounter)
-                        print("playBlackjack: tableObj is now {0}. Number of players remaining: {1}.".format(tableObj, tableObj.numPlayers))
-                    posY += LINESPACING12
+                for seat in ('left', 'middle', 'right'):
+                    if isPlayerStillThere(seat):
+                        withdrawText = "Would like to withdraw {}?".format(tableObj.players[seat].name)
+                        withdrawSurf = BASICFONT.render(withdrawText, True, TEXTCOLOR)
+                        withdrawRect = withdrawSurf.get_rect(topleft = (posX, posY))
+                        DISPLAYSURF.blit(withdrawSurf, withdrawRect)
+                        pygame.display.update()
+                        posY += LINESPACING12
+                        answer = checkForYesNo(posX, posY, 'topleft')
+                        if answer == True:
+                            # This function alters the tableObj.
+                            removeActivePlayer(seat, roundCounter)
+                            print("playBlackjack: tableObj is now {0}. Number of players remaining: {1}.".format(tableObj, tableObj.numPlayers))
+                        posY += LINESPACING12
                     
                 # We need to offer the user a chance to save their players'
                 # progress if they pulled all of their players from the table.
@@ -1947,18 +1952,44 @@ def playBlackjack(tableObj, listPlayers):
                     # Even if the user does not want to quit, control must be
                     # returned to main() to start a new game.
                     return
+
+            # Now, the will call for ante amounts for initial bets on the
+            # hands. This also sets the maximum raise later in the round.
+            # This is a very interactive phase of the round, requiring that
+            # user ante up for each player. It will user another set of Textbox
+            # objects to get each initial bet.
+            # pdb.set_trace()
+            tableObj.phase = 'ante'
+            # Clear the screen and redraw the table.
+            DISPLAYSURF.fill(BGCOLOR)
+            pygame.display.update()
+            refreshTable(tableObj.phase, roundCounter)
+            for seat in ('left', 'middle', 'right'):
+                if isPlayerStillThere(seat):
+                    while tableObj.players[seat].bet == 0:
+                        tableObj.seat = seat
+                        # This loop will continue until the player's ante
+                        # is a valid amount. There are other functions that
+                        # provide error messages, but not this one.
+                        getBet(seat)
+
+            # Now, we refresh the screen to show the bets in place.
+            DISPLAYSURF.fill(BGCOLOR)
+            refreshTable(tableObj.phase, roundCounter)
+            pygame.display.update()
+            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
             # pygame.display.update()  # This pair of commands ends the game's
             # pygame.time.wait(33)     # event loop by refreshing the screen.
             # FPSCLOCK.tick()          # 33ms wait = 30fps.
 
-def removeActivePlayer(playerPosition, rounds):
+def removeActivePlayer(seat, rounds):
     """
     This function removes a player from the table object, but updates their
     bank in listPlayers. This function is used with the player wants to
     withdraw a player between rounds.
     INPUTS: three arguments (listPlayers and tableObj are global objects)
         tableObj, a CasinoTable class object (global)
-        playerPosition, string, the player's seat at the table
+        seat, string, the player's seat at the table
         rounds, integer, the number of rounds the player played before
             being pulled from the table
     OUTPUTS: none
@@ -1969,7 +2000,7 @@ def removeActivePlayer(playerPosition, rounds):
     # update the bank for that player once found. If they played sufficient
     # rounds, the player's skill should be updated as well.
     # pdb.set_trace()
-    playerObj = tableObj.players[playerPosition]
+    playerObj = tableObj.players[seat]
     for i in range(0, len(listPlayers)):
         if listPlayers[i]['name'] == playerObj.name:
             # Update the player's bank.
@@ -1986,18 +2017,355 @@ def removeActivePlayer(playerPosition, rounds):
     # objects do not easily delete items.
     newPlayerDict = {}
     for playerSeat in ('left', 'middle', 'right'):
-        try:
-            name = tableObj.players[playerSeat].name
-        except:
-            # This player no longer exists. Skip it.
-            print("removeActivePlayer: No player at playerPosition {}. Skipping it.".format(playerPosition))
-            continue
-        if playerSeat != playerPosition:
+        if isPlayerStillThere(playerSeat) and playerSeat != seat:
             newPlayerDict[playerSeat] = tableObj.players[playerSeat]
         # It will skip the player with the matching seat.
     tableObj.players = newPlayerDict            
     tableObj.numPlayers -= 1
     return
+
+def refreshTable(phase, rounds):
+    """
+    This function refreshes the player/dealer data, cards dealt, and game
+    as the game round progresses. It uses the phase of the round to determine
+    what should print out of the Dealer's cards and data. This function uses
+    phase, a string with one of the following values:
+        'start'  : allows the user to withdraw players before ante
+        'ante'   : collecting initial bets from players
+        'deal'   : dealing the cards
+        'raise'  : the players have an opportunity to double down before
+                    playing their hands
+        'left'   : left player's turn (must be one)
+        'middle' : middle player's turn (if there is one)
+        'right'  : right player's turn (if there is one)
+        'dealer' : dealer's turn
+    INPUTS: two arguments
+        phase. string, see above for valid values
+        rounds, integer (round number of the current game)
+    NOTE: This function does NOT clear the screen before printing, because
+    thst is often not required.
+    """
+    generateTable(tableChoice['table color'])
+    if phase != 'dealer':
+        printTableDealer(tableObj.tableDealer.extract_data())
+    else:
+        printTableDealer(tableObj.tableDealer.extract_data(), output = 'dealer turn')
+    for seat in ('left', 'middle', 'right'):
+        if isPlayerStillThere(seat):
+            printTablePlayer(tableObj.players[seat].extract_data(), seat)
+    if phase == 'start':
+        roundText = "Currently starting Round {0}.".format(rounds)
+    elif phase == 'ante':
+        roundText = "Currently anteing up for Round {0}.".format(rounds)
+    elif phase == 'deal':
+        roundText = "Currently dealing cards in Round {0}.".format(rounds)
+    elif phase == 'raise':
+        roundText = "Currently offering double down in Round {0}.".format(rounds)
+    elif phase == 'left':
+        roundText = "Currently {0}'s turn in Round {1}.".format(tableObj.players['left'].name, rounds)
+    elif phase == 'middle':
+        roundText = "Currently {0}'s turn in Round {1}.".format(tableObj.players['middle'].name, rounds)
+    elif phase == 'right':
+        roundText = "Currently {0}'s turn in Round {1}.".format(tableObj.players['right'].name, rounds)
+    elif phase == 'dealer':
+        roundText = "Currently {0}'s turn in Round {1}.".format(tableObj.tableDealer.name, rounds)
+    posX = RIGHTMARGIN
+    posY = TOPMARGIN
+    roundSurf = BASICFONT.render(roundText, True, TEXTCOLOR)
+    roundRect = roundSurf.get_rect(topright = (posX, posY))
+    DISPLAYSURF.blit(roundSurf, roundRect)
+    pygame.display.update()
+    return
+
+def isPlayerStillThere(seat):
+    """
+    This function checks to see if a player occupies a particular seat at the
+    game table. Returns True if so, False otherwise. It uses "seat" to prevent
+    any changes to global seat.
+    INPUTS: seat, a string with values 'left', 'middle', or 'right'
+    OUTPUTS: boolean, True if occupied, False otherwise.
+    """
+    # Some player positions may be empty.
+    try:
+        playerName = tableObj.players[seat].name
+    except:
+        # Player position is empty. Skip it.
+        print("isPlayerStillThere: No player at seat {}. Skipping it.".format(seat))
+        return False
+    else:
+        return True
+
+def getBet(split = False):
+    """
+    This function leverages the Textbox class to create a numbers only textbox
+    for the user to enter their bet amount. If the phase is 'ante', it will
+    check that the bet falls between the table max and min bets. If the phase
+    is 'left', 'right', or 'middle' (the player's turn), it will check the
+    bet amount against their original bet to see that it does not exceed that
+    original bet (double down).
     
+    If the split flag is True and the phase is 'deal', this is the split hand
+    ante bet. The table max and min apply to it as well. If the split flag is
+    True and the phase is a player's turn, then it is a double down bet on the
+    split hand, which cannot exceed the previous bet amount for the split hand.
+
+    The functions each option calls is actually the function, handleBet().
+    The actual functions called by the Textbox objects are wrappers to ensure
+    that split can be transmitted to handleBet() successfully.
+
+    INPUTS: seat, a string indicating the player's position
+            split, boolean, True for split hand, False for regular hand
+    OUTPUTS: All outputs are made to tableObj.
+    """
+    # pdb.set_trace()
+    partOfRound = tableObj.phase
+    seat = tableObj.seat
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    # First, we need to clear any text from the STATUSBLOCK in the upper left
+    # corner of the screen.
+    statusSurf = pygame.Surface((STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT))
+    statusRect = statusSurf.get_rect(topleft = (LEFTMARGIN, TOPMARGIN))
+    statusSurf.fill(BGCOLOR)
+    DISPLAYSURF.blit(statusSurf, statusRect)
+    pygame.display.update()
+
+    if partOfRound == 'ante':
+        anteText = "{0}, please ante up for this round.".format(tableObj.players[seat].name)
+        anteSurf = PROMPTFONT.render(anteText, True, TEXTCOLOR)
+        anteRect = anteSurf.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        betTextboxRect = anteRect.copy()
+        betTextboxRect.topleft = (posX, posY)
+        betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleRegBet,
+                             charFilter = 'number', enterClears = True, enterDeactivates = True)
+    # This is a test to see if getTableChoice events can be resused instead
+    # creating a second function. If so, it should be renamed and the comments
+    # adjusted accordingly.
+        betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
+
+    # This is the ante for a split hand.
+    elif partOfRound == 'deal' and split == True:
+        anteText = "{0}, please ante up for your split hand.".format(tableObj.players[seat].name)
+        anteSurf = PROMPTFONT.render(anteText, True, TEXTCOLOR)
+        anteRect = anteSurf.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        betTextboxRect = anteRect.copy()
+        betTextboxRect.topleft = (posX, posY)
+        betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleSplitBet,
+                             charFilter = 'number', enterClears = True, enterDeactivates = True)
+    # Still testing reusable code here as well.
+        betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
+
+    # This is a double down for a regular hand.
+    elif partOfRound == 'raise' and split == False:
+        doubleDownText = "{0}, how much would you like to raise your bet by?".format(tableObj.players[seat].name)
+        doubleDownSurf = PROMPTFONT.render(doubleDownText, True, TEXTCOLOR)
+        doubleDownRect = doubleDownSurf.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        betTextboxRect = doubleDownSurf.copy()
+        betTextboxRect.topleft = (posX, posY)
+        betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleRegBet,
+                             charFilter = 'number', enterClears = True, enterDeactivates = True)
+    # Still testing reusable code here as well.
+        betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
+
+    elif partOfRound == 'raise' and split == True:
+        doubleDownText = "{0}, how much would you like to raise your bet on your split hand by?".format(tableObj.players[seat].name)
+        doubleDownSurf = PROMPTFONT.render(doubleDownText, True, TEXTCOLOR)
+        doubleDownRect = doubleDownSurf.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        betTextboxRect = doubleDownSurf.copy()
+        betTextboxRect.topleft = (posX, posY)
+        betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleSplitBet,
+                             charFilter = 'number', enterClears = True, enterDeactivates = True)
+    # Still testing reusable code here as well.
+        betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
+        
+    return
+
+def handleBet(id, betAmt, split):
+    """
+    This function uses the split flag and the partOfRound (global) variable
+    to determine which Player method to call to perform the operation. The
+    operations include taking an ante bet on a player hands, regular and
+    split, and taking double down increases to the same. The Player class
+    methods can check the amounts to make sure they are valid. If the amount
+    is invalid or is not a number, this function print an error message, and
+    then call getBet with the parameters it received to try again.
+    INPUTS: three arguments
+        id     : integer, the location of the calling process in memory
+        betAmt : string to convert into an integer
+        split  : boolean, indicates if the bet is on a split hand
+    OUTPUTS: All outputs are changes to the global tableObj
+    Note: The Textbox objects have filters to prevent undesirable characters
+    from being entered in the dialog box.
+    Note: This function is called by the command run by the Textbox objects
+    collecting the bet information, handleRegBet, handleSplitBet, updateBet
+    and updateSplitBet.
+    """
+    betAmt = int(betAmt)
+    tableMin = tableObj.min_bet
+    tableMax = tableObj.max_bet
+    seat = tableObj.seat
+    partOfRound = tableObj.phase
+    maxRegRaise   = tableObj.players[seat].bet
+    maxSplitRaise = tableObj.players[seat].split_bet
+    playerName = tableObj.players[seat].name
+    # The first thing we need to do after the user hits return in the Textbox
+    # is to clear the status block.
+    statusSurf = pygame.Surface((STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT))
+    statusRect = statusSurf.get_rect(topleft = (LEFTMARGIN, TOPMARGIN))
+    statusSurf.fill(BGCOLOR)
+    DISPLAYSURF.blit(statusSurf, statusRect)
+    pygame.display.update()
+    # This alligns the "on screen response", either confirming a valid bet
+    # or giving instruction on what would be an acceptable bet.
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+
+    # First, we check to see if this an ante bet (before cards are dealt).
+    if split == False and partOfRound == 'ante':
+        # We have to check the validity of the bet.
+        if (tableMin <= betAmt <= tableMax):
+            # Bet is valid. Assign it to the bet attribute for the player and
+            # thank the user. That will cause the loop in playBlackjack to
+            # terminate after it returns.
+            tableObj.players[seat].bet = betAmt
+            responseText = "Thank you and good luck, {}.".format(playerName)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+            # The bet is not a valid ante amount. We need to send an error
+            # message.
+        else:
+            responseText = "Invalid ante bet. Min bet is ${:d}. Max bet is ${:d}.".format(tableMin, tableMax)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+            # There is a loop in the original calling function, playBlackjack,
+            # that will attempt to get a valid bet again.
+            
+    # Next, we check if this is a double down on a player's regular bet.
+    elif split == False and partOfRound == 'raise':
+        # In this case, there are three possible outcomes:
+        #   1) the raise is zero, which the game will take as the player
+        #       changed their mind,
+        #   2) the raise is between 0 and their original bet, making it a
+        #       valid amount,
+        #   3) the raise is not between 0 and their original bet, making it
+        #       invalid.
+        if betAmt == 0:
+            # This bet amount is treated as the user changing their mind about
+            # raising the bet.
+            responseText = "Changing your mind can be wise. Good luck, {}.".format(playerName)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+        elif (0 < betAmt <= maxRegRaise):
+            # Bet is valid. Assign it to the bet attribute for the player and
+            # thank the user. That will cause the loop in playBlackjack to
+            # terminate after it returns.
+            tableObj.players[seat].bet = betAmt
+            responseText = "Thank you and good luck, {}.".format(playerName)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+        else:
+            # The bet is not a valid ante amount. We need to send an error
+            # message.
+            responseText = "Invalid raise. Min raise is $0. Max raise is ${}.".format(maxRegRaise)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+            # There is a loop in the original calling function, playBlackjack,
+            # that will attempt to get a valid bet again.
+
+    # Next, we deal with the ante on a split hand. It is created while during
+    # the initial deal (after a second card has been dealt to all players).
+    elif split == True and partOfRound == 'deal':
+        # We have to check the validity of the bet. Split bets still have to
+        # adhere to tableMax and tableMin.
+        if (tableMin <= betAmt <= tableMax):
+            # Bet is valid. Assign it to the bet attribute for the player and
+            # thank the user. That will cause the loop in playBlackjack to
+            # terminate after it returns.
+            tableObj.players[seat].bet = betAmt
+            responseText = "Thank you and good luck with both hands, {}.".format(playerName)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+            # The bet is not a valid ante amount. We need to send an error
+            # message.
+        else:
+            responseText = "Invalid ante bet. Min bet is ${:d}. Max bet is ${:d}.".format(tableMin, tableMax)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+            # There is a loop in the original calling function, playBlackjack,
+            # that will attempt to get a valid bet again.
+
+    # Next, we check if this is a double down on a player's split bet.
+    elif split == True and partOfRound == 'raise':
+        # In this case, there are three possible outcomes:
+        #   1) the raise is zero, which the game will take as the player
+        #       changed their mind,
+        #   2) the raise is between 0 and their original split ante, making it
+        #       a valid amount,
+        #   3) the raise is not between 0 and their split bet, making it
+        #       invalid.
+        if betAmt == 0:
+            # This bet amount is treated as the user changing their mind about
+            # raising the bet.
+            responseText = "Changing your mind can be wise. Good luck, {}.".format(playerName)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+        elif (0 < betAmt <= maxRegRaise):
+            # Bet is valid. Assign it to the bet attribute for the player and
+            # thank the user. That will cause the loop in playBlackjack to
+            # terminate after it returns.
+            tableObj.players[seat].bet = betAmt
+            responseText = "Thank you and good luck, {}.".format(playerName)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+        else:
+            # The bet is not a valid ante amount. We need to send an error
+            # message.
+            responseText = "Invalid raise. Min raise is $0. Max raise is ${}.".format(maxSplitRaise)
+            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+            # There is a loop in the original calling function, playBlackjack,
+            # that will attempt to get a valid bet again.
+
+    # This block prints the response, then pauses waiting for the user to hit
+    # the spacebar.
+    DISPLAYSURF.blit(responseSurf, responseRect)
+    pygame.display.update()
+    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+    statusSurf.fill(BGCOLOR)
+    DISPLAYSURF.blit(statusSurf, statusRect)
+    pygame.display.update()
+    return # handleBet
+
+def handleRegBet(id, betAmt):
+    """
+    This is a wrapper function for handldBet(). It allows us to pass the split
+    flag to handleBet.
+    INPUTS: two arguments
+        id : integer memory address of the process
+        betAmt : text from the Textbox object
+    OUTPUTS: None. This does not write to the screen, either. It simply runs
+        handleBet with split = False
+    """
+    handleBet(id, betAmt, False)
+    return
+
+def handleSplitBet(id, betAmt):
+    """
+    This is a wrapper function for handldBet(). It allows us to pass the split
+    flag to handleBet.
+    INPUTS: two arguments
+        id : integer memory address of the process
+        betAmt : text from the Textbox object
+    OUTPUTS: None. This does not write to the screen, either. It simply runs
+        handleBet with split = True
+    """
+    handleBet(id, betAmt, True)
+    return
+
+
 if __name__ == '__main__':
     main()

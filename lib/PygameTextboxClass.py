@@ -186,15 +186,15 @@ class Textbox(object):
         else:
             raise KeyError("Character filter type {} is not a valid character filter.".format(self.charFilter))
         # Now, we need to set up the fonts this module uses.
-        if self.boxFont in pygame.font.get_fonts():
+        # pdb.set_trace()
+        try:
             self.boxFont = pygame.font.Font(self.boxFont, self.fontSize)
-        else:
-            self.boxFont = pygame.font.Font(self.DEFAULTFONT, self.fontSize)
-        if self.warningFont in pygame.font.get_fonts():
-            self.warningFont = pygame.font.Font(self.warningFont, self.fontSize)
-        else:
-            self.warningFont = pygame.font.Font(self.DEFAULTFONT, self.fontSize)
-        
+        except:
+            if self.boxFont in pygame.font.get_fonts():
+                self.boxFont = pygame.font.Font(self.boxFont, self.fontSize)
+            else:
+                self.boxFont = pygame.font.Font(self.DEFAULTFONT, self.fontSize)
+
     def process_kwargs(self, kwargs):
         """
         This method takes the list of kwargs and changes the defaults
@@ -215,8 +215,6 @@ class Textbox(object):
             'charFilter'    : 'any' (Converts to PRINTABLEFILTER)
             'fontSize'      : DEFAULTFONTSIZE
             'boxFont'       : DEFAULTFONT
-            'warningFont'   : DEFAULTFONT
-            'warningColor'  : RED
             'boxWidth'      : DEFAULTBOXWIDTH
             'enterClears'   : False
             'enterDeactivates' : True
@@ -235,8 +233,6 @@ class Textbox(object):
                     'charFilter'    : 'any',
                     'fontSize'      : self.DEFAULTFONTSIZE,
                     'boxFont'       : self.DEFAULTFONT,
-                    'warningFont'   : self.DEFAULTFONT,
-                    'warningColor'  : self.RED,
                     'boxWidth'      : self.DEFAULTBOXWIDTH,
                     'enterClears'   : False,
                     'enterDeactivates' : True }
