@@ -602,3 +602,9 @@ Casino (game): Reduced the minimum bet for starter tables to 5. Added an extra p
 Casino (game): pressSpaceToContinue: Added optional parameters to print the press spacebar message at another location besides the corner.
 Casino (game): getTableChoiceEvents: Renamed to getTextboxEvents since the code has proven to be reusable to collect bets.
 Player: extract_data: Fixed a bug that ensures that bets will appear in the extracted data even though hands do not exist yet.
+
+1/3/18 20:00 Pushed to origin pygame
+
+Casino (game): dealRound: Added this function to deal the initial round of cards to each player (including dealer). It checks for player and dealer blackjacks. It will also ask call getInsBet if a 10 point card or an ace is the dealer's visible card after the second card is dealt. For player blackjack's, it will playerBlackjack to deal with outcome and dispense their winnings. 
+Casino (game): dealRound: Added a try/except block in case int(betAmt) raises a ValueError. It can if the user hits return without entering numbers. It is now able to handle dealing both initial cards.
+Casino (game): printTableDealer: The CARDIMAGES dictionary needs a tuple, not a list of one tuple to find the image of a card. The Dealer's visible card is actually a list. Rather than change the underlying Dealer class, I opted to set visCard equal to the first element of a one length list.

@@ -112,7 +112,7 @@ SCROLLSPEED = 1200
 
 def main(): # main game function
     global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, PROMPTFONT
-    global listPlayers, listDealers, tableChoice, tableObj
+    global listPlayers, listDealers, tableChoice, tableObj, results
 
     # Pygame initialization.
     pygame.init()
@@ -263,6 +263,8 @@ def main(): # main game function
         CARDIMAGES[card]['rect']    = CARDIMAGES[card]['surface'].get_rect()
     # Diagnostic print to see if these cards were setup correctly.
     # cardImagesDiagnosticPrint()
+    # print("main: CARDIMAGES = {}.".format(CARDIMAGES))
+    # pressSpaceToContinue()
 
     listDealers = generateDealerList()
 
@@ -315,6 +317,15 @@ def main(): # main game function
                            tableChoice['bank'],
                            tableChoice['table bets'][0],
                            tableChoice['table bets'][1])
+    print("main: Table min is ${0}. Table max is ${1}.".format(tableObj.min_bet, tableObj.max_bet))
+
+    # results stores the outcome of dealing a card to a player or dealer. In
+    # particular, it stores a blackjack if one was dealt to anyone as the
+    # table. For the players, the hand is an instant win with a higher playout.
+    # For the dealer, blackjack means that the dealer will beat anyone else
+    # who did not get an initial blackjack.
+    results = {}
+    
     # Note: The following turn controls are also initialized with tableObj:
     # tableObj.phase: string indicating the current phase of the round of
     #       play. There are several values. This is a global variable.
@@ -580,6 +591,7 @@ def printTableDealer(tableDealer, output = 'player turn'):
             posXHoldCard = WINCENTERX - (int((CARDSPACING + CARDWIDTH)/ 2))
             posYHoldCard = DEALERSCARDS
             holdCard = tableDealer['hand'][0]
+            print("printTableDealer: holdCard is {}.".format(holdCard))
             dealerHoldCardSurf = CARDIMAGES[holdCard]['surface']
             dealerHoldCardRect = CARDIMAGES[holdCard]['rect']
             dealerHoldCardRect.topleft = (posXHoldCard, posYHoldCard)
@@ -593,7 +605,11 @@ def printTableDealer(tableDealer, output = 'player turn'):
         if tableDealer['hand'] and sizeOfHand > 1:
             posXVisCard = WINCENTERX + (int((CARDSPACING + CARDWIDTH)/ 2))
             posYVisCard = DEALERSCARDS
-            visCard = tableDealer['visible card']
+            print("printTableDealer: tableDealer's visible card is {}.".format(tableDealer['visible card']))
+            # In Dealer and Player objects, the cards are tuples inside of
+            # lists. We need to call the first and only member of this list.
+            visCard = tableDealer['visible card'][0]
+            print("printTableDealer: visCard = {}.".format(visCard))
             dealerVisCardSurf = CARDIMAGES[visCard]['surface']
             dealerVisCardRect = CARDIMAGES[visCard]['rect']
             dealerVisCardRect.topleft = (posXVisCard, posYVisCard)
@@ -1908,7 +1924,7 @@ def playBlackjack(tableObj, listPlayers):
             DISPLAYSURF.fill(BGCOLOR)
             refreshTable(tableObj.phase, roundCounter)
             print("playBlackjack: tableObj contains {}".format(tableObj))
-            print("playBlackjack: Current Status: phase = ".format(tableObj.phase))
+            print("playBlackjack: Current Status: phase = {}".format(tableObj.phase))
             # Before a round starts, the user may pull any player out of the
             # game to keep them from being eliminated, including all three.
             posX = LEFTMARGIN
@@ -1953,7 +1969,7 @@ def playBlackjack(tableObj, listPlayers):
                     # returned to main() to start a new game.
                     return
 
-            # Now, the will call for ante amounts for initial bets on the
+            # Now, the game will call for ante amounts for initial bets on the
             # hands. This also sets the maximum raise later in the round.
             # This is a very interactive phase of the round, requiring that
             # user ante up for each player. It will user another set of Textbox
@@ -1978,9 +1994,18 @@ def playBlackjack(tableObj, listPlayers):
             refreshTable(tableObj.phase, roundCounter)
             pygame.display.update()
             pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+
+            # The next phase is dealing the cards. The first round of dealt
+            # card includes the Dealer's hold (facedown) card.
+            tableObj.phase = 'deal'
+            # Deal first card.
+            dealRound(roundCounter)
+            # Deal second card.
+            dealRound(roundCounter)
             # pygame.display.update()  # This pair of commands ends the game's
             # pygame.time.wait(33)     # event loop by refreshing the screen.
             # FPSCLOCK.tick()          # 33ms wait = 30fps.
+    return # playBlackjack
 
 def removeActivePlayer(seat, rounds):
     """
@@ -2186,13 +2211,27 @@ def getBet(split = False):
 
 def handleBet(id, betAmt, split):
     """
-    This function uses the split flag and the partOfRound (global) variable
+    This function uses the split flag and the tableObj.phase variable
     to determine which Player method to call to perform the operation. The
     operations include taking an ante bet on a player hands, regular and
     split, and taking double down increases to the same. The Player class
     methods can check the amounts to make sure they are valid. If the amount
     is invalid or is not a number, this function print an error message, and
     then call getBet with the parameters it received to try again.
+    
+    It calls the Player.update_bet() and update_split_bet() methods and checks
+    the code to determine the right response to bad amounts. Their return
+    codes are:
+            'success'   = the bet could be increased
+            'bust'      = the bet exceeds the money in the bank
+            'size'      = the bet is not allowed because it exceeds double the
+                        original bet
+            'min'       = the bet is not enough to meet the casino minimums
+            'max'       = the bet exceeds the max allowed initial bet
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
+            'Unknown'   = an unknown error occurred
+
     INPUTS: three arguments
         id     : integer, the location of the calling process in memory
         betAmt : string to convert into an integer
@@ -2204,7 +2243,13 @@ def handleBet(id, betAmt, split):
     collecting the bet information, handleRegBet, handleSplitBet, updateBet
     and updateSplitBet.
     """
-    betAmt = int(betAmt)
+    # pdb.set_trace()
+    # There is a possiblity that the user will hit return prematurely. We
+    # need to be prepared for that possibility.
+    try:
+        betAmt = int(betAmt)
+    except:
+        return
     tableMin = tableObj.min_bet
     tableMax = tableObj.max_bet
     seat = tableObj.seat
@@ -2226,112 +2271,92 @@ def handleBet(id, betAmt, split):
 
     # First, we check to see if this an ante bet (before cards are dealt).
     if split == False and partOfRound == 'ante':
-        # We have to check the validity of the bet.
-        if (tableMin <= betAmt <= tableMax):
-            # Bet is valid. Assign it to the bet attribute for the player and
-            # thank the user. That will cause the loop in playBlackjack to
-            # terminate after it returns.
-            tableObj.players[seat].bet = betAmt
+        # We have to check the validity of the bet. Note, a result of 'size'
+        # is only possible when doubling down.
+        result = tableObj.players[seat].update_bet(betAmt, tableMin, tableMax)
+        if result == 'success':
+            # Bet is valid. The tableObj has been updated.
             responseText = "Thank you and good luck, {}.".format(playerName)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
-            # The bet is not a valid ante amount. We need to send an error
-            # message.
-        else:
-            responseText = "Invalid ante bet. Min bet is ${:d}. Max bet is ${:d}.".format(tableMin, tableMax)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
-            # There is a loop in the original calling function, playBlackjack,
-            # that will attempt to get a valid bet again.
             
-    # Next, we check if this is a double down on a player's regular bet.
-    elif split == False and partOfRound == 'raise':
-        # In this case, there are three possible outcomes:
-        #   1) the raise is zero, which the game will take as the player
-        #       changed their mind,
-        #   2) the raise is between 0 and their original bet, making it a
-        #       valid amount,
-        #   3) the raise is not between 0 and their original bet, making it
-        #       invalid.
-        if betAmt == 0:
-            # This bet amount is treated as the user changing their mind about
-            # raising the bet.
-            responseText = "Changing your mind can be wise. Good luck, {}.".format(playerName)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
-        elif (0 < betAmt <= maxRegRaise):
-            # Bet is valid. Assign it to the bet attribute for the player and
-            # thank the user. That will cause the loop in playBlackjack to
-            # terminate after it returns.
-            tableObj.players[seat].bet = betAmt
-            responseText = "Thank you and good luck, {}.".format(playerName)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+        # The bet is not a valid ante amount. We need to send an error
+        # message.
+        elif result in ('min', 'max'):
+            responseText = "Invalid ante bet. Min bet is ${:d}. Max bet is ${:d}.".format(tableMin, tableMax)
+        elif result == 'bust':
+            # The amount, including all other bets, exceeds the player's bank.
+            responseText = "Your bank cannot cover that bet."
         else:
-            # The bet is not a valid ante amount. We need to send an error
-            # message.
-            responseText = "Invalid raise. Min raise is $0. Max raise is ${}.".format(maxRegRaise)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
-            # There is a loop in the original calling function, playBlackjack,
-            # that will attempt to get a valid bet again.
+            # Code Unknown. TypeError should not be possible with number
+            # filters turned on in the Textbox.
+            raise RunTimeError("handleBet: An Unknown or TypeError came back from Player.update_bet method.")
+
+        # There is a loop in the original calling function, playBlackjack,
+        # that will attempt to get a valid bet again.
+            
+    # Next, we check if this is a double down on a player's existing bet. The
+    # double_down() method requires a flag, True for split hand, False for
+    # regular hand. That allows us to combine both together here.
+    elif partOfRound == 'raise':
+        # First, we eliminate the zero raises.
+        if betAmt == 0:
+            # This bet amount is treated as if the user changed their mind
+            # about raising the bet.
+            responseText = "Changing your mind can be wise. Good luck, {}.".format(playerName)
+        else:
+            # This is a non-zero raise. We need to send it to update_bet.
+            # Note: The min/max bet amounts are unneeded optional arguments
+            # here. Note: The boolean tells double_down which bet it is going
+            # to update.
+            result = tableObj.players[seat].double_down(betAmt, split)
+            if result == 'success':
+                # Bet is valid. It has already been applied by the method.            
+                responseText = "Thank you and good luck, {}.".format(playerName)
+            elif result == 'size':
+                # The raise exceeded the original bet.
+                if split == True:
+                    responseText = "Invalid raise. Max raise is ${}.".format(maxRegRaise)
+                else:
+                    responseText = "Invalid raise. Max raise is ${}.".format(maxSplitRaise)
+            elif result == 'bust':
+                # Their bank could not cover the amount.
+                responseText = "Your bank cannot cover that bet."
+            else:
+                # Code Unknown. TypeError should not be possible with number
+                # filters turned on in the Textbox.
+                raise RunTimeError("handleBet: An Unknown or TypeError came back from Player.update_bet method.")
+            
+        # There is a loop in the original calling function, playBlackjack,
+        # that will attempt to get a valid bet again.
 
     # Next, we deal with the ante on a split hand. It is created while during
     # the initial deal (after a second card has been dealt to all players).
     elif split == True and partOfRound == 'deal':
         # We have to check the validity of the bet. Split bets still have to
         # adhere to tableMax and tableMin.
-        if (tableMin <= betAmt <= tableMax):
-            # Bet is valid. Assign it to the bet attribute for the player and
-            # thank the user. That will cause the loop in playBlackjack to
-            # terminate after it returns.
-            tableObj.players[seat].bet = betAmt
-            responseText = "Thank you and good luck with both hands, {}.".format(playerName)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
-            # The bet is not a valid ante amount. We need to send an error
-            # message.
-        else:
-            responseText = "Invalid ante bet. Min bet is ${:d}. Max bet is ${:d}.".format(tableMin, tableMax)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
-            # There is a loop in the original calling function, playBlackjack,
-            # that will attempt to get a valid bet again.
-
-    # Next, we check if this is a double down on a player's split bet.
-    elif split == True and partOfRound == 'raise':
-        # In this case, there are three possible outcomes:
-        #   1) the raise is zero, which the game will take as the player
-        #       changed their mind,
-        #   2) the raise is between 0 and their original split ante, making it
-        #       a valid amount,
-        #   3) the raise is not between 0 and their split bet, making it
-        #       invalid.
-        if betAmt == 0:
-            # This bet amount is treated as the user changing their mind about
-            # raising the bet.
-            responseText = "Changing your mind can be wise. Good luck, {}.".format(playerName)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
-        elif (0 < betAmt <= maxRegRaise):
-            # Bet is valid. Assign it to the bet attribute for the player and
-            # thank the user. That will cause the loop in playBlackjack to
-            # terminate after it returns.
-            tableObj.players[seat].bet = betAmt
+        result = tableObj.players[seat].update_split_bet(betAmt, tableMax, tableMin)
+        if result == 'success':
+            # Bet is valid. The tableObj has been updated.
             responseText = "Thank you and good luck, {}.".format(playerName)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
+            
+        # The bet is not a valid ante amount. We need to send an error
+        # message.
+        elif result in ('min', 'max'):
+            responseText = "Invalid ante bet. Min bet is ${:d}. Max bet is ${:d}.".format(tableMin, tableMax)
+        elif result == 'bust':
+            # The amount, including all other bets, exceeds the player's bank.
+            responseText = "Your bank cannot cover that bet."
         else:
-            # The bet is not a valid ante amount. We need to send an error
-            # message.
-            responseText = "Invalid raise. Min raise is $0. Max raise is ${}.".format(maxSplitRaise)
-            responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
-            responseRect = responseSurf.get_rect(topleft = (posX, posY))
-            # There is a loop in the original calling function, playBlackjack,
-            # that will attempt to get a valid bet again.
+            # Code Unknown. TypeError should not be possible with number
+            # filters turned on in the Textbox.
+            raise RunTimeError("handleBet: An Unknown or TypeError came back from Player.update_bet method.")
+
+        # There is a loop in the original calling function, playBlackjack,
+        # that will attempt to get a valid bet again.
 
     # This block prints the response, then pauses waiting for the user to hit
     # the spacebar.
+    responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
+    responseRect = responseSurf.get_rect(topleft = (posX, posY))
     DISPLAYSURF.blit(responseSurf, responseRect)
     pygame.display.update()
     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
@@ -2366,6 +2391,57 @@ def handleSplitBet(id, betAmt):
     handleBet(id, betAmt, True)
     return
 
+def dealRound(rounds):
+    """
+    This function deal a round of cards to each player, including the dealer.
+    It uses the Player.add_card_to_hand() method to (which the Dealer also
+    has) to add cards to their hands. Both methods return strings 'blackjack',
+    'playable', or 'bust' each time a new card is added. It also uses the
+    CardShoe.remove_top() to produce the card to be dealt.
+    INPUTS: rounds, integer, the number of the current game round
+    OUTPUTS: only on screen
+    """
+    # Clear the screen.
+    DISPLAYSURF.fill(BGCOLOR)
+    pygame.display.update()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    if len(tableObj.tableDealer.hand) == 0:
+        statusText = "Dealing first round of cards."
+    else:
+        statusText = "Dealing second round of cards."
+    statusSurf = BASICFONT.render(statusText, True, TEXTCOLOR)
+    statusRect = statusSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(statusSurf, statusRect)
+    pygame.display.update()
+    posY += LINESPACING18
+    # results is a dictionary to store the returns codes from each dealt card.
+    # It is a global variable, but it needs to be reset each time cards are
+    # dealt to all players.
+    results = {}
+    for seat in ('left', 'middle', 'right', 'dealer'):
+        card = tableObj.deck.remove_top()
+        if seat != 'dealer':
+            results[seat] = tableObj.players[seat].add_card_to_hand(card)
+        else:
+            results[seat] = tableObj.tableDealer.add_card_to_hand(card)
+    refreshTable(tableObj.phase, rounds)
+    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+    # Print out and deal with all blackjack results from the players.
+    for seat in ('left', 'middle', 'right', 'dealer'):
+        if results[seat] == 'blackjack':
+            if seat != 'dealer':
+                winnings = int(tableObj.players[seat].bet * tableObj.blackjack_multiplier[1])
+                dealerLosses += winnings
+                blackjackText = "Congratulations, {0}. You have a blackjack\n that paid out ${1}.".format(tableObj.players[seat].name, winnings)
+                blackjackSurf = SCOREFONT.render(blackjackText, True, TEXTCOLOR)
+                blackjackRect = blackjackSurf.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(blackjackSurf, blackjackRect)
+                posY += 2 * LINESPACING12
+                tableObj.players[seat].blackjack(blackjack_multiplier[1])
+            else:
+                tableObj.tableDealer.blackjack_flag == True
+    return # dealRound
 
 if __name__ == '__main__':
     main()
