@@ -608,3 +608,21 @@ Player: extract_data: Fixed a bug that ensures that bets will appear in the extr
 Casino (game): dealRound: Added this function to deal the initial round of cards to each player (including dealer). It checks for player and dealer blackjacks. It will also ask call getInsBet if a 10 point card or an ace is the dealer's visible card after the second card is dealt. For player blackjack's, it will playerBlackjack to deal with outcome and dispense their winnings. 
 Casino (game): dealRound: Added a try/except block in case int(betAmt) raises a ValueError. It can if the user hits return without entering numbers. It is now able to handle dealing both initial cards.
 Casino (game): printTableDealer: The CARDIMAGES dictionary needs a tuple, not a list of one tuple to find the image of a card. The Dealer's visible card is actually a list. Rather than change the underlying Dealer class, I opted to set visCard equal to the first element of a one length list.
+
+1/6/18 18:55 Pushed to origin pygame
+
+Casino (game): Constants: Created TABLESEATS = ('left', 'middle', 'right') and TABLESEATSALL = ('left', 'middle', 'right', 'dealer') to remove the cumbersome tuples that are used is almost every function to go through the list of players around the table. The required changes to playBlackjack, removeActivePlayer, refreshTable, checkForInsBets, and dealRound.
+Casino (game): clearStatusCorner: Created this function to clear the status block (left corner of the game screen). The code to keep clearing that corner shows up throughout the functions in this game. Making it a function makes the code more readable. The functions effected by this change are: getBet, checkForPairs, handleBet, and checkForInsBets (up to this point in the game development).
+Casino (game): checkForInsBets: Checks the Dealer.blackjack_flag and offers the players an option to make an insurance bet, including those who have already won a blackjack.
+Casino (game): handleBets: Now supports insurance bets as well. It uses handleInsBet as a wrapper function.
+Casino (game): handleBet, getBet, handleInsBet, handleRegBet, handleSplitBet: These functions now use betType = ('reg', 'split', 'ins') in place of the split boolean.
+Casino (game): getBet: Made the code easier to read. Corrected error that would have broken the double down functionality.
+Casino (game): playBlackjack: Updated the bet calls there to match the updated bet functions.
+Casino (game): checkforPairs: Scans the hands of the players looking for pairs. Any player with a pair will be offered the opportunity to split their hand.
+CasinoTable: Attributes: Added a dictionary object to the tableObj (tableObj.results) that stores that state of the player's hand after cards are added to it.
+CasinoTable: __init__: Added the new attribute, results to the tableObj.
+CasinoTable: diagnostic_print: Added the new attribute, results, to the printout.
+Casino (game): deal_round: Changed results into an attribute.
+Casino (game): getBet: Fixed errors setting rect objects equal to surf objects. This broke the double down and insurance bet Textboxes.
+Casino (game): Added an extra phase, 'end', that acts as a cleanup phase between rounds. The requires updating comments in main, and refreshTable.
+Casino (game): refreshTable: Added a full board clear to it to keep player data from stepping on itself as the game progresses.

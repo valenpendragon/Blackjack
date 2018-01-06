@@ -871,7 +871,7 @@ class Player(object):
             # If it could be converted, the sign needs to be stripped off the
             # value.
             ins_amt = abs(ins_amt)
-        
+        print("update_ins: Min Bet is ${0}. Max Bet is ${1}.".format(min_bet, max_bet))
         # Next, we need to check for an existing insurance bet. If it exists
         # already, no changes are permitted.
         if (self.insurance != 0):
@@ -1325,6 +1325,21 @@ class CasinoTable(object):
         seat: This is the current player position, indicating which player is
             the focus of the game. Valid values are: None, 'left', middle',
             'right', or 'dealer'
+        results: This dictionary stores the status of the player's hand after
+            a card has been added to it or the hands split. It also stores
+            dealer's hand status. The key set maps as follows:
+                'left'         : player in left seat, regular hand
+                'left split'   : player in left seat, split hand
+                'middle'       : player in middle seat, regular hand
+                'middle split' : player in middle seat, split hand
+                'right'        : player in right seat, regular hand
+                'right split'  : player in right seat, split hand
+                'dealer'       : dealer's hand
+            The statuses for these hands are:
+                'blackjack'    : natural 21
+                'playable'     : the hand is still playable
+                'bust'         : the hand busted
+                'none'         : this hand does not exist
 
         NOTE: The user loses when all the players bust their banks. The 
             user wins when the players break the dealer's bank.
@@ -1436,6 +1451,22 @@ class CasinoTable(object):
                          together) 
             min_bet      min bet players can make
             max_bet      max bet players can make
+            results: This dictionary stores the status of the player's hand
+                after a card has been added to it or the hands split. It also
+                stores dealer's hand status. The key set maps as follows:
+                    'left'         : player in left seat, regular hand
+                    'left split'   : player in left seat, split hand
+                    'middle'       : player in middle seat, regular hand
+                    'middle split' : player in middle seat, split hand
+                    'right'        : player in right seat, regular hand
+                    'right split'  : player in right seat, split hand
+                    'dealer'       : dealer's hand
+                The statuses for these hands are:
+                    'blackjack'    : natural 21
+                    'playable'     : the hand is still playable
+                    'bust'         : the hand busted
+                    'none'         : this hand does not exist
+            
         '''
         # self.TABLESIZE  and self.TABLESEATS are constants in this library,
         # but the number of players depends on whether or not any of the
@@ -1471,6 +1502,26 @@ class CasinoTable(object):
         self.phase = 'pregame'
         self.seat  = None
 
+        # Now, we prepare a new attribute, results, which stores the current
+        # status of any hands a player or dealer has.
+        self.results = {}
+        for seat in ('left', 'middle', 'right', 'dealer'):
+            if seat != 'dealer':
+                try:
+                    nameTest = self.players[seat].name
+                except:
+                    # Skip it because the player's seat is empty.
+                    continue
+                else:
+                    hand = seat
+                    split_hand = seat + ' split'
+                    self.results[hand] = 'none'
+                    self.results[split_hand] = 'none'
+            else: # The seat is the dealer.
+                hand = seat
+                self.results[hand] = 'none'
+
+
         # Finally, we need to create a deck using the CardShoe class.
         self.deck = CardShoe()
         return
@@ -1503,11 +1554,14 @@ class CasinoTable(object):
         print("Blackjack multiplier: ", self.blackjack_multiplier)
         print("Dealer's Bank: ", self.tableDealer.bank)
         print("Table seating (TABLESIZE): ", self.TABLESIZE)
+        print("Dealer's Hand Status: ", self.results['dealer'])
         print("Actual Number of Players (numPlayers): ", self.numPlayers)
         self.deck.diagnostic_print()
         for i in xrange(1, self.numPlayers + 1):
             ordinal = self.TABLESEATS[str(i)]
             self.players[ordinal].diagnostic_print()
+            print("Hand Status of Player: ", self.results[ordinal])
+            print("Split Hand Status of Player: ", self.results[ordinal + ' split'])
         print("Completed diagnostic print of CasinoTable.")
         return
     

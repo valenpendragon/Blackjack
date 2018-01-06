@@ -1,10 +1,19 @@
 from __future__ import print_function
-import random, os, pygame, inflection, collections, sys, string, copy
-from pygame.transform import scale
-from pygame.locals import *
-from lib import CardShoe, Player, Dealer, CasinoTable, Textbox
 
+import collections
+import copy
+import os
 import pdb
+import random
+import string
+import sys
+
+from lib import CardShoe, CasinoTable, Dealer, Player, Textbox
+
+import inflection
+import pygame
+from pygame.locals import *
+from pygame.transform import scale
 
 # Colors          R    G    B
 BLACK        = (  0,   0,   0)
@@ -54,7 +63,7 @@ BUTTONWIDTH        =  100  # width of action buttons
 BUTTONHEIGHT       =   50  # height of action buttons
 BUTTONSPACING      =   75  # Spacing between action buttons
 OUTLINEWIDTH       =    5  # width of the outlines of butttons
-STATUSBLOCKWIDTH   =  200  # width of the status block (upper left corner)
+STATUSBLOCKWIDTH   =  350  # width of the status block (upper left corner)
 STATUSBLOCKHEIGHT  =  150  # height of the status block (upper left corner)
 PHASEBLOCKWIDTH    =  100  # width of round phase block (upper right corner)
 PHASEBLOCKHEIGHT   =  100  # height of round phase block (upper right corner)
@@ -109,10 +118,16 @@ STARTINGBANK = 50000
 # instruction text on screen.
 SCROLLSPEED = 1200
 
+# These positions get used so often, it is necessary to have a couple of handy
+# constants for them.
+TABLESEATS    = ('left', 'middle', 'right')
+TABLESEATSALL = ('left', 'middle', 'right', 'dealer')
+
 
 def main(): # main game function
-    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT, DATAFONT, INSTRUCTFONT, PROMPTFONT
-    global listPlayers, listDealers, tableChoice, tableObj, results
+    global FPSCLOCK, DISPLAYSURF, CARDIMAGES, BLANKCARD, BASICFONT, SCOREFONT
+    global DATAFONT, INSTRUCTFONT, PROMPTFONT
+    global listPlayers, listDealers, tableChoice, tableObj
 
     # Pygame initialization.
     pygame.init()
@@ -319,13 +334,6 @@ def main(): # main game function
                            tableChoice['table bets'][1])
     print("main: Table min is ${0}. Table max is ${1}.".format(tableObj.min_bet, tableObj.max_bet))
 
-    # results stores the outcome of dealing a card to a player or dealer. In
-    # particular, it stores a blackjack if one was dealt to anyone as the
-    # table. For the players, the hand is an instant win with a higher playout.
-    # For the dealer, blackjack means that the dealer will beat anyone else
-    # who did not get an initial blackjack.
-    results = {}
-    
     # Note: The following turn controls are also initialized with tableObj:
     # tableObj.phase: string indicating the current phase of the round of
     #       play. There are several values. This is a global variable.
@@ -338,6 +346,7 @@ def main(): # main game function
     #           'middle' : middle player's turn (if there is one)
     #           'right'  : right player's turn (if there is one)
     #           'dealer' : dealer's turn
+    #           'end'    : end of the current round (clean up phase)
     # tableObj.seat: string indicating the seat of the player, used to
     #       indicate which player turn it is and as a dictionary key to get
     #       player data out of the tableObj.player dictionary. Valid values
@@ -1098,7 +1107,7 @@ def generateDealerList():
                 listDealers[i]['blackjack multiplier'] = ('2:1', 2.00)
             listDealers[i]['table bets'] = (500, 1000000)
 
-    return listDealers
+    return listDealers # generateDealerList
 
 def dieRoll(die, minNum, maxNum, adj=0):
     """
@@ -1943,7 +1952,7 @@ def playBlackjack(tableObj, listPlayers):
                 # use the global variable, seat that will be very
                 # important in the player turns.
                 posY += LINESPACING12
-                for seat in ('left', 'middle', 'right'):
+                for seat in TABLESEATS:
                     if isPlayerStillThere(seat):
                         withdrawText = "Would like to withdraw {}?".format(tableObj.players[seat].name)
                         withdrawSurf = BASICFONT.render(withdrawText, True, TEXTCOLOR)
@@ -1980,7 +1989,7 @@ def playBlackjack(tableObj, listPlayers):
             DISPLAYSURF.fill(BGCOLOR)
             pygame.display.update()
             refreshTable(tableObj.phase, roundCounter)
-            for seat in ('left', 'middle', 'right'):
+            for seat in TABLESEATS:
                 if isPlayerStillThere(seat):
                     while tableObj.players[seat].bet == 0:
                         tableObj.seat = seat
@@ -2002,6 +2011,19 @@ def playBlackjack(tableObj, listPlayers):
             dealRound(roundCounter)
             # Deal second card.
             dealRound(roundCounter)
+
+            # Now that all players (dealer included) have a full hand and any
+            # player blackjacks have been resolved, we need to see if the
+            # dealer has a ten value card or an ace showing. If so, the
+            # players can bet on the dealer having a blackjack.
+            checkForInsBet()
+
+            # Next, we need to offer any players who have received a pair the
+            # opportuntity to split their hand. Once that is done, a 21 for
+            # either hand is not considered a blackjack. At best, it can tie
+            # dealer if the dealer has non-blackjack.
+            checkForPairs(roundCounter)
+
             # pygame.display.update()  # This pair of commands ends the game's
             # pygame.time.wait(33)     # event loop by refreshing the screen.
             # FPSCLOCK.tick()          # 33ms wait = 30fps.
@@ -2041,13 +2063,13 @@ def removeActivePlayer(seat, rounds):
     # reduce the number of players by 1. The only problem is that CasinoTable
     # objects do not easily delete items.
     newPlayerDict = {}
-    for playerSeat in ('left', 'middle', 'right'):
+    for playerSeat in TABLESEATS:
         if isPlayerStillThere(playerSeat) and playerSeat != seat:
             newPlayerDict[playerSeat] = tableObj.players[playerSeat]
         # It will skip the player with the matching seat.
     tableObj.players = newPlayerDict            
     tableObj.numPlayers -= 1
-    return
+    return # removeActivePlayer
 
 def refreshTable(phase, rounds):
     """
@@ -2055,6 +2077,7 @@ def refreshTable(phase, rounds):
     as the game round progresses. It uses the phase of the round to determine
     what should print out of the Dealer's cards and data. This function uses
     phase, a string with one of the following values:
+        'pregame': setting up for a game (not used here)
         'start'  : allows the user to withdraw players before ante
         'ante'   : collecting initial bets from players
         'deal'   : dealing the cards
@@ -2064,18 +2087,21 @@ def refreshTable(phase, rounds):
         'middle' : middle player's turn (if there is one)
         'right'  : right player's turn (if there is one)
         'dealer' : dealer's turn
+        'end'    : end of the current round (clean up phase)
     INPUTS: two arguments
         phase. string, see above for valid values
         rounds, integer (round number of the current game)
     NOTE: This function does NOT clear the screen before printing, because
     thst is often not required.
     """
+    # Start with a full board clear.
+    DISPLAYSURF.fill(BGCOLOR)
     generateTable(tableChoice['table color'])
     if phase != 'dealer':
         printTableDealer(tableObj.tableDealer.extract_data())
     else:
         printTableDealer(tableObj.tableDealer.extract_data(), output = 'dealer turn')
-    for seat in ('left', 'middle', 'right'):
+    for seat in TABLESEATS:
         if isPlayerStillThere(seat):
             printTablePlayer(tableObj.players[seat].extract_data(), seat)
     if phase == 'start':
@@ -2094,13 +2120,15 @@ def refreshTable(phase, rounds):
         roundText = "Currently {0}'s turn in Round {1}.".format(tableObj.players['right'].name, rounds)
     elif phase == 'dealer':
         roundText = "Currently {0}'s turn in Round {1}.".format(tableObj.tableDealer.name, rounds)
+    elif phase == 'end':
+        roundText = "End of round {0}.".format(rounds)
     posX = RIGHTMARGIN
     posY = TOPMARGIN
     roundSurf = BASICFONT.render(roundText, True, TEXTCOLOR)
     roundRect = roundSurf.get_rect(topright = (posX, posY))
     DISPLAYSURF.blit(roundSurf, roundRect)
     pygame.display.update()
-    return
+    return # refreshTable
 
 def isPlayerStillThere(seat):
     """
@@ -2120,7 +2148,7 @@ def isPlayerStillThere(seat):
     else:
         return True
 
-def getBet(split = False):
+def getBet(seat, betType = 'reg'):
     """
     This function leverages the Textbox class to create a numbers only textbox
     for the user to enter their bet amount. If the phase is 'ante', it will
@@ -2145,18 +2173,16 @@ def getBet(split = False):
     # pdb.set_trace()
     partOfRound = tableObj.phase
     seat = tableObj.seat
+    playerName = tableObj.players[seat].name 
     posX = LEFTMARGIN
     posY = TOPMARGIN
     # First, we need to clear any text from the STATUSBLOCK in the upper left
     # corner of the screen.
-    statusSurf = pygame.Surface((STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT))
-    statusRect = statusSurf.get_rect(topleft = (LEFTMARGIN, TOPMARGIN))
-    statusSurf.fill(BGCOLOR)
-    DISPLAYSURF.blit(statusSurf, statusRect)
-    pygame.display.update()
+    clearStatusCorner()
 
     if partOfRound == 'ante':
-        anteText = "{0}, please ante up for this round.".format(tableObj.players[seat].name)
+        # This is an initial ante before any cards are dealt.
+        anteText = "{0}, please ante up for this round.".format(playerName)
         anteSurf = PROMPTFONT.render(anteText, True, TEXTCOLOR)
         anteRect = anteSurf.get_rect(topleft = (posX, posY))
         posY += LINESPACING18
@@ -2164,14 +2190,12 @@ def getBet(split = False):
         betTextboxRect.topleft = (posX, posY)
         betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleRegBet,
                              charFilter = 'number', enterClears = True, enterDeactivates = True)
-    # This is a test to see if getTableChoice events can be resused instead
-    # creating a second function. If so, it should be renamed and the comments
-    # adjusted accordingly.
         betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
 
-    # This is the ante for a split hand.
-    elif partOfRound == 'deal' and split == True:
-        anteText = "{0}, please ante up for your split hand.".format(tableObj.players[seat].name)
+    elif partOfRound == 'deal' and betType == 'split':
+        # This is the ante for a split hand. It takes place while cards are
+        # still being dealt.
+        anteText = "{0}, please ante up for your split hand.".format(playerName)
         anteSurf = PROMPTFONT.render(anteText, True, TEXTCOLOR)
         anteRect = anteSurf.get_rect(topleft = (posX, posY))
         posY += LINESPACING18
@@ -2179,45 +2203,57 @@ def getBet(split = False):
         betTextboxRect.topleft = (posX, posY)
         betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleSplitBet,
                              charFilter = 'number', enterClears = True, enterDeactivates = True)
-    # Still testing reusable code here as well.
         betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
 
-    # This is a double down for a regular hand.
-    elif partOfRound == 'raise' and split == False:
-        doubleDownText = "{0}, how much would you like to raise your bet by?".format(tableObj.players[seat].name)
+    elif partOfRound == 'raise' and betType == 'reg':
+        # This is a double down for a regular hand.
+        doubleDownText = "{0}, how much would you like to raise your bet by?".format(playerName)
         doubleDownSurf = PROMPTFONT.render(doubleDownText, True, TEXTCOLOR)
         doubleDownRect = doubleDownSurf.get_rect(topleft = (posX, posY))
         posY += LINESPACING18
-        betTextboxRect = doubleDownSurf.copy()
+        betTextboxRect = doubleDownRect.copy()
         betTextboxRect.topleft = (posX, posY)
         betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleRegBet,
                              charFilter = 'number', enterClears = True, enterDeactivates = True)
-    # Still testing reusable code here as well.
-        betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
+        betResult = getTextboxEvents(betTextbox, doubleDownSurf, doubleDownRect, DISPLAYSURF)
 
-    elif partOfRound == 'raise' and split == True:
-        doubleDownText = "{0}, how much would you like to raise your bet on your split hand by?".format(tableObj.players[seat].name)
+    elif partOfRound == 'raise' and betType == 'split':
+        # This is a double down on a split hand.
+        doubleDownText = "{0}, how much would you like to raise your bet on your split hand by?".format(playerName)
         doubleDownSurf = PROMPTFONT.render(doubleDownText, True, TEXTCOLOR)
         doubleDownRect = doubleDownSurf.get_rect(topleft = (posX, posY))
         posY += LINESPACING18
-        betTextboxRect = doubleDownSurf.copy()
+        betTextboxRect = doubleDownRect.copy()
         betTextboxRect.topleft = (posX, posY)
         betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleSplitBet,
                              charFilter = 'number', enterClears = True, enterDeactivates = True)
-    # Still testing reusable code here as well.
-        betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
+        betResult = getTextboxEvents(betTextbox, doubleDownSurf, doubleDownRect, DISPLAYSURF)
+
+    elif betType == 'ins':
+        # This is an insurance bet.
+        insText = "{0}, how much do you want to wager as an insurance bet?".format(playerName)
+        insSurf = PROMPTFONT.render(insText, True, TEXTCOLOR)
+        insRect = insSurf.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        betTextboxRect = insRect.copy()
+        betTextboxRect.topleft = (posX, posY)
+        betTextbox = Textbox((betTextboxRect), fontSize = 12, command = handleInsBet,
+                             charFilter = 'number', enterClears = True, enterDeactivates = True)
+        betResult = getTextboxEvents(betTextbox, insSurf, insRect, DISPLAYSURF)
         
-    return
+    return # getBet
 
-def handleBet(id, betAmt, split):
+def handleBet(id, betAmt, betType):
     """
-    This function uses the split flag and the tableObj.phase variable
-    to determine which Player method to call to perform the operation. The
-    operations include taking an ante bet on a player hands, regular and
-    split, and taking double down increases to the same. The Player class
-    methods can check the amounts to make sure they are valid. If the amount
-    is invalid or is not a number, this function print an error message, and
-    then call getBet with the parameters it received to try again.
+    This function uses a text flag and the tableObj.phase variable to
+    determine which Player method to call to perform the operation. The
+    operations include taking an ante bet on a player's hand, regular and
+    split, taking double down increases to the same, and taking insurance
+    bets when it is called for. The Player class methods can check the
+    amounts to make sure they are valid. If the amount is invalid or is not
+    a number, this function print an error message, and returns control back
+    to the calling function. That calling function will need a while loop that
+    loops until the desired tableObj attribute has been changed.
     
     It calls the Player.update_bet() and update_split_bet() methods and checks
     the code to determine the right response to bad amounts. Their return
@@ -2235,7 +2271,10 @@ def handleBet(id, betAmt, split):
     INPUTS: three arguments
         id     : integer, the location of the calling process in memory
         betAmt : string to convert into an integer
-        split  : boolean, indicates if the bet is on a split hand
+        betType: string with the following values:
+            'reg'  : this bet is on the regular hand
+            'split': this bet is on the split hand
+            'ins'  : this is an insurance bet on the dealer's hand
     OUTPUTS: All outputs are changes to the global tableObj
     Note: The Textbox objects have filters to prevent undesirable characters
     from being entered in the dialog box.
@@ -2243,8 +2282,7 @@ def handleBet(id, betAmt, split):
     collecting the bet information, handleRegBet, handleSplitBet, updateBet
     and updateSplitBet.
     """
-    # pdb.set_trace()
-    # There is a possiblity that the user will hit return prematurely. We
+   # There is a possiblity that the user will hit return prematurely. We
     # need to be prepared for that possibility.
     try:
         betAmt = int(betAmt)
@@ -2259,18 +2297,15 @@ def handleBet(id, betAmt, split):
     playerName = tableObj.players[seat].name
     # The first thing we need to do after the user hits return in the Textbox
     # is to clear the status block.
-    statusSurf = pygame.Surface((STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT))
-    statusRect = statusSurf.get_rect(topleft = (LEFTMARGIN, TOPMARGIN))
-    statusSurf.fill(BGCOLOR)
-    DISPLAYSURF.blit(statusSurf, statusRect)
-    pygame.display.update()
+    clearStatusCorner()
+    
     # This alligns the "on screen response", either confirming a valid bet
     # or giving instruction on what would be an acceptable bet.
     posX = LEFTMARGIN
     posY = TOPMARGIN
 
     # First, we check to see if this an ante bet (before cards are dealt).
-    if split == False and partOfRound == 'ante':
+    if betType == 'reg' and partOfRound == 'ante':
         # We have to check the validity of the bet. Note, a result of 'size'
         # is only possible when doubling down.
         result = tableObj.players[seat].update_bet(betAmt, tableMin, tableMax)
@@ -2306,14 +2341,16 @@ def handleBet(id, betAmt, split):
             # This is a non-zero raise. We need to send it to update_bet.
             # Note: The min/max bet amounts are unneeded optional arguments
             # here. Note: The boolean tells double_down which bet it is going
-            # to update.
+            # to update. So, we need to create a split flag here.
+            # Note: Insurance bets are never raised.
+            split = (betAmt == 'split')
             result = tableObj.players[seat].double_down(betAmt, split)
             if result == 'success':
                 # Bet is valid. It has already been applied by the method.            
                 responseText = "Thank you and good luck, {}.".format(playerName)
             elif result == 'size':
                 # The raise exceeded the original bet.
-                if split == True:
+                if betType == 'split':
                     responseText = "Invalid raise. Max raise is ${}.".format(maxRegRaise)
                 else:
                     responseText = "Invalid raise. Max raise is ${}.".format(maxSplitRaise)
@@ -2330,10 +2367,10 @@ def handleBet(id, betAmt, split):
 
     # Next, we deal with the ante on a split hand. It is created while during
     # the initial deal (after a second card has been dealt to all players).
-    elif split == True and partOfRound == 'deal':
+    elif betType == 'split' and partOfRound == 'deal':
         # We have to check the validity of the bet. Split bets still have to
         # adhere to tableMax and tableMin.
-        result = tableObj.players[seat].update_split_bet(betAmt, tableMax, tableMin)
+        result = tableObj.players[seat].update_split_bet(betAmt, tableMin, tableMax)
         if result == 'success':
             # Bet is valid. The tableObj has been updated.
             responseText = "Thank you and good luck, {}.".format(playerName)
@@ -2353,6 +2390,33 @@ def handleBet(id, betAmt, split):
         # There is a loop in the original calling function, playBlackjack,
         # that will attempt to get a valid bet again.
 
+    # Finally, we deal with the case that all hands have been dealt and the
+    # Dealer is showing a ten value or Ace. This means that the dealer had to
+    # offer an insurance bet. This only happens after 'deal' is over and before
+    # 'raise' starts.
+    elif betType == 'ins':
+        # Insurance bets abide by the same table limits as any other bet.
+        result = tableObj.players[seat].update_ins(betAmt, tableMin, tableMax)
+        if result == 'success':
+            # Bet is valid. The tableObj has been updated.
+            responseText = "Excellent choice. Good luck, {}.".format(playerName)
+
+        # Something is wrong with the bet.
+        elif result == 'exists':
+            responseText = "You cannot raise an insurance bet."
+        elif result in ('min', 'max'):
+            responseText = "Invalid insurance bet. Min bet is ${:d}. Max bet is ${:d}.".format(tableMin, tableMax)
+        elif result == 'bust':
+            # The amount, including all other bets, exceeds the player's bank.
+            responseText = "Your bank cannot cover that bet."
+        else:
+            # Code Unknown. TypeError should not be possible with number
+            # filters turned on in the Textbox.
+            raise RunTimeError("handleBet: An Unknown or TypeError came back from Player.update_bet method.")
+
+        # There is a loop in the original calling function, playBlackjack,
+        # that will attempt to get a valid bet again.
+
     # This block prints the response, then pauses waiting for the user to hit
     # the spacebar.
     responseSurf = BASICFONT.render(responseText, True, TEXTCOLOR)
@@ -2360,36 +2424,49 @@ def handleBet(id, betAmt, split):
     DISPLAYSURF.blit(responseSurf, responseRect)
     pygame.display.update()
     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
-    statusSurf.fill(BGCOLOR)
-    DISPLAYSURF.blit(statusSurf, statusRect)
+    clearStatusCorner()
     pygame.display.update()
     return # handleBet
 
 def handleRegBet(id, betAmt):
     """
-    This is a wrapper function for handldBet(). It allows us to pass the split
-    flag to handleBet.
+    This is a wrapper function for handldBet(). It allows us to pass an
+    argument to handleBet telling it what kind of bet this is.
     INPUTS: two arguments
         id : integer memory address of the process
         betAmt : text from the Textbox object
     OUTPUTS: None. This does not write to the screen, either. It simply runs
-        handleBet with split = False
+        handleBet with betType = 'reg'
     """
-    handleBet(id, betAmt, False)
+    handleBet(id, betAmt, 'reg')
     return
 
 def handleSplitBet(id, betAmt):
     """
-    This is a wrapper function for handldBet(). It allows us to pass the split
-    flag to handleBet.
+    This is a wrapper function for handldBet(). It allows us to pass an
+    argument to handleBet telling it what kind of bet this is.
     INPUTS: two arguments
         id : integer memory address of the process
         betAmt : text from the Textbox object
     OUTPUTS: None. This does not write to the screen, either. It simply runs
-        handleBet with split = True
+        handleBet with betType = 'split'
     """
-    handleBet(id, betAmt, True)
+    handleBet(id, betAmt, 'split')
     return
+
+def handleInsBet(id, betAmt):
+    """
+    This is a wrapper function for handldBet(). It allows us to pass an
+    argument to handleBet telling it what kind of bet this is.
+    INPUTS: two arguments
+        id : integer memory address of the process
+        betAmt : text from the Textbox object
+    OUTPUTS: None. This does not write to the screen, either. It simply runs
+        handleBet with betType = 'ins'
+    """
+    handleBet(id, betAmt, 'ins')
+    return
+
 
 def dealRound(rounds):
     """
@@ -2397,15 +2474,30 @@ def dealRound(rounds):
     It uses the Player.add_card_to_hand() method to (which the Dealer also
     has) to add cards to their hands. Both methods return strings 'blackjack',
     'playable', or 'bust' each time a new card is added. It also uses the
-    CardShoe.remove_top() to produce the card to be dealt.
+    CardShoe.remove_top() to produce the card to be dealt. The results of each
+    card dealt are stored in tableObj.results. This is a nested dictionary
+    object. The keys point to:
+        'left'         : player in left seat, regular hand
+        'left split'   : player in left seat, split hand
+        'middle'       : player in middle seat, regular hand
+        'middle split' : player in middle seat, split hand
+        'right'        : player in right seat, regular hand
+        'right split'  : player in right seat, split hand
+        'dealer'       : dealer's hand
+    The statuses for these hands are:
+        'blackjack'    : natural 21
+        'playable'     : the hand is still playable
+        'bust'         : the hand busted
+        'none'         : this hand does not exist
     INPUTS: rounds, integer, the number of the current game round
-    OUTPUTS: only on screen
+    OUTPUTS: only on screen and tableObj changes
     """
     # Clear the screen.
     DISPLAYSURF.fill(BGCOLOR)
     pygame.display.update()
     posX = LEFTMARGIN
     posY = TOPMARGIN
+    blackjackMultiplier = tableObj.blackjack_multiplier[1]
     if len(tableObj.tableDealer.hand) == 0:
         statusText = "Dealing first round of cards."
     else:
@@ -2415,33 +2507,303 @@ def dealRound(rounds):
     DISPLAYSURF.blit(statusSurf, statusRect)
     pygame.display.update()
     posY += LINESPACING18
-    # results is a dictionary to store the returns codes from each dealt card.
-    # It is a global variable, but it needs to be reset each time cards are
-    # dealt to all players.
-    results = {}
-    for seat in ('left', 'middle', 'right', 'dealer'):
+    for seat in TABLESEATSALL:
         card = tableObj.deck.remove_top()
         if seat != 'dealer':
-            results[seat] = tableObj.players[seat].add_card_to_hand(card)
+            # This is here to test split hand functionality.
+            if seat == 'middle' and len(tableObj.players[seat].hand) == 1:
+                lastRank = tableObj.players[seat].hand[0][0]
+                card = (lastRank, card[1])
+            tableObj.results[seat] = tableObj.players[seat].add_card_to_hand(card)
         else:
-            results[seat] = tableObj.tableDealer.add_card_to_hand(card)
+            tableObj.results[seat] = tableObj.tableDealer.add_card_to_hand(card)
     refreshTable(tableObj.phase, rounds)
     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
-    # Print out and deal with all blackjack results from the players.
-    for seat in ('left', 'middle', 'right', 'dealer'):
-        if results[seat] == 'blackjack':
+    # Print out and deal with all blackjack results from the players. This is
+    # now an attribute of the class CasinoTable.
+    for seat in TABLESEATSALL:
+        dealerLosses = 0
+        if tableObj.results[seat] == 'blackjack':
             if seat != 'dealer':
-                winnings = int(tableObj.players[seat].bet * tableObj.blackjack_multiplier[1])
+                winnings = int(tableObj.players[seat].bet * blackjackMultiplier)
                 dealerLosses += winnings
-                blackjackText = "Congratulations, {0}. You have a blackjack\n that paid out ${1}.".format(tableObj.players[seat].name, winnings)
-                blackjackSurf = SCOREFONT.render(blackjackText, True, TEXTCOLOR)
-                blackjackRect = blackjackSurf.get_rect(topleft = (posX, posY))
-                DISPLAYSURF.blit(blackjackSurf, blackjackRect)
-                posY += 2 * LINESPACING12
-                tableObj.players[seat].blackjack(blackjack_multiplier[1])
-            else:
-                tableObj.tableDealer.blackjack_flag == True
+                blackjackTextFirst  = "Congratulations, {}. You have a blackjack".format(tableObj.players[seat].name) 
+                blackjackTextSecond = "that paid out ${}.".format(winnings)
+                blackjackSurfFirst  = SCOREFONT.render(blackjackTextFirst, True, TEXTCOLOR)
+                blackjackRectFirst  = blackjackSurfFirst.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(blackjackSurfFirst, blackjackRectFirst)
+                posY += LINESPACING12
+                blackjackSurfSecond = SCOREFONT.render(blackjackTextSecond, True, TEXTCOLOR)
+                blackjackRectSecond = blackjackSurfSecond.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(blackjackSurfSecond, blackjackRectSecond)
+                pygame.display.update()
+                posY += LINESPACING12
+                # We need to add the winning to the player's bank. This method
+                # does it for us.
+                tableObj.players[seat].blackjack(blackjackMultiplier)
+                pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        # Now, we need to deduct the immediate losses the dealer suffered
+        # from player blackjacks. The method below returns True if the
+        # Dealer's bank survived the losses, False if this round of player
+        # wins breaks the bank.
+        dealerBreak = tableObj.tableDealer.dealer_lost(dealerLosses)
+        if dealerBreak == False:
+            playersWinGame()
     return # dealRound
+
+def checkForInsBet():
+    """
+    This function looks at the Dealer attribute, blackjack_flag. It will be
+    true if the Dealer's visible card is a ten, a face card, or an ace. That
+    means that the player's can bet on whether or not the dealer has a 21.
+    This function calls getBet with 'ins' option for betType.
+    Note: Even players who scored a blackjack (which would have been resolved
+    by this point in the game) can opt to bet on a dealer blackjack and win a
+    'second' time.
+    INPUTS: None
+    OUTPUTS: None
+    """
+    # First, clear the corner of the screen.
+    clearStatusCorner()
+
+    print("checkForInsBet: Blackjack Flag is {}.".format(tableObj.tableDealer.blackjack_flag))
+    blackjackFlag = tableObj.tableDealer.blackjack_flag
+    visCard = tableObj.tableDealer.visible_card[0]
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    if blackjackFlag == True:
+        rank, suit = visCard
+        if rank == 'K':
+            cardName = 'a king'
+        elif rank == 'Q':
+            cardName = 'a queen'
+        elif rank == 'J':
+            cardName = 'a jack'
+        elif rank == '10':
+            cardName = 'a ten'
+        else: # Card is an Ace.
+            cardName = 'an ace'
+        insBetAckTextFirst  = "Since I have {0} showing, would anyone like".format(cardName)
+        insBetAckTextSecond = "to place an insurance bet on my possible blackjack?"
+        insBetAckSurfFirst  = PROMPTFONT.render(insBetAckTextFirst, True, TEXTCOLOR)
+        insBetAckRectFirst  = insBetAckSurfFirst.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(insBetAckSurfFirst, insBetAckRectFirst)
+        posY += LINESPACING12
+        insBetAckSurfSecond = PROMPTFONT.render(insBetAckTextSecond, True, TEXTCOLOR)
+        insBetAckRectSecond = insBetAckSurfSecond.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(insBetAckSurfSecond, insBetAckRectSecond)
+        pygame.display.update()
+        posY += LINESPACING12
+        answer = checkForYesNo(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        pygame.display.update()
+        # If the user does not want the players to make insurance bets, this
+        # function will return to playBlackjack.
+        if answer == False:
+            return
+
+        # Since we cleaned the corner again already, we can reset the position.
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        # We need ask each "player" if they want to place an insurance bet.
+        for seat in TABLESEATS:
+            # We need to clear the corner between loops. The statusSurf is the
+            # entire upper left corner.
+            clearStatusCorner()
+            posY = LEFTMARGIN
+            # We have to make sure a player is in the seat.
+            if isPlayerStillThere(seat):
+                print("checkForInsBet: Seat is set to {}.".format(seat))
+                playerName = tableObj.players[seat].name
+                print("checkForInsBet: Players is now {}.".format(playerName))
+                insBetText = "{}, would you like to place an insurance bet?.".format(playerName)
+                insBetSurf = PROMPTFONT.render(insBetText, True, TEXTCOLOR)
+                insBetRect = insBetSurf.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(insBetSurf, insBetRect)
+                pygame.display.update()
+                posY += LINESPACING18
+                answer = checkForYesNo(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                if answer == True:
+                    while tableObj.players[seat].insurance == 0:
+                        tableObj.seat = seat
+                        getBet(seat, 'ins')
+                        print("checkForInsBet: Player {0} placed an insurance bet of ${1}.".format(playerName, tableObj.players[seat].insurance))
+    return # checkForInsBet
+
+def checkForPairs(rounds):
+    """
+    This function checks for pairs in the players dealt hands. Each player
+    that has a pair will be offered the option of splitting their hand into
+    two hands. From that point on, even a 21 from 2 cards cannot be considered
+    a blackjack result.
+
+    This function uses Player.split_check(), which returns True when a pair
+    exists, False otherwise. Once a pair is found, it will ask the player who
+    has the pair if they want to split their hand. If so, it will call the
+    Player.split_pair() method. After that, it will call for a bet on this
+    new hand, called a split hand.
+
+    Neither Player method requires arguments, but refreshTable needs the 
+    phase and round count. The phase can come from tableObj, but rounds has 
+    to be passed through from playBlackjack.
+    INPUTS: integer rounds (number of the current round)
+    OUTPUTS: Only to the screen
+    """
+    # First, we need to clear the corner of the screen.
+    clearStatusCorner()
+    # Next, we need to check each regular hand for pairs. We also need to
+    # make sure a player is still in the seat.
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            pairExists = tableObj.players[seat].split_check()
+            if pairExists == True:
+                posX = LEFTMARGIN
+                posY = TOPMARGIN
+                clearStatusCorner()
+                # We need to ask the user if they want to split up the
+                # player's pair into two hands.
+                playerName = tableObj.players[seat].name
+                splitHandTextFirst  = "{0}, you have a pair showing.".format(playerName)
+                splitHandTextSecond = "Would you like to split your hand?"
+                splitHandSurfFirst  = PROMPTFONT.render(splitHandTextFirst, True, TEXTCOLOR)
+                splitHandRectFirst  = splitHandSurfFirst.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(splitHandSurfFirst, splitHandRectFirst)
+                posY += LINESPACING12
+                splitHandSurfSecond = PROMPTFONT.render(splitHandTextSecond, True, TEXTCOLOR)
+                splitHandRectSecond = splitHandSurfSecond.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(splitHandSurfSecond, splitHandRectSecond)
+                pygame.display.update()
+                answer = checkForYesNo(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                if answer == True:
+                    # Now, we need to split the pair into two hands and update
+                    # the full screen. Note, the phase is still 'deal'. We also
+                    # need to reset the text position to the upper left again.
+                    tableObj.players[seat].split_pair()
+                    refreshTable(tableObj.phase, rounds)
+                    posX = LEFTMARGIN
+                    posY = TOPMARGIN
+                    clearStatusCorner()
+                    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                    # Now, the players needs to make a new ante on the split
+                    # hand. After that, two cards will be dealt, one to each
+                    # hand. The loop below will break out once a valid ante
+                    # has been entered.
+                    while tableObj.players[seat].split_bet == 0:
+                        tableObj.seat = seat
+                        getBet(seat, 'split')
+                    refreshTable(tableObj.phase, rounds)
+                    dealSingleCard(seat, rounds, 'split regular')
+                    dealSingleCard(seat, rounds, 'split new')
+                    # Note: dealSingleCard has a pressSpaceToContinue at the
+                    # end of function.
+    return # checkForPairs
+                    
+def dealSingleCard(seat, rounds, handType):
+    """
+    This function handles dealing a single card to a specific player's hand,
+    including the Dealer. It uses the player and dealer methods add_card_to_hand
+    and checks the outcome of adding the card. There are a few types of hands
+    that will be encountered in the game. The handTypes are:
+        'regular'       : player's regular hand after the deal phase is done
+        'split regular' : player's regular hand after a pair was split
+        'split new'     : player's new single card split hand
+        'split'         : player's split hand after the deal phase is done
+        'dealer'        : dealer's hand during the dealer's turn
+    Each of these options has different requirements, but the process has a
+    number of common steps. Mainly, it changes what is said to the user/player
+    and which hand receives the dealt card.
+
+    This function also updates the results dictionary that is part of the 
+        tableObj (tableObj.results). The keys for this dictionary are:
+        'left'         : player in left seat, regular hand
+        'left split'   : player in left seat, split hand
+        'middle'       : player in middle seat, regular hand
+        'middle split' : player in middle seat, split hand
+        'right'        : player in right seat, regular hand
+        'right split'  : player in right seat, split hand
+        'dealer'       : dealer's hand
+    The statuses for these hands are:
+        'blackjack'    : natural 21
+        'playable'     : the hand is still playable
+        'bust'         : the hand busted
+        'none'         : this hand does not exist
+
+    INPUTS: three arguments
+        seat : string, the seat at the casino table, values are TABLESEATSALL
+        rounds : integer, number of the current round of play
+        handType : string (see above for values and meanings)
+    OUTPUTS: None, all changes occur to the screen or parts of tableObj.
+    """
+    # Clearing the status corner.
+    clearStatusCorner()
+    # Setting up the position variables
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    # Draw a card from the CardShoe.
+    newCard = tableObj.deck.remove_top()
+    # For each hand possibility, we have three things we need to do. First,
+    # we need to add the card to correct hand and see what effect that has
+    # on player or dealer scores. That is the "result". Second, we need to
+    # put up an appropriate message in the status corner. Third, we need to
+    # add the result to the tableObj.results dictionary.
+    if handType == 'regular':
+        result = tableObj.players[seat].add_card_to_hand(newCard)
+        promptText = "Here is another card for your regular hand."
+        tableObj.results[seat] = result
+
+    elif handType == 'split regular':
+        result = tableObj.players[seat].add_card_to_hand(newCard)
+        promptText = "Dealing a new card for your regular hand."
+        # Blackjacks only count before splitting hands, not after.
+        if result == 'blackjack':
+            result = 'playable'
+        tableObj.results[seat] = result
+
+    elif handType == 'split new':
+        result = tableObj.players[seat].add_card_to_split(newCard)
+        promptText = "Dealing a new card for your split hand."
+        tableObj.results[seat + ' split'] = result
+
+    elif handType == 'split':
+        result = tableObj.players[seat].add_card_to_hand(newCard)
+        promptText = "Here is another card for your split hand."
+        tableObj.results[seat + ' split'] = result
+
+    elif handType == 'dealer':
+        result = tableObj.tableDealer.add_card_to_hand(newCard)
+        promptText = "Dealer takes another card."
+        tableObj.results['dealer'] = result
+    
+    # Now, we need to update the whole table layout and add to it the text
+    # for the hand that will receive the newly dealt card.
+    refreshTable(tableObj.phase, rounds)
+    promptSurf = PROMPTFONT.render(promptText, True, TEXTCOLOR)
+    promptRect = promptSurf.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(promptSurf, promptRect)
+    pygame.display.update()
+    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+    return # dealSingleCard
+                
+def clearStatusCorner():
+    """
+    These commands get used over and over in this game. Basically, this
+    function writes over the corner of the screen with the background color.
+    This clears that block, called the status block.
+    INPUTS: None
+    OUTPUTS: Only to the screen.
+    """
+    statusSurf = pygame.Surface((STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT))
+    statusRect = statusSurf.get_rect(topleft = (LEFTMARGIN, TOPMARGIN))
+    statusSurf.fill(BGCOLOR)
+    DISPLAYSURF.blit(statusSurf, statusRect)
+    pygame.display.update()
+    return
+
+def playersWinGame():
+    """
+    This function will handle the players breaking the bank for the table
+    they were playing at.
+    """
+    pass
 
 if __name__ == '__main__':
     main()
