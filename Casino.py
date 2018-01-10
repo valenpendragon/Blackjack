@@ -304,15 +304,15 @@ def main(): # main game function
     # of the skill levels is starter ---> normal ---> special event ---> high
     # roller.
     tablesPermitted = getTableSkillList(listPlayers)
-    print("main: tablePermitted set to {}".format(tablesPermitted))
+    # print("main: tablePermitted set to {}".format(tablesPermitted))
     listDealers = filterDealers(tablesPermitted, listDealers)
-    print("main: Dealer list after filtering: {}".format(listDealers))
+    # print("main: Dealer list after filtering: {}".format(listDealers))
     
     # Initialize tableChoice and call offerTableChoice to get the user's
     # choice of dealer. The while loop ensures we actually get a name that
     # matches a dealer. Capitalization does not matter.
     offerTableChoices(listDealers)
-    print("main: tableChoice is {0}".format(tableChoice))
+    # print("main: tableChoice is {0}".format(tableChoice))
     while tableChoice == {}:
         instText = "Dealer's name was not a valid choice. Please try again."
         instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
@@ -321,7 +321,7 @@ def main(): # main game function
         DISPLAYSURF.blit(instSurf, instRect)
         pressSpaceToContinue()
         offerTableChoices(listDealers)
-        print("main: tableChoice is {0}".format(tableChoice))
+        # print("main: tableChoice is {0}".format(tableChoice))
 
     # Now, we need to generate a CasinoTable object. This object needs to be
     # populated from listPlayers and tableChoice. Note, 'table bets' is the
@@ -1837,7 +1837,7 @@ def scrollText(filename):
         # insert a pause to make is easier to read.
         pygame.display.update()
         pygame.time.wait(SCROLLSPEED)
-        
+    return # scrollText        
 
 def playBlackjack(tableObj, listPlayers):
     """
@@ -1996,7 +1996,7 @@ def playBlackjack(tableObj, listPlayers):
                         # This loop will continue until the player's ante
                         # is a valid amount. There are other functions that
                         # provide error messages, but not this one.
-                        getBet(seat)
+                        getBet()
 
             # Now, we refresh the screen to show the bets in place.
             DISPLAYSURF.fill(BGCOLOR)
@@ -2023,6 +2023,13 @@ def playBlackjack(tableObj, listPlayers):
             # either hand is not considered a blackjack. At best, it can tie
             # dealer if the dealer has non-blackjack.
             checkForPairs(roundCounter)
+
+            # Now that all of the hands have been dealt, including split
+            # hands, and ante bets have been placed on all existing hands,
+            # it is time to offer the user the option of doubling down on
+            # some of the better looking blackjack hands.
+            tableObj.phase = 'raise'
+            doubleDown(roundCounter)
 
             # pygame.display.update()  # This pair of commands ends the game's
             # pygame.time.wait(33)     # event loop by refreshing the screen.
@@ -2148,7 +2155,7 @@ def isPlayerStillThere(seat):
     else:
         return True
 
-def getBet(seat, betType = 'reg'):
+def getBet(betType = 'reg'):
     """
     This function leverages the Textbox class to create a numbers only textbox
     for the user to enter their bet amount. If the phase is 'ante', it will
@@ -2170,10 +2177,11 @@ def getBet(seat, betType = 'reg'):
             split, boolean, True for split hand, False for regular hand
     OUTPUTS: All outputs are made to tableObj.
     """
-    # pdb.set_trace()
+    print("getBet: Status (tableObj): phase is {0}. seat is {1}. name is {2}.".format(tableObj.phase, tableObj.seat, tableObj.players[tableObj.seat].name))
     partOfRound = tableObj.phase
     seat = tableObj.seat
-    playerName = tableObj.players[seat].name 
+    playerName = tableObj.players[seat].name
+    print("getBet: Status: partOfRound is {0}. seat is {1}. playerName is {2}.".format(partOfRound, seat, playerName))
     posX = LEFTMARGIN
     posY = TOPMARGIN
     # First, we need to clear any text from the STATUSBLOCK in the upper left
@@ -2181,6 +2189,7 @@ def getBet(seat, betType = 'reg'):
     clearStatusCorner()
 
     if partOfRound == 'ante':
+        print("getBet: Status: Starting regular ante bet for {0}.".format(playerName))
         # This is an initial ante before any cards are dealt.
         anteText = "{0}, please ante up for this round.".format(playerName)
         anteSurf = PROMPTFONT.render(anteText, True, TEXTCOLOR)
@@ -2193,6 +2202,7 @@ def getBet(seat, betType = 'reg'):
         betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
 
     elif partOfRound == 'deal' and betType == 'split':
+        print("getBet: Status: Starting split ante bet for {0}.".format(playerName))
         # This is the ante for a split hand. It takes place while cards are
         # still being dealt.
         anteText = "{0}, please ante up for your split hand.".format(playerName)
@@ -2206,6 +2216,7 @@ def getBet(seat, betType = 'reg'):
         betResult = getTextboxEvents(betTextbox, anteSurf, anteRect, DISPLAYSURF)
 
     elif partOfRound == 'raise' and betType == 'reg':
+        print("getBet: Status: Starting raise bet for {0}.".format(playerName))
         # This is a double down for a regular hand.
         doubleDownText = "{0}, how much would you like to raise your bet by?".format(playerName)
         doubleDownSurf = PROMPTFONT.render(doubleDownText, True, TEXTCOLOR)
@@ -2218,6 +2229,7 @@ def getBet(seat, betType = 'reg'):
         betResult = getTextboxEvents(betTextbox, doubleDownSurf, doubleDownRect, DISPLAYSURF)
 
     elif partOfRound == 'raise' and betType == 'split':
+        print("getBet: Status: Starting raise split bet for {0}.".format(playerName))
         # This is a double down on a split hand.
         doubleDownText = "{0}, how much would you like to raise your bet on your split hand by?".format(playerName)
         doubleDownSurf = PROMPTFONT.render(doubleDownText, True, TEXTCOLOR)
@@ -2230,6 +2242,7 @@ def getBet(seat, betType = 'reg'):
         betResult = getTextboxEvents(betTextbox, doubleDownSurf, doubleDownRect, DISPLAYSURF)
 
     elif betType == 'ins':
+        print("getBet: Status: Starting insurance bet for {0}.".format(playerName))
         # This is an insurance bet.
         insText = "{0}, how much do you want to wager as an insurance bet?".format(playerName)
         insSurf = PROMPTFONT.render(insText, True, TEXTCOLOR)
@@ -2295,6 +2308,9 @@ def handleBet(id, betAmt, betType):
     maxRegRaise   = tableObj.players[seat].bet
     maxSplitRaise = tableObj.players[seat].split_bet
     playerName = tableObj.players[seat].name
+    print("handleBet: Status: tableMin is ${0}. tableMax is ${1}.".format(tableMin, tableMax))
+    print("handleBet: Status: seat is {0}. phase is {1}. playerName is {2}.".format(seat, partOfRound, playerName))
+    print("handleBet: Status: maxRegRaise is ${0}. maxSplitRaise is ${1}.".format(maxRegRaise, maxSplitRaise))
     # The first thing we need to do after the user hits return in the Textbox
     # is to clear the status block.
     clearStatusCorner()
@@ -2306,9 +2322,11 @@ def handleBet(id, betAmt, betType):
 
     # First, we check to see if this an ante bet (before cards are dealt).
     if betType == 'reg' and partOfRound == 'ante':
+        print("handleBet: Applying regular ante bet {0} for Player {1}.".format(betAmt, playerName))
         # We have to check the validity of the bet. Note, a result of 'size'
         # is only possible when doubling down.
         result = tableObj.players[seat].update_bet(betAmt, tableMin, tableMax)
+        print("handleBet: result returned by update_bet is {0}.".format(result))
         if result == 'success':
             # Bet is valid. The tableObj has been updated.
             responseText = "Thank you and good luck, {}.".format(playerName)
@@ -2323,54 +2341,89 @@ def handleBet(id, betAmt, betType):
         else:
             # Code Unknown. TypeError should not be possible with number
             # filters turned on in the Textbox.
-            raise RunTimeError("handleBet: An Unknown or TypeError came back from Player.update_bet method.")
+            responseText = "An error occurred trying to apply the ante."
 
         # There is a loop in the original calling function, playBlackjack,
         # that will attempt to get a valid bet again.
             
-    # Next, we check if this is a double down on a player's existing bet. The
-    # double_down() method requires a flag, True for split hand, False for
-    # regular hand. That allows us to combine both together here.
-    elif partOfRound == 'raise':
+    # Next, we check if this is a double down on a player's regular bet.
+    # First we check the regular bet. The player can raise it zero up to
+    # double their original ante on the hand.
+    elif partOfRound == 'raise' and betType == 'reg':
+        print("handleBet: Applying raise to regular bet {0} for Player {1}.".format(betAmt, playerName))
         # First, we eliminate the zero raises.
         if betAmt == 0:
             # This bet amount is treated as if the user changed their mind
             # about raising the bet.
             responseText = "Changing your mind can be wise. Good luck, {}.".format(playerName)
-        else:
-            # This is a non-zero raise. We need to send it to update_bet.
-            # Note: The min/max bet amounts are unneeded optional arguments
-            # here. Note: The boolean tells double_down which bet it is going
-            # to update. So, we need to create a split flag here.
-            # Note: Insurance bets are never raised.
-            split = (betAmt == 'split')
-            result = tableObj.players[seat].double_down(betAmt, split)
+            # We need to set the raise flag for the bet as well.
+            tableObj.players[seat].raise_bet = True
+            result = None
+        else: # The raise is non-zero.
+            result = tableObj.players[seat].double_down(betAmt, False)
             if result == 'success':
-                # Bet is valid. It has already been applied by the method.            
+                # The raise amount is valid. The player methods update_bet
+                # and double_down have updated the bet attribute already.
+                # We just need to respond with an acceptance and set the
+                # raise_bet flag.
                 responseText = "Thank you and good luck, {}.".format(playerName)
+                tableObj.players[seat].raise_bet = True
+            elif result == 'bust':
+                # The player's bank cannot cover the increase.
+                responseText = "Your bank cannot cover the new regular bet."
             elif result == 'size':
-                # The raise exceeded the original bet.
-                if betType == 'split':
-                    responseText = "Invalid raise. Max raise is ${}.".format(maxRegRaise)
-                else:
-                    responseText = "Invalid raise. Max raise is ${}.".format(maxSplitRaise)
+                # The bet is outside the range of 0 to the original ante.
+                responseText = "Invalid raise. Min is $0. Max is {0}.".format(maxRegRaise)
+            else: # Some kind of error occurred that try captured. 
+                responseText = "An error occurred trying to raise the bet."
+        print("handleBet: result returned by update_bet is {0}. Raise flag is {1}.".format(result, tableObj.players[seat].raise_bet))
+    
+    # Next, we check if this is a double down on a player's existing split
+    # bet. First we check the regular bet. The player can raise it zero up to
+    # double their original ante on the hand.
+    elif partOfRound == 'raise' and betType == 'split':
+        print("handleBet: Applying raise to split bet {0} for Player {1}.".format(betAmt, playerName))
+        # First, as with raising the regular bet, we eliminate the zero raises.
+        if betAmt == 0:
+            # Again, this is taken as the "player" changing their mind.
+            responseText = "Changing your mind can be wise. Good luck, {}.".format(playerName)
+            # Like the reg bet, we still need to flip the raise flag for this
+            # bet.
+            tableObj.players[seat].raise_split_bet = True
+            result = None
+        else: # The raise is non-zero.
+            result = tableObj.players[seat].double_down(betAmt, True)
+            if result == 'success':
+                # The raise amount is valid. The player methods, 
+                # update_split_bet and double_down have updated the split_bet
+                # attribute already. We just need to respond with an
+                # acceptance and set the raise_split_bet flag.
+                responseText = "Thank you and good luck, {}.".format(playerName)
+                tableObj.players[seat].raise_split_bet = True 
             elif result == 'bust':
                 # Their bank could not cover the amount.
-                responseText = "Your bank cannot cover that bet."
+                responseText = "Your bank cannot cover the new split bet."
+            elif result == 'size':
+                # The raise exceeded the original bet.
+                responseText = "Invalid raise. Min is $0. Max is {0}.".format(maxSplitRaise)
             else:
                 # Code Unknown. TypeError should not be possible with number
                 # filters turned on in the Textbox.
-                raise RunTimeError("handleBet: An Unknown or TypeError came back from Player.update_bet method.")
+                responseText = "An error occurred trying to raise the split bet."
+        print("handleBet: result returned by update_split_bet is {0}. Raise flag is {1}.".format(result, tableObj.players[seat].raise_split_bet))
             
         # There is a loop in the original calling function, playBlackjack,
         # that will attempt to get a valid bet again.
 
     # Next, we deal with the ante on a split hand. It is created while during
     # the initial deal (after a second card has been dealt to all players).
+    # Note: Insurance bets cannot be raised.
     elif betType == 'split' and partOfRound == 'deal':
+        print("handleBet: Applying split ante bet {0} for Player {1}.".format(betAmt, playerName))
         # We have to check the validity of the bet. Split bets still have to
         # adhere to tableMax and tableMin.
         result = tableObj.players[seat].update_split_bet(betAmt, tableMin, tableMax)
+        print("handleBet: result returned by update_split_bet is {0}.".format(result))
         if result == 'success':
             # Bet is valid. The tableObj has been updated.
             responseText = "Thank you and good luck, {}.".format(playerName)
@@ -2385,8 +2438,8 @@ def handleBet(id, betAmt, betType):
         else:
             # Code Unknown. TypeError should not be possible with number
             # filters turned on in the Textbox.
-            raise RunTimeError("handleBet: An Unknown or TypeError came back from Player.update_bet method.")
-
+            responseText = "An error occurred trying to apply the split ante."
+            
         # There is a loop in the original calling function, playBlackjack,
         # that will attempt to get a valid bet again.
 
@@ -2395,8 +2448,10 @@ def handleBet(id, betAmt, betType):
     # offer an insurance bet. This only happens after 'deal' is over and before
     # 'raise' starts.
     elif betType == 'ins':
+        print("handleBet: Applying insurance bet {0} for Player {1}.".format(betAmt, playerName))
         # Insurance bets abide by the same table limits as any other bet.
         result = tableObj.players[seat].update_ins(betAmt, tableMin, tableMax)
+        print("handleBet: result returned by update_ins is {0}.".format(result))
         if result == 'success':
             # Bet is valid. The tableObj has been updated.
             responseText = "Excellent choice. Good luck, {}.".format(playerName)
@@ -2412,7 +2467,7 @@ def handleBet(id, betAmt, betType):
         else:
             # Code Unknown. TypeError should not be possible with number
             # filters turned on in the Textbox.
-            raise RunTimeError("handleBet: An Unknown or TypeError came back from Player.update_bet method.")
+            responseText = "An error occurred trying to apply the insurance bet."
 
         # There is a loop in the original calling function, playBlackjack,
         # that will attempt to get a valid bet again.
@@ -2510,10 +2565,6 @@ def dealRound(rounds):
     for seat in TABLESEATSALL:
         card = tableObj.deck.remove_top()
         if seat != 'dealer':
-            # This is here to test split hand functionality.
-            if seat == 'middle' and len(tableObj.players[seat].hand) == 1:
-                lastRank = tableObj.players[seat].hand[0][0]
-                card = (lastRank, card[1])
             tableObj.results[seat] = tableObj.players[seat].add_card_to_hand(card)
         else:
             tableObj.results[seat] = tableObj.tableDealer.add_card_to_hand(card)
@@ -2625,7 +2676,7 @@ def checkForInsBet():
                 if answer == True:
                     while tableObj.players[seat].insurance == 0:
                         tableObj.seat = seat
-                        getBet(seat, 'ins')
+                        getBet('ins')
                         print("checkForInsBet: Player {0} placed an insurance bet of ${1}.".format(playerName, tableObj.players[seat].insurance))
     return # checkForInsBet
 
@@ -2653,7 +2704,9 @@ def checkForPairs(rounds):
     # Next, we need to check each regular hand for pairs. We also need to
     # make sure a player is still in the seat.
     for seat in TABLESEATS:
-        if isPlayerStillThere(seat):
+        if isPlayerStillThere(seat) and tableObj.results[seat] == 'playable':
+            # tableObj.diagnostic_print()
+            print("checkForPairs: seat is {0}. Player is {1}.".format(seat, tableObj.players[seat].name))
             pairExists = tableObj.players[seat].split_check()
             if pairExists == True:
                 posX = LEFTMARGIN
@@ -2689,7 +2742,7 @@ def checkForPairs(rounds):
                     # has been entered.
                     while tableObj.players[seat].split_bet == 0:
                         tableObj.seat = seat
-                        getBet(seat, 'split')
+                        getBet('split')
                     refreshTable(tableObj.phase, rounds)
                     dealSingleCard(seat, rounds, 'split regular')
                     dealSingleCard(seat, rounds, 'split new')
@@ -2797,6 +2850,128 @@ def clearStatusCorner():
     DISPLAYSURF.blit(statusSurf, statusRect)
     pygame.display.update()
     return
+
+def doubleDown(rounds):
+    """
+    This method offers the user an opportunity to raise the bets on the hands
+    dealt to the players. Under Casino rules for Blackjack, players may
+    raise their bets up to double the amount of the original bet, hence the
+    term 'double down'. There are two exceptions, and both have to do with
+    player or dealer blackjacks. Players who get dealt a blackjack have already
+    won their hand by now. They get an increased payout (up to triple at the
+    high rollers tables) for it. Insurance bets cannot be raised either. They
+    payout when the dealer reveals the hold card.
+
+    This phase of the game is called 'raise'.
+
+    The function getBet deals with these bet increases. It is calls handleBet
+    via the wrappers handleRegBet or handleSplitBet. This time, since the
+    antes make the original regular bet and split bet non-zero, the Player bet
+    update methods already know to look for a range of increases from $0 to
+    the current bet amount. As with the antes, it will not accept an invalid
+    raise.
+
+    INPUTS: rounds, integer, number of the current round of play
+    """
+    # As always, when a new function starts, we clear the status corner and
+    # set the position coordinates.
+    clearStatusCorner()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    # Now, we need to setup a local variable that we may need later on.
+    partOfRound = tableObj.phase
+
+    # We need to give the user a few instructions before moving ahead.
+    instructTextFirst  = "Now, you may raise the ante bets. The increase"
+    instructTextSecond = "cannot exceed double the original bet. If you change"
+    instructTextThird  = "your mind, simply enter a zero raise amount."
+    instructSurfFirst  = PROMPTFONT.render(instructTextFirst, True, TEXTCOLOR)
+    instructSurfSecond = PROMPTFONT.render(instructTextSecond, True, TEXTCOLOR)
+    instructSurfThird  = PROMPTFONT.render(instructTextThird, True, TEXTCOLOR)
+    instructRectFirst  = instructSurfFirst.get_rect(topleft = (posX, posY))
+    posY += LINESPACING18
+    instructRectSecond = instructSurfSecond.get_rect(topleft = (posX, posY))
+    posY += LINESPACING18
+    instructRectThird  = instructSurfThird.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(instructSurfFirst, instructRectFirst)
+    DISPLAYSURF.blit(instructSurfSecond, instructRectSecond)
+    DISPLAYSURF.blit(instructSurfThird, instructRectThird)
+    pygame.display.update()
+    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+    for seat in TABLESEATS:
+        print("doubleDown: seat is {0} in {1}.".format(seat, TABLESEATS))
+        if isPlayerStillThere(seat):
+            # getBet will prompt the "player" for bet raises. handleBet
+            # validates the bet amounts and warns the user of invalid bets.
+            # We just have to ask if the user wants to raise the bet and
+            # setup a while loop to verify that the bet changed amount.
+            # The big issues for this function are determining if the
+            # player already won the round with a blackjack and to check
+            # for a split hand, along with a regular hand. The results dict
+            # object supplies these answers. There is an attribute for
+            # players, raise_bet and raise_split_bet, which are used to
+            # verify that a raise success was received.
+            # First, we need to reset the position and clear the status
+            # corner for each pass.
+            clearStatusCorner()
+            tableObj.seat = seat
+            playerName = tableObj.players[seat].name
+            posX = LEFTMARGIN
+            posY = TOPMARGIN
+
+            # A hand that is 'playable' has neither won already nor busted.
+            if tableObj.results[seat] == 'playable':
+                print("doubleDown: Asking Player {0} to raise bet.".format(playerName))
+                raiseText = "{0}, would like to raise your regular bet?".format(playerName)
+                raiseSurf = PROMPTFONT.render(raiseText, True, TEXTCOLOR)
+                raiseRect = raiseSurf.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(raiseSurf, raiseRect)
+                # diagnosticPrint(tableObj, 'v')
+                pygame.display.update()
+                answer = checkForYesNo(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                print("doubleDown: Status: Phase is {0}. partOfRound is {1}".format(tableObj.phase, partOfRound))
+                print("doubleDown: Status: Player.name is {0}.".format(tableObj.players[seat].name))
+                print("doubleDown: Status: Player's current bet is {0}. Answer is {1}.".format(tableObj.players[seat].bet, answer))
+                if answer == True:
+                    while tableObj.players[seat].raise_bet == False:
+                        getBet('reg')
+                        clearStatusCorner()
+                        refreshTable(partOfRound, rounds)
+                print("doubleDown: Status: Completed Player {0}'s raise on regular hand.".format(playerName))
+            print("doubleDown: Status: Completed stanza for Player {0}'s regular hand.".format(playerName))
+            # Need to clear the status corner again and reset position.
+            clearStatusCorner()
+            posX = LEFTMARGIN
+            posY = TOPMARGIN
+            # answer = None  # Resetting answer between stanzas.
+            refreshTable(partOfRound, rounds)
+            # diagnosticPrint(tableObj, 'v')
+
+            # A split hand that is playable has neither won nor busted. A None
+            # value will be ignored as well.
+            if tableObj.results[seat + ' split'] == 'playable':
+                print("doubleDown: Asking Player {0} to raise split bet.".format(playerName))
+                raiseText = "{0}, would like to raise your split bet?".format(playerName)
+                raiseSurf = PROMPTFONT.render(raiseText, True, TEXTCOLOR)
+                raiseRect = raiseSurf.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(raiseSurf, raiseRect)
+                pygame.display.update()
+                answer = checkForYesNo(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                print("doubleDown: Status: Phase is {0}. partOfRound is {1}".format(tableObj.phase, partOfRound))
+                print("doubleDown: Status: Player.name is {0}.".format(tableObj.players[seat].name))
+                print("doubleDown: Status: Player's split bet is {0}. Answer is {1}.".format(tableObj.players[seat].split_bet, answer))
+                if answer == True:
+                    while tableObj.players[seat].raise_split_bet == False:
+                        getBet('split')
+                        clearStatusCorner()
+                        refreshTable(partOfRound, rounds)
+                print("doubleDown: Status: Completed Player {0}'s raise on split hand.".format(playerName))
+            # diagnosticPrint(tableObj, 'v')
+            print("doubleDown: Status: Completed stanza for Player {0}'s split hand.".format(playerName))
+    clearStatusCorner()
+    refreshTable(partOfRound, rounds)
+    # diagnosticPrint(tableObj, 'v')
+    return # doubleDown
 
 def playersWinGame():
     """

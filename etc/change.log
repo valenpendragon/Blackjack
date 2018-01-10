@@ -626,3 +626,11 @@ Casino (game): deal_round: Changed results into an attribute.
 Casino (game): getBet: Fixed errors setting rect objects equal to surf objects. This broke the double down and insurance bet Textboxes.
 Casino (game): Added an extra phase, 'end', that acts as a cleanup phase between rounds. The requires updating comments in main, and refreshTable.
 Casino (game): refreshTable: Added a full board clear to it to keep player data from stepping on itself as the game progresses.
+
+1/10/18 00:59 Pushed to origin pygame
+
+Casino (game): scrollText: Added a return with a comment indicating which function/method it closed. I realize that return is only needed if a method or function actually needs to return an object of some kind, but I like to know which function/method ended there when the code sprawls past a page.
+Player Class: Added two new attributes, raise_bet and raise_split_bet. These values are booleans that indicate if the player did opt to raise the bet, but raised it by $0 instead. These new attributes required changes to __init__, end_round, and diagnostic_print.
+Casino (game): getBet: Added flip of raise_bet and raise_split_bet to the double down stanzas. Rebuilt the 'raise bet' stanza since it was stuck in a loop presenting the wrong names and failing to update any bets. Changed the raise Error commands to error messages. Removed seat from the arguments since it was causing old values to supersede the tableObj.seat value, requiring changes to playBlackjack, checkForPairs, checkForInsBets, and doubleDown.
+CasinoTable: diagnostic_print: Added print out for player's seat.
+Casino (game): dealRound: Removed code used to generate pairs to test checkForPairs, getBet, and handleBet functionality for split hands.

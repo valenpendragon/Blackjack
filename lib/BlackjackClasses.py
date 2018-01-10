@@ -197,7 +197,11 @@ class Player(object):
             player's split hand, if it exists
         bank: integer number of dollars the player currently has in chips
         bet: current amount bet on the outcome of their hand vs dealer's hand
+        raise_bet: boolean indicating if the player has attempted to raise
+            there bet
         split_bet: tracks any bets applied to a split hand
+        raise_split_bet: boolean indicating if the player has attempted to
+            raise their split bet
         insurance: tracks the amount of any side bets taken on the dealer
             getting blackjack (requires Dealer shows an Ace or 10 value card
             for its visible card)
@@ -318,7 +322,9 @@ class Player(object):
         self.soft_split_score = 0
         self.hard_split_score = 0
         self.bet = 0
+        self.raise_bet = False
         self.split_bet = 0
+        self.raise_split_bet = False
         self.insurance = 0
         return
     
@@ -724,7 +730,9 @@ class Player(object):
         self.soft_split_score = 0
         self.hard_split_score = 0
         self.bet = 0
+        self.raise_bet = False
         self.split_bet = 0
+        self.raise_split_bet = False
         self.insurance = 0
         return
     
@@ -961,7 +969,9 @@ class Player(object):
         print("Hard Score for Split Hand: ", self.hard_split_score)
         print("Remaining Bank: ", self.bank)
         print("Bet on Hand: ", self.bet)
+        print("Raise Flag on Regular Bet: ", self.raise_bet)
         print("Bet on Split Hand: ", self.split_bet)
+        print("Raise Flag on Split Bet: ", self.raise_split_bet)
         print("Insurance Bet: ", self.insurance)
         return
 
@@ -1559,6 +1569,7 @@ class CasinoTable(object):
         self.deck.diagnostic_print()
         for i in xrange(1, self.numPlayers + 1):
             ordinal = self.TABLESEATS[str(i)]
+            print("Player's Seat: ", ordinal)
             self.players[ordinal].diagnostic_print()
             print("Hand Status of Player: ", self.results[ordinal])
             print("Split Hand Status of Player: ", self.results[ordinal + ' split'])
