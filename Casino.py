@@ -38,6 +38,8 @@ SADDLEBROWN  = (139,  69,  19)
 
 BGCOLOR   = DIMGRAY
 TEXTCOLOR = WHITE
+ELIMINATIONCOLOR   = RED
+ELIMINATIONBGCOLOR = WHITE
 BUTTONOUTLINE   = BLACK
 BUTTONTEXTCOLOR = BLACK
 
@@ -63,7 +65,7 @@ BUTTONWIDTH        =  100  # width of action buttons
 BUTTONHEIGHT       =   50  # height of action buttons
 BUTTONSPACING      =   75  # Spacing between action buttons
 OUTLINEWIDTH       =    5  # width of the outlines of butttons
-STATUSBLOCKWIDTH   =  350  # width of the status block (upper left corner)
+STATUSBLOCKWIDTH   =  400  # width of the status block (upper left corner)
 STATUSBLOCKHEIGHT  =  150  # height of the status block (upper left corner)
 PHASEBLOCKWIDTH    =  100  # width of round phase block (upper right corner)
 PHASEBLOCKHEIGHT   =  100  # height of round phase block (upper right corner)
@@ -352,7 +354,7 @@ def main(): # main game function
     #       player data out of the tableObj.player dictionary. Valid values
     #       are None, 'left', 'middle', or 'right'.
     # Out of __init__, phase = 'pregame' and seat = None
-    playBlackjack(tableObj, listPlayers)
+    playBlackjack()
 
 def terminate():
     """
@@ -440,10 +442,9 @@ def diagnosticPrint(tableObj, output = ''):
             tableObjInfoRect.topleft = (posX, posY)
             DISPLAYSURF.blit(tableObjInfoSurf, tableObjInfoRect)
             # Note: We need the index to go from 1 to 3 inclusive.
-            for i in xrange(1, numOfPlayers + 1):
-                ordinal = tableObj.TABLESEATS[str(i)]
-                playerObj = tableObj.players[ordinal].extract_data()
-                printTablePlayer(playerObj, ordinal, 'diagnostic')
+            for seat in TABLESEATS:
+                playerObj = tableObj.players[seat].extract_data()
+                printTablePlayer(playerObj, seat, 'diagnostic')
             
 
     else: # tableObj is not defined.
@@ -878,6 +879,7 @@ def printTablePlayer(playerObj, seat, output = 'normal'):
             card = playerObj['hand'][i]
             cardRect = CARDIMAGES[card]['rect']
             cardRect.center = (regHandX, regHandY)
+            print("printTablePlayer: Card location is ({0}, {1}).".format(regHandX, regHandY))
             DISPLAYSURF.blit(CARDIMAGES[card]['surface'], cardRect)
             regHandX += CARDWIDTH + CARDSPACING
 
@@ -887,6 +889,7 @@ def printTablePlayer(playerObj, seat, output = 'normal'):
             card = playerObj['split hand'][i]
             cardRect = CARDIMAGES[card]['rect']
             cardRect.center = (splitHandX, splitHandY)
+            print("printTablePlayer: Card location is ({0}, {1}).".format(splitHandX, splitHandY))
             DISPLAYSURF.blit(CARDIMAGES[card]['surface'], cardRect)
             splitHandX += CARDWIDTH + CARDSPACING
         
@@ -1839,7 +1842,7 @@ def scrollText(filename):
         pygame.time.wait(SCROLLSPEED)
     return # scrollText        
 
-def playBlackjack(tableObj, listPlayers):
+def playBlackjack():
     """
     This is the game loop for playing Blackjack at the user's choice of table.
     The tableObj takes care of the game play, thanks in no small part to the
@@ -1894,39 +1897,7 @@ def playBlackjack(tableObj, listPlayers):
     endGame = False
     while not endGame:  # This is the actual game loop. main() sets it up.
         roundCounter += 1
-        # The following variables control the behavior of the game in the
-        # event loop. Their purposes are as follows:
-        #   endRound : boolean, True tells the event while loop to exit
-        #   hitChosen : None or player's name, indicates the user wants the
-        #       current player to take a card, has to be reset between cards
-        #       requested by the players and between players in the round
-        #   standChosen : None or player's name, indicates the user wants the
-        #       player to 'stand', overrides hitChosen
-        #   insBet : None or player's name, indicates that the user wants the
-        #       player to make an insurance bet when offered
-        #   doubleDown : None or player's name, indicates that the users wants
-        #       the player to double down on a bet
-        #   splitHand : None or player's name, indicates that the user wants
-        #       the player split their hand
-        #   leaveTable : boolean, True indicates that the user wants to pull
-        #       all players and leave the game
-        #   pullPlayer : None or the player's name, indicates that user wants
-        #       the player to leave the table and "settle up", this removes
-        #       the player from the current game but not permanently eliminated
-        #   activeHitStand: boolean, tells Python that the hitButton and
-        #       standButton are active and to look for mouse click events
-        #   infoButtonPressed : boolean, tells Python that the user needs to
-        #       see the Break The Bank rules again.
         endRound    = False
-        # hitChosen   = None
-        # standChosen = None
-        # insBet      = None
-        # doubleDown  = None
-        # splitHand   = None
-        # leaveTable  = False
-        # pullPlayer  = None
-        # activeHitStand    = False
-        # infoButtonPressed = False
         tableObj.phase = 'start'
         while not endRound:  # This is the primary event loop for the game.
             # First, we print the table, the dealer, and the players.
@@ -2031,6 +2002,27 @@ def playBlackjack(tableObj, listPlayers):
             tableObj.phase = 'raise'
             doubleDown(roundCounter)
 
+            # Bets have been raised on all hands. It is time for the player
+            # turns to begin. They will go counterclockwise, left, middle,
+            # then right. For each playable hand, the player has the option
+            # to hit or stand. Each time a card is dealt, the Player method
+            # add_card_to_hand or add_card_to_split will update the results
+            # dictionary with the status of their hand. The function
+            # checkForHitStand works very similarly to checkForYesNo.
+            # The function hitOrStand calls the others as it progresses.
+            # When finished, it will return a value indicating how many
+            # hands were still playable by the time the dealer's turn begins.
+            # The value determines if a dealer automatically wins all 
+            # remaining hands or has to actually play the turn.
+            remainingHands, remainingPlayers = hitOrStand(roundCounter)
+
+            # Now, it is time for the dealer's turn. This could change the
+            # remainginPlayers as well.
+
+            # Finally, we have the endRound. This resets function will reset
+            # results, eliminate players who busted, reset hands and bets for
+            # players who remain in the game.
+            
             # pygame.display.update()  # This pair of commands ends the game's
             # pygame.time.wait(33)     # event loop by refreshing the screen.
             # FPSCLOCK.tick()          # 33ms wait = 30fps.
@@ -2565,6 +2557,9 @@ def dealRound(rounds):
     for seat in TABLESEATSALL:
         card = tableObj.deck.remove_top()
         if seat != 'dealer':
+            # Added to test fixes of split hand behavior
+            if len(tableObj.players[seat].hand) == 1:
+                card = tableObj.players[seat].hand[0]
             tableObj.results[seat] = tableObj.players[seat].add_card_to_hand(card)
         else:
             tableObj.results[seat] = tableObj.tableDealer.add_card_to_hand(card)
@@ -2817,7 +2812,7 @@ def dealSingleCard(seat, rounds, handType):
         tableObj.results[seat + ' split'] = result
 
     elif handType == 'split':
-        result = tableObj.players[seat].add_card_to_hand(newCard)
+        result = tableObj.players[seat].add_card_to_split(newCard)
         promptText = "Here is another card for your split hand."
         tableObj.results[seat + ' split'] = result
 
@@ -2834,6 +2829,7 @@ def dealSingleCard(seat, rounds, handType):
     DISPLAYSURF.blit(promptSurf, promptRect)
     pygame.display.update()
     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+    print("dealSingleCard: Player Hands: Regular {0}. Split {1}.".format(tableObj.players[seat].hand, tableObj.players[seat].split_hand))
     return # dealSingleCard
                 
 def clearStatusCorner():
@@ -2872,6 +2868,7 @@ def doubleDown(rounds):
     raise.
 
     INPUTS: rounds, integer, number of the current round of play
+    OUTPUTS: No outputs except to the game screen.
     """
     # As always, when a new function starts, we clear the status corner and
     # set the position coordinates.
@@ -2972,6 +2969,230 @@ def doubleDown(rounds):
     refreshTable(partOfRound, rounds)
     # diagnosticPrint(tableObj, 'v')
     return # doubleDown
+
+def hitOrStand(rounds):
+    """
+    This function interacts with the user to provide additional cards to the
+    players. It uses the Player methods add_card_to_hand and add_card_to_split
+    along with the function dealSingleCard to determine if a player busts.
+    INPUTS: rounds, integer, the number of the current round of play
+    OUTPUTS: tuple of integers
+        remainingHands: number of hands remaining for the dealer's turn
+        remainingPlayers: number of players eliminated during this phase
+    """
+    # Set our hand and player counters. playerLosses tabulates each players
+    # losses during their turn.
+    # Note: Players cannot win until the dealer's turn if they did not hit
+    # blackjack already.
+    remainingHands = 0
+    remainingPlayers = 0
+    playerLosses = 0
+    for seat in TABLESEATS:
+        tableObj.phase = partOfRound = seat
+        playerName = tableObj.players[seat].name
+        # A player might have been withdrawn or busted the bank in previous
+        # rounds, or the player may have already hit blackjack. So, we have
+        # to check both before proceeding. This part checks the regular hand.
+        if isPlayerStillThere(seat):
+            # Increment the player counter and reset playerLosses.
+            remainingPlayers += 1
+            playerLosses = 0
+            # This loop continues until the player says stop or the hand busts.
+            while tableObj.results[seat] == 'playable':
+                # Reset the position to the upper left of the status corner
+                # and clear the status corner. Increment the hands counter.
+                remainingHands += 1
+                posX = TOPMARGIN
+                posY = LEFTMARGIN
+                clearStatusCorner()
+                hitText = "{0}, would like another card for your regular hand?".format(playerName)
+                hitSurf = PROMPTFONT.render(hitText, True, TEXTCOLOR)
+                hitRect = hitSurf.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(hitSurf, hitRect)
+                pygame.display.update()
+                # Returns True for Y/H or False for N/S.
+                answer = checkForHitStand()
+                if answer == True:
+                    dealSingleCard(seat, rounds, 'regular')
+                else:
+                    # Breaks the loop if the user does not want another card.
+                    break
+                refreshTable(partOfRound, rounds)
+                if tableObj.results[seat] == 'bust':
+                    # Decrement hand counter since this one is defunct.
+                    remainingHands -= 1
+                    # Increment the player's losses
+                    playerLosses += tableObj.players[seat].bet
+                    # This method updates the dealer's bank with the player's
+                    # lost bet.
+                    tableObj.tableDealer.dealer_won(tableObj.players[seat].bet)
+                    bustTextFirst  = "{0}, your regular hand busted.".format(playerName)
+                    bustTextSecond = "Your losses are now ${0}.".format(playerLosses)
+                    bustSurfFirst  = DATAFONT.render(bustTextFirst, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                    bustSurfSecond = DATAFONT.render(bustTextSecond, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                    bustRectFirst  = bustSurfFirst.get_rect(topleft = (posX, posY))
+                    posY += LINESPACING18
+                    bustRectSecond = bustSurfSecond.get_rect(topleft = (posX, posY))
+                    DISPLAYSURF.blit(bustSurfFirst, bustRectFirst)
+                    DISPLAYSURF.blit(bustSurfSecond, bustRectSecond)
+                    pygame.display.update()
+                    posY += LINESPACING18
+                    lossResult = tableObj.players[seat].reg_loss()
+                    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                    # A False result means the player broke their bank. It is
+                    # still possible for them to survive if they have a split
+                    # hand or an insurance bet, however.
+                    # Note: Bust means the while loop will terminate.
+                    # Note: Entering the stanza below means that the player
+                    # cannot have another hand.
+                    if (lossResult == False and\
+                        tableObj.split_flag == False and\
+                        tableObj.ins == 0):
+                        eliminateTextFirst  = "You do not have additional bets that could"
+                        eliminateTextSecond = "cover your losses. You have been eliminated."
+                        eliminateSurfFirst  = PROMPTFONT.render(eliminateTextFirst, True, ELIMINATIONCOLOR)
+                        eliminateSurfSecond = PROMPTFONT.render(eliminateTextSecond, True, ELIMINATIONCOLOR)
+                        eliminateRectFirst  = eliminateSurfFirst.get_rect(topleft = (posX, posY))
+                        posY += LINESPACING18
+                        eliminateRectSecond = eliminateSurfSecond.get_rect(topleft = (posX, posY))
+                        DISPLAYSURF.blit(eliminateSurfFirst, eliminateRectFirst)
+                        DISPLAYSURF.blit(eliminateSurfSecond, eliminateRectSecond)
+                        pygame.display.update()
+                        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                        # This function removes the player from the tableObj.
+                        # We also need to decrement the player counter.
+                        eliminatePlayer(seat)
+                        remainingPlayers -= 1
+                        # We have to break out because the player is gone now.
+                        break
+            # End of while loop for cards for the regular hand.
+            
+            # Now, we have to make sure that the player is still here. Then,
+            # we need to do the same things for a split hand, if it exists.
+            if not isPlayerStillThere(seat):
+                # The player was eliminated, meaning there is no playable
+                # split hand.
+                continue
+
+            while tableObj.results[seat + ' split'] == 'playable':
+                # Reset the position to the upper left of the status corner
+                # and clear the status corner. Increment the hands counter.
+                remainingHands += 1
+                posX = TOPMARGIN
+                posY = LEFTMARGIN
+                clearStatusCorner()
+                hitText = "{0}, would like another card for your split hand?".format(playerName)
+                hitSurf = PROMPTFONT.render(hitText, True, TEXTCOLOR)
+                hitRect = hitSurf.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(hitSurf, hitRect)
+                pygame.display.update()
+                # Returns True for Y/H or False for N/S.
+                answer = checkForHitStand()
+                if answer == True:
+                    dealSingleCard(seat, rounds, 'split')
+                else:
+                    # Breaks the loop if the user does not want another card.
+                    break
+                refreshTable(partOfRound, rounds)
+                if tableObj.results[seat + ' split'] == 'bust':
+                    # Decrement hand counter since this one is defunct.
+                    remainingHands -= 1
+                    # Increment the player's losses
+                    playerLosses += tableObj.players[seat].split_bet
+                    # This method updates the dealer's bank with the player's
+                    # lost split bet.
+                    tableObj.tableDealer.dealer_won(tableObj.players[seat].split_bet)
+                    bustTextFirst  = "{0}, your split hand busted.".format(playerName)
+                    bustTextSecond = "Your losses are now ${0}.".format(playerLosses)
+                    bustSurfFirst  = DATAFONT.render(bustTextFirst, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                    bustSurfSecond = DATAFONT.render(bustTextSecond, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                    bustRectFirst  = bustSurfFirst.get_rect(topleft = (posX, posY))
+                    posY += LINESPACING18
+                    bustRectSecond = bustSurfSecond.get_rect(topleft = (posX, posY))
+                    DISPLAYSURF.blit(bustSurfFirst, bustRectFirst)
+                    DISPLAYSURF.blit(bustSurfSecond, bustRectSecond)
+                    pygame.display.update()
+                    posY += LINESPACING18
+                    lossResult = tableObj.players[seat].split_loss()
+                    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                    # A False result means the player broke their bank. It is
+                    # still possible for them to survive with an insurance
+                    # bet, however.
+                    # Note: Bust means the while loop will terminate.
+                    if (lossResult == False and tableObj.ins == 0):
+                        eliminateTextFirst  = "You do not have additional bets that could"
+                        eliminateTextSecond = "cover your losses. You have been eliminated."
+                        eliminateSurfFirst  = PROMPTFONT.render(eliminateTextFirst, True, ELIMINATIONCOLOR)
+                        eliminateSurfSecond = PROMPTFONT.render(eliminateTextSecond, True, ELIMINATIONCOLOR)
+                        eliminateRectFirst  = eliminateSurfFirst.get_rect(topleft = (posX, posY))
+                        posY += LINESPACING18
+                        eliminateRectSecond = eliminateSurfSecond.get_rect(topleft = (posX, posY))
+                        DISPLAYSURF.blit(eliminateSurfFirst, eliminateRectFirst)
+                        DISPLAYSURF.blit(eliminateSurfSecond, eliminateRectSecond)
+                        pygame.display.update()
+                        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                        # This function removes the player from the tableObj.
+                        # We also need to decrement the player counter.
+                        eliminatePlayer(seat)
+                        remainingPlayers -= 1
+                        # We have to break out because the player is gone now.
+                        break 
+                # End of while loop for cards for the split hand.
+            # End of if statement checking for filled seats.
+        # End of for loop checking seats.
+    return (remainingHands, remainingPlayers) # hitOrStand
+            
+def checkForHitStand():
+    """
+    This function works similar to checkForYesNo, except that it accepts four
+    different inputs, besides QUIT and ESCAPE. These inputs are:
+        'Y' : yes the player wants another card
+        'H' : the player wants a 'hit' (another card)
+        'N' : no, the player does not want another card
+        'S' : the player wants to 'stand' (no more cards)
+    INPUTS: None
+    OUTPUTS: True, if Y or H were pressed, False is N or S were pressed
+    """
+    while True: # event loop
+        # Note: Unlike checkForYesNo, this function works only in the bottom
+        # right corner of the status block.
+        posX = STATUSBLOCKWIDTH
+        posY = STATUSBLOCKHEIGHT - LINESPACING18
+        instructTextFirst  = "Press H or Y to get another card (hit or yes)."
+        instructTextSecond = "Press S or N to stand (stand or no)."
+        instructSurfFirst  = DATAFONT.render(instructTextFirst, True, TEXTCOLOR)
+        instructSurfSecond = DATAFONT.render(instructTextSecond, True, TEXTCOLOR)
+        instructRectFirst  = instructSurfFirst.get_rect(bottomright = (posX, posY))
+        posY = STATUSBLOCKHEIGHT
+        instructRectSecond = instructSurfSecond.get_rect(bottomright = (posX, posY))
+        DISPLAYSURF.blit(instructSurfFirst, instructRectFirst)
+        DISPLAYSURF.blit(instructSurfSecond, instructRectSecond)
+        pygame.display.update()
+
+        for event in pygame.event.get(QUIT): # get all QUIT events
+            terminate()                      # terminate if any QUIT events are present
+        for event in pygame.event.get(KEYUP):# get all KEYUP events
+            if event.key == K_ESCAPE:        # ESCAPE is also a 'quit' event
+                terminate()
+
+        for event in pygame.event.get(KEYDOWN):
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:    # Another QUIT event
+                    terminate()
+                elif event.key in (K_y, K_h):
+                    return True
+                elif event.key in (K_n, K_s):
+                    return False
+        pygame.display.update()
+        FPSCLOCK.tick()
+    
+def eliminatePlayer(seat):
+    """
+    This function eliminates a player that has broken their bank during the
+    game. They will also be eliminated from the saved game, but not by this
+    function.
+    """
+    pass
 
 def playersWinGame():
     """

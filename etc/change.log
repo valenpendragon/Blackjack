@@ -634,3 +634,14 @@ Player Class: Added two new attributes, raise_bet and raise_split_bet. These val
 Casino (game): getBet: Added flip of raise_bet and raise_split_bet to the double down stanzas. Rebuilt the 'raise bet' stanza since it was stuck in a loop presenting the wrong names and failing to update any bets. Changed the raise Error commands to error messages. Removed seat from the arguments since it was causing old values to supersede the tableObj.seat value, requiring changes to playBlackjack, checkForPairs, checkForInsBets, and doubleDown.
 CasinoTable: diagnostic_print: Added print out for player's seat.
 Casino (game): dealRound: Removed code used to generate pairs to test checkForPairs, getBet, and handleBet functionality for split hands.
+
+1/10/18 23:28 Pushed to origin pygame
+
+Casino (game): Constants: STATUSBLOCKWIDTH is now 400 to better erase split bet Textbox prompts to raise split bets. added ELIMINATIONCOLOR (red) and ELIMINATIONBGCOLOR (white) which is used when players bust their hand or their bank (are eliminated from the game).
+Casino (game): playBlackjack: Removed unused commented out stanzas of status variables. After fighting with weird globals behavior, removed both arguments (tableObj and listPlayers) from the function's arguments. This required minimal changes (except to my personal documentation).
+Casino (game): doubleDown: Updated the comment block to indicate that there are no return outputs. All output is to the game screen.
+Casino (game): hitOrStand: Created this function to handle the players' turns. It will also keep track of remaining hands and players and return these values when done. It calls eliminatePlayer for any player who breaks their bank during the game.
+Casino: checkForHitStand: Checks for the user pressing the keys Y/N or H/S. Returns True for Y/H or False for N/S.
+Casino (game): eliminatePlayer: Created this function to remove a player from the tableObj if their bank has busted.
+Casino (game): diagnosticPrint: Changed loop printing players from 'ordinals' to seats.
+Casino (game): dealSingleCard: Fixed a bug that was delivering cards intended for the split hand to the regular hand.
