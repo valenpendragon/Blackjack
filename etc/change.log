@@ -633,7 +633,7 @@ Casino (game): scrollText: Added a return with a comment indicating which functi
 Player Class: Added two new attributes, raise_bet and raise_split_bet. These values are booleans that indicate if the player did opt to raise the bet, but raised it by $0 instead. These new attributes required changes to __init__, end_round, and diagnostic_print.
 Casino (game): getBet: Added flip of raise_bet and raise_split_bet to the double down stanzas. Rebuilt the 'raise bet' stanza since it was stuck in a loop presenting the wrong names and failing to update any bets. Changed the raise Error commands to error messages. Removed seat from the arguments since it was causing old values to supersede the tableObj.seat value, requiring changes to playBlackjack, checkForPairs, checkForInsBets, and doubleDown.
 CasinoTable: diagnostic_print: Added print out for player's seat.
-Casino (game): dealRound: Removed code used to generate pairs to test checkForPairs, getBet, and handleBet functionality for split hands.
+Casino (game): dealRound: Removed code used to generate pairs to test checkForPairs, getBet, and handleBet functionality for split hands. It has been there to test functionality.
 
 1/10/18 23:28 Pushed to origin pygame
 
@@ -645,3 +645,11 @@ Casino: checkForHitStand: Checks for the user pressing the keys Y/N or H/S. Retu
 Casino (game): eliminatePlayer: Created this function to remove a player from the tableObj if their bank has busted.
 Casino (game): diagnosticPrint: Changed loop printing players from 'ordinals' to seats.
 Casino (game): dealSingleCard: Fixed a bug that was delivering cards intended for the split hand to the regular hand.
+
+1/14/18 06:43 Pushed to origin pygame
+
+Casino (game): checkForPairs: Put a stanza in to determine if a player has enough money in their bank to cover a split hand ante to prevent the function from looping when the player is unable to place even a table minimum split hand bet.
+Casino (game): checkForInsBet: This function had a similar looping flaw to checkForPairs. This function now checks to see if the player can cover all of their existing bets and the tableMin for an insurance bet.
+Casino (game): main: A saved player could create a similar looping flaw. Fixing this required adding analysis stanzas to warn the user about players unable to make the ante on the first round or only surviving a few rounds. This section allows the player to choose a different dealer if they wish. Fixing this flaw also required adding a call to a new function, checkPlayerViability, to playBlackjack that eliminates players who cannot meet their ante bet.
+Casino (game): checkPlayerViability: Created this function to make sure that all players can meet their ante. Those that cannot are eliminated using eliminatePlayer.
+Break-The-Bank-Rules: Updated the content to warn the user that players who cannot meet the table minimums for the ante will be eliminated.

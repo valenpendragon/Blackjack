@@ -18,10 +18,14 @@ with each higher graduation. A second way to advance is for the player to
 be playing at the table when the 'team' of players breaks the dealer's bank.
 
 At the end of any round of play, the user can pull the player from the table.
-The best reason is to keep them from losing their bank and being eliminated
+The best reason is to keep them from losing their bank and/or being eliminated
 from the game. Players who 'leave the table' will be saved when the game ends
 just like any other surviving players. The caveat is that they cannot return
-to play until the next game.
+to play until the next game. Note: While the game in later phases of a round
+prevents players from splitting hands or making insurance bets without enough
+in their bank to cover them, at the START of a round, any player who cannot
+cover the table minimum ante bet WILL BE ELIMINATED IF THE USER DOES NOT
+REMOVE THEM.
 
 All players must ante up at the beginning of each round. A dialog box
 will appear for you to enter the player's initial bet (or ante). It must be

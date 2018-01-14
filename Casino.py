@@ -313,17 +313,101 @@ def main(): # main game function
     # Initialize tableChoice and call offerTableChoice to get the user's
     # choice of dealer. The while loop ensures we actually get a name that
     # matches a dealer. Capitalization does not matter.
-    offerTableChoices(listDealers)
-    # print("main: tableChoice is {0}".format(tableChoice))
+    tableChoice = {}
+    print("main: tableChoice is {0}".format(tableChoice))
     while tableChoice == {}:
-        instText = "Dealer's name was not a valid choice. Please try again."
-        instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
-        instRect = instSurf.get_rect(center = (WINCENTERX, WINCENTERY))
-        DISPLAYSURF.fill(BLACK)
-        DISPLAYSURF.blit(instSurf, instRect)
-        pressSpaceToContinue()
         offerTableChoices(listDealers)
-        # print("main: tableChoice is {0}".format(tableChoice))
+        print("main: tableChoice is {0}".format(tableChoice))
+        # Now, we need to look at the Dealer the user chose. If the ante is
+        # too high for at least one of the players, we need to warn them
+        # that the player(s) must be removed or face elimination as the game
+        # starts up. Then, we give them an option to reconsider.
+        # Clear the screen:
+        DISPLAYSURF.fill(BLACK)
+        pygame.display.update()
+        posX = LEFTMARGIN
+        posY = WINCENTERY
+        if tableChoice == {}:
+            # The player hit enter with an invalid dealer's name.
+            instText = "Dealer's name was not a valid choice. Please try again."
+            instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
+            instRect = instSurf.get_rect(center = (WINCENTERX, WINCENTERY))
+            DISPLAYSURF.fill(BLACK)
+            DISPLAYSURF.blit(instSurf, instRect)
+            pressSpaceToContinue()
+        else: # Player picked a valid choice.
+            # tableProblems is a counter of the list of problems found after
+            # checking the player banks against the table minimum ante.
+            tableProblems = 0
+            tableMin = tableChoice['table bets'][0]
+            for i in range(0, len(listPlayers)):
+                playerName = listPlayers[i]['name']
+                playerBank = listPlayers[i]['bank']
+                dealerName = tableChoice['name']
+                if playerBank < tableMin:
+                    tableProblems += 1
+                    warningTextFirst  = "{0} cannot meet the table minimum of {1} to ante up.".format(playerName, tableMin)
+                    warningTextSecond = "This player should be withdrawn to prevent elimination."
+                    warningSurfFirst  = INSTRUCTFONT.render(warningTextFirst, True, TEXTCOLOR)
+                    warningSurfSecond = INSTRUCTFONT.render(warningTextSecond, True, TEXTCOLOR)
+                    warningRectFirst  = warningSurfFirst.get_rect(topleft = (posX, posY))
+                    posY += LINESPACING18
+                    warningRectSecond = warningSurfSecond.get_rect(topleft = (posX, posY))
+                    posY += LINESPACING18
+                    DISPLAYSURF.blit(warningSurfFirst, warningRectFirst)
+                    DISPLAYSURF.blit(warningSurfSecond, warningRectSecond)
+                    pygame.display.update()
+                else:
+                    # Being able to survive at least 4 rounds with a player
+                    # is kind of what I would consider a minimum number of
+                    # turns at a particular level of skill, considering how
+                    # slanted the blackjack rules are (in favor of the house).
+                    # So, we need test that number next and warn the user
+                    # that the player might not survive very long.
+                    # Reset this counter between iterations.
+                    playerSurvival = 0
+                    while (playerSurvival <= 5) and (playerSurvival * tableMin < playerBank):
+                        playerSurvival += 1
+                    if playerSurvival <= 5:
+                        # The player won't last long at the current ante level.
+                        tableProblems += 1
+                        warningTextFirst  = "Given the table minimum of {0}, {1} can avoid".format(tableMin, playerName)
+                        warningTextSecond = "elimination about {0} rounds at minimum bets.".format(playerSurvival)
+                        warningTextThird  = "Withdrawing this player early is likely to prevent elimination."
+                        warningSurfFirst  = INSTRUCTFONT.render(warningTextFirst, True, TEXTCOLOR)
+                        warningSurfSecond = INSTRUCTFONT.render(warningTextSecond, True, TEXTCOLOR)
+                        warningSurfThird  = INSTRUCTFONT.render(warningTextThird, True, TEXTCOLOR)
+                        warningRectFirst  = warningSurfFirst.get_rect(topleft = (posX, posY))
+                        posY += LINESPACING18
+                        warningRectSecond = warningSurfSecond.get_rect(topleft = (posX, posY))
+                        posY += LINESPACING18
+                        warningRectThird  = warningSurfThird.get_rect(topleft = (posX, posY))
+                        posY += LINESPACING18
+                        DISPLAYSURF.blit(warningSurfFirst, warningRectFirst)
+                        DISPLAYSURF.blit(warningSurfSecond, warningRectSecond)
+                        DISPLAYSURF.blit(warningSurfThird, warningRectThird)
+                        pygame.display.update()
+            
+            if tableProblems != 0:
+                # There were some serious problems with the dealer choice.
+                promptTextFirst  = "Given these problems, are you sure you want to"
+                promptTextSecond = "pick {0} as your dealer?".format(dealerName)
+                promptSurfFirst  = INSTRUCTFONT.render(promptTextFirst, True, TEXTCOLOR)
+                promptSurfSecond = INSTRUCTFONT.render(promptTextSecond, True, TEXTCOLOR)
+                promptRectFirst  = promptSurfFirst.get_rect(topleft = (posX, posY))
+                posY += LINESPACING18
+                promptRectSecond = promptSurfSecond.get_rect(topleft = (posX, posY))
+                posY += LINESPACING18
+                DISPLAYSURF.blit(promptSurfFirst, promptRectFirst)
+                DISPLAYSURF.blit(promptSurfSecond, promptRectSecond)
+                pygame.display.update()
+                answer = checkForYesNo(posX, posY, 'topleft')
+                if answer == True:
+                    # The user still wants to move ahead with this choice.
+                    break
+                else:
+                    # The user decided to pick another choice after all.
+                    tableChoice = {}                
 
     # Now, we need to generate a CasinoTable object. This object needs to be
     # populated from listPlayers and tableChoice. Note, 'table bets' is the
@@ -1842,6 +1926,8 @@ def scrollText(filename):
         pygame.time.wait(SCROLLSPEED)
     return # scrollText        
 
+
+
 def playBlackjack():
     """
     This is the game loop for playing Blackjack at the user's choice of table.
@@ -1865,7 +1951,7 @@ def playBlackjack():
     remaining players bust or leave the table. This is how a player can level
     up without breaking the bank at a table.
     
-    INPUTS: two arguments
+    INPUTS: No arguments. All objects changed are global ones.
         tableObj, a CasinoTable object
         listPlayers. the global list of player dictionaries which must be
             updated as the game progresses
@@ -1897,7 +1983,7 @@ def playBlackjack():
     endGame = False
     while not endGame:  # This is the actual game loop. main() sets it up.
         roundCounter += 1
-        endRound    = False
+        endRound = False
         tableObj.phase = 'start'
         while not endRound:  # This is the primary event loop for the game.
             # First, we print the table, the dealer, and the players.
@@ -1948,6 +2034,13 @@ def playBlackjack():
                     # Even if the user does not want to quit, control must be
                     # returned to main() to start a new game.
                     return
+
+            # There was a flaw in the logic that would lock a player in a
+            # loop if the player had a non-zero bank, but one that is not
+            # sufficient to make an ante bet. (It also effected insurance
+            # and split hand bets.) Here, we prevent it by eliminating any
+            # player that cannot make the ante bet.
+            checkPlayerViability()
 
             # Now, the game will call for ante amounts for initial bets on the
             # hands. This also sets the maximum raise later in the round.
@@ -2069,6 +2162,45 @@ def removeActivePlayer(seat, rounds):
     tableObj.players = newPlayerDict            
     tableObj.numPlayers -= 1
     return # removeActivePlayer
+
+def checkPlayerViability():
+    """
+    This function checks each player from the previous round or from a saved
+    game to see if they can be meet the table minimum ante for the new round.
+    If so, they will remain. If not, they are deleted.
+    INPUTS: None
+    OUTPUT: None. All changes are made to tableObj, a global object.
+    """
+    # First, we pull out the information that we need from the tableObj.
+    tableMin = tableObj.min_bet
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            # This seat is occupied. So, we need to determine if the player
+            # is viable or will lock the game in a loop. Any player unable
+            # to make their ante bet this round would break the game.
+
+            # These variables have to be refreshed for each iteration.
+            posX = LEFTMARGIN
+            posY = TOPMARGIN
+            playerName = tableObj.players[seat].name
+            playerBank = tableObj.players[seat].bank
+            if playerBank < tableMin:
+                # This player is not viable.
+                clearStatusCorner()
+                warningTextFirst  = "{0} cannot make the ante. This player".format(playerName)
+                warningTextSecond = "will be eliminated from the game."
+                warningSurfFirst  = PROMPTFONT.render(warningTextFirst, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                warningSurfSecond = PROMPTFONT.render(warningTextSecond, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                warningRectFirst  = warningSurfFirst.get_rect(topleft = (posX, posY))
+                posY += LINESPACING12
+                warningRectSecond = warningSurfSecond.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(warningSurfFirst, warningRectFirst)
+                DISPLAYSURF.blit(warningSurfSecond, warningRectSecond)
+                pygame.display.update()
+                pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                eliminatePlayer(seat)
+            continue
+    return # checkPlayerViability
 
 def refreshTable(phase, rounds):
     """
@@ -2557,11 +2689,11 @@ def dealRound(rounds):
     for seat in TABLESEATSALL:
         card = tableObj.deck.remove_top()
         if seat != 'dealer':
-            # Added to test fixes of split hand behavior
-            if len(tableObj.players[seat].hand) == 1:
-                card = tableObj.players[seat].hand[0]
             tableObj.results[seat] = tableObj.players[seat].add_card_to_hand(card)
         else:
+            # Added to test fixes to checkForInsBet
+            if len(tableObj.tableDealer.hand) == 1:
+                card = ('K', card[1])
             tableObj.results[seat] = tableObj.tableDealer.add_card_to_hand(card)
     refreshTable(tableObj.phase, rounds)
     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
@@ -2609,6 +2741,12 @@ def checkForInsBet():
     INPUTS: None
     OUTPUTS: None
     """
+    # Initialize variables used to determine if a play can cover the table
+    # minimum for an insurance bet.
+    playerTotalBets = 0
+    tableMin = tableObj.min_bet
+    playerBank = 0
+    
     # First, clear the corner of the screen.
     clearStatusCorner()
 
@@ -2652,15 +2790,39 @@ def checkForInsBet():
         posY = TOPMARGIN
         # We need ask each "player" if they want to place an insurance bet.
         for seat in TABLESEATS:
+            # We need to reset the variables used to determine if a player
+            # can cover an insurance bet each iteration of the for loop.
+            playerTotalBets = 0
             # We need to clear the corner between loops. The statusSurf is the
             # entire upper left corner.
             clearStatusCorner()
             posY = LEFTMARGIN
             # We have to make sure a player is in the seat.
             if isPlayerStillThere(seat):
-                print("checkForInsBet: Seat is set to {}.".format(seat))
+                # Since the player is still in the seat, we can reset two
+                # more variables.
                 playerName = tableObj.players[seat].name
+                playerBank = tableObj.players[seat].bank
+                playerTotalBets = tableObj.players[seat].total_bets()
+                print("checkForInsBet: Seat is set to {}.".format(seat))
                 print("checkForInsBet: Players is now {}.".format(playerName))
+                # We have to make sure that the player can cover the table
+                # minimum for an insurance bet before asking them if they
+                # want to make one.
+                if playerTotalBets + tableMin >= playerBank:
+                    insBetTextFirst  = "{0}, you have insufficient money remaining".format(playerName)
+                    insBetTextSecond = "to cover the table minimum for an insurance bet."
+                    insBetSurfFirst  = PROMPTFONT.render(insBetTextFirst, True, TEXTCOLOR)
+                    insBetRectFirst  = insBetSurfFirst.get_rect(topleft = (posX, posY))
+                    DISPLAYSURF.blit(insBetSurfFirst, insBetRectFirst)
+                    posY += LINESPACING12
+                    insBetSurfSecond = PROMPTFONT.render(insBetTextSecond, True, TEXTCOLOR)
+                    insBetRectSecond = insBetSurfSecond.get_rect(topleft = (posX, posY))
+                    DISPLAYSURF.blit(insBetSurfSecond, insBetRectSecond)
+                    pygame.display.update()
+                    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                    # Skip this player.
+                    continue
                 insBetText = "{}, would you like to place an insurance bet?.".format(playerName)
                 insBetSurf = PROMPTFONT.render(insBetText, True, TEXTCOLOR)
                 insBetRect = insBetSurf.get_rect(topleft = (posX, posY))
@@ -2691,25 +2853,63 @@ def checkForPairs(rounds):
     Neither Player method requires arguments, but refreshTable needs the 
     phase and round count. The phase can come from tableObj, but rounds has 
     to be passed through from playBlackjack.
+
+    There is an error condition that came in development. This function needs
+    to verify that the player can meet the table minimum before allowing them
+    to split their hand. Otherwise, the game will be stuck in a loop.
+
     INPUTS: integer rounds (number of the current round)
     OUTPUTS: Only to the screen
     """
+    # Initializing variables used to determine if a player can ante up with
+    # their current bets already made. Some of these variables will be reset
+    # each time the for loop iterates.
+    playerTotalBets = 0
+    tableMin = tableObj.min_bet
+    playerBank = 0
     # First, we need to clear the corner of the screen.
     clearStatusCorner()
     # Next, we need to check each regular hand for pairs. We also need to
     # make sure a player is still in the seat.
     for seat in TABLESEATS:
+        # Resetting playerTotalBets for the next iteration.
+        playerTotalBets = 0
         if isPlayerStillThere(seat) and tableObj.results[seat] == 'playable':
-            # tableObj.diagnostic_print()
+            # The player needs to exist before we can set these variables.
+            playerName = tableObj.players[seat].name
+            playerBank = tableObj.players[seat].bank
             print("checkForPairs: seat is {0}. Player is {1}.".format(seat, tableObj.players[seat].name))
             pairExists = tableObj.players[seat].split_check()
             if pairExists == True:
                 posX = LEFTMARGIN
                 posY = TOPMARGIN
                 clearStatusCorner()
+                # An serious problem develops with players running on very
+                # low balance banks: They can trap the game in a loop in
+                # the player has to ante up, but does not have enough money
+                # left to do so. In this case, we need to trap that error by
+                # making sure that the player can ante up before offering to
+                # split their hand.  canAnte is the boolean flag for this.
+                # It is initialized to False for each player and when this
+                # function is called.
+                playerTotalBets = tableObj.players[seat].total_bets()
+                if playerTotalBets + tableMin >= playerBank:
+                    splitHandTextFirst  = "{0}, you have insufficient money remaining".format(playerName)
+                    splitHandTextSecond = "to cover the table minimum ante on a split hand."
+                    splitHandSurfFirst  = PROMPTFONT.render(splitHandTextFirst, True, TEXTCOLOR)
+                    splitHandRectFirst  = splitHandSurfFirst.get_rect(topleft = (posX, posY))
+                    DISPLAYSURF.blit(splitHandSurfFirst, splitHandRectFirst)
+                    posY += LINESPACING12
+                    splitHandSurfSecond = PROMPTFONT.render(splitHandTextSecond, True, TEXTCOLOR)
+                    splitHandRectSecond = splitHandSurfSecond.get_rect(topleft = (posX, posY))
+                    DISPLAYSURF.blit(splitHandSurfSecond, splitHandRectSecond)
+                    pygame.display.update()
+                    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+                    # Skip to the next player.
+                    continue
+                # To get this far, the player's bank can cover the new ante.
                 # We need to ask the user if they want to split up the
                 # player's pair into two hands.
-                playerName = tableObj.players[seat].name
                 splitHandTextFirst  = "{0}, you have a pair showing.".format(playerName)
                 splitHandTextSecond = "Would you like to split your hand?"
                 splitHandSurfFirst  = PROMPTFONT.render(splitHandTextFirst, True, TEXTCOLOR)
@@ -3038,6 +3238,9 @@ def hitOrStand(rounds):
                     pygame.display.update()
                     posY += LINESPACING18
                     lossResult = tableObj.players[seat].reg_loss()
+                    print("hitOrStand: Status: lossResult = {0}.".format(lossResult))
+                    print("hitOrStand: Status: Split Flag is {0}.".format(tableObj.players[seat].split_flag))
+                    print("hitOrStand: Status: Insurance bet is {0}.".format(tableObj.players[seat].insurance))
                     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
                     # A False result means the player broke their bank. It is
                     # still possible for them to survive if they have a split
@@ -3046,12 +3249,12 @@ def hitOrStand(rounds):
                     # Note: Entering the stanza below means that the player
                     # cannot have another hand.
                     if (lossResult == False and\
-                        tableObj.split_flag == False and\
-                        tableObj.ins == 0):
+                        tableObj.players[seat].split_flag == False and\
+                        tableObj.players[seat].insurance == 0):
                         eliminateTextFirst  = "You do not have additional bets that could"
                         eliminateTextSecond = "cover your losses. You have been eliminated."
-                        eliminateSurfFirst  = PROMPTFONT.render(eliminateTextFirst, True, ELIMINATIONCOLOR)
-                        eliminateSurfSecond = PROMPTFONT.render(eliminateTextSecond, True, ELIMINATIONCOLOR)
+                        eliminateSurfFirst  = PROMPTFONT.render(eliminateTextFirst, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                        eliminateSurfSecond = PROMPTFONT.render(eliminateTextSecond, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
                         eliminateRectFirst  = eliminateSurfFirst.get_rect(topleft = (posX, posY))
                         posY += LINESPACING18
                         eliminateRectSecond = eliminateSurfSecond.get_rect(topleft = (posX, posY))
@@ -3114,16 +3317,18 @@ def hitOrStand(rounds):
                     pygame.display.update()
                     posY += LINESPACING18
                     lossResult = tableObj.players[seat].split_loss()
+                    print("hitOrStand: Status: lossResult = {0}.".format(lossResult))
+                    print("hitOrStand: Status: Insurance bet is {0}.".format(tableObj.players[seat].insurance))
                     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
                     # A False result means the player broke their bank. It is
                     # still possible for them to survive with an insurance
                     # bet, however.
                     # Note: Bust means the while loop will terminate.
-                    if (lossResult == False and tableObj.ins == 0):
+                    if (lossResult == False and tableObj.players[seat].insurance == 0):
                         eliminateTextFirst  = "You do not have additional bets that could"
                         eliminateTextSecond = "cover your losses. You have been eliminated."
-                        eliminateSurfFirst  = PROMPTFONT.render(eliminateTextFirst, True, ELIMINATIONCOLOR)
-                        eliminateSurfSecond = PROMPTFONT.render(eliminateTextSecond, True, ELIMINATIONCOLOR)
+                        eliminateSurfFirst  = PROMPTFONT.render(eliminateTextFirst, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                        eliminateSurfSecond = PROMPTFONT.render(eliminateTextSecond, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
                         eliminateRectFirst  = eliminateSurfFirst.get_rect(topleft = (posX, posY))
                         posY += LINESPACING18
                         eliminateRectSecond = eliminateSurfSecond.get_rect(topleft = (posX, posY))
@@ -3133,8 +3338,12 @@ def hitOrStand(rounds):
                         pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
                         # This function removes the player from the tableObj.
                         # We also need to decrement the player counter.
-                        eliminatePlayer(seat)
-                        remainingPlayers -= 1
+                        removeCheck = eliminatePlayer(seat)
+                        if removeCheck == True:
+                            remainingPlayers -= 1
+                        else:
+                            print("hitOrStand: Unable to remove player in seat {0}.".format(seat))
+                            terminate()
                         # We have to break out because the player is gone now.
                         break 
                 # End of while loop for cards for the split hand.
@@ -3191,8 +3400,17 @@ def eliminatePlayer(seat):
     This function eliminates a player that has broken their bank during the
     game. They will also be eliminated from the saved game, but not by this
     function.
+    INPUTS: seat, string, indicating the seat the player was in before
+        breaking their bank
+    OUTPUTS: Boolean
+        True: Player successfully removed
+        False: Player could not be removed
     """
-    pass
+    del tableObj.players[seat]
+    if isPlayerStillThere(seat):
+        return False
+    else:
+        return True
 
 def playersWinGame():
     """
