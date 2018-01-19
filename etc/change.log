@@ -653,3 +653,15 @@ Casino (game): checkForInsBet: This function had a similar looping flaw to check
 Casino (game): main: A saved player could create a similar looping flaw. Fixing this required adding analysis stanzas to warn the user about players unable to make the ante on the first round or only surviving a few rounds. This section allows the player to choose a different dealer if they wish. Fixing this flaw also required adding a call to a new function, checkPlayerViability, to playBlackjack that eliminates players who cannot meet their ante bet.
 Casino (game): checkPlayerViability: Created this function to make sure that all players can meet their ante. Those that cannot are eliminated using eliminatePlayer.
 Break-The-Bank-Rules: Updated the content to warn the user that players who cannot meet the table minimums for the ante will be eliminated.
+
+1/19/18 13:00 Pushed to origin pygame
+
+Casino (game): Constants: Added HANDLIST to store all of the keys to the tableObj.results dictionary.
+Casino (game): dealersTurn: Created this function to play out the dealer's turn. It includes the instance where the dealer does not have play their hand, dealer has blackjack, and the dealer has to play their hand per casino rules. THIS HAS NOT BEEN TESTED.
+Casino (game): resolveInsBets: Created this function to resolve all bets on dealer's blackjack. It uses a boolean value (True for dealer blackjack, False otherwise) and processes all of the insurance bets accordingly, running eliminatePlayer for any players that break their bank from losing this bet. It returns the number players remaining in the game. THIS HAS NOT BEEN TESTED.
+Casino (game): dealerHasBlackjack: Created this function to deal with playable hands that automatically lost to dealer blackjack. It calls eliminatePlayer whenever a player breaks their bank due to these losses. It returns the number of players remaining in the game.
+Casino (game): dealerBusts: Created this function to handle the dealer's losses and player wins for playable hands when the dealer's hand busts. It calls playersWinGame to handle winning this game (current a stub). THIS HAS NOT BEEN TESTED.
+Casino (game): findDefunctPlayer: Created this function to check at the end of a round for a player with a broken bank that might have been missed by the other functions. THIS HAS NOT BEEN TESTED.
+Casino (game): endOfRound: This is a stub for the function that will clear bets, hands, and results at the end of the round.
+Casino (game): playerWinGame: This is s stub for the function that will handle the case of the dealer breaking its bank (and the user and players winning).
+Casino (game): userLostGame: This a stub for the function that will handle the aftermath of all players being eliminated by breaking their banks.

@@ -124,6 +124,10 @@ SCROLLSPEED = 1200
 # constants for them.
 TABLESEATS    = ('left', 'middle', 'right')
 TABLESEATSALL = ('left', 'middle', 'right', 'dealer')
+# This tuple stores all of the keys used in the Table object dictionary
+# attribute results (tableObj.results). This is used in the dealer's turn
+# to iterate through all of the possible hand options.
+HANDLIST = ('left', 'left split', 'middle', 'middle split', 'right', 'right split', 'dealer')
 
 
 def main(): # main game function
@@ -2111,6 +2115,8 @@ def playBlackjack():
 
             # Now, it is time for the dealer's turn. This could change the
             # remainginPlayers as well.
+            tableObj.phase = 'dealer'
+            dealersTurn(remainingHands, remainingPlayers, roundCounter)
 
             # Finally, we have the endRound. This resets function will reset
             # results, eliminate players who busted, reset hands and bets for
@@ -3394,6 +3400,7 @@ def checkForHitStand():
                     return False
         pygame.display.update()
         FPSCLOCK.tick()
+    return # checkForHitStand
     
 def eliminatePlayer(seat):
     """
@@ -3412,10 +3419,731 @@ def eliminatePlayer(seat):
     else:
         return True
 
+def dealersTurn(remainingHands, remainingPlayers, rounds):
+    """
+    This function plays out the dealers turn. First, it checks to see if any
+    hands remain that the dealer has to play against. Here are a list of the
+    conditions for each hand:
+        Player              Dealer              Outcome
+        ----------------------------------------------------
+        Blackjack           Playable hand       Player wins
+        Any non-blackjack   Blackjack           Dealer wins
+        Non-blackjack 21    Non-blackjack 21    Tie, no winner
+        High score          High score          Tie, no winner
+        Low score           High score          Dealer wins
+        Busts               Playable hand       Dealer wins
+        Playable hand       Busts               Player wins
+    
+    The dealer has to abide by the following casino rules:
+        * dealer must stand on a hard 17 or more
+        * dealer stands on any 21 (blackjack or otherwise)
+        * dealer must take a card on a soft 16 or less
+        * dealer must stand on a hard 16 or less if the soft score on the
+            hand is 17 or greater AND it beats at least one player's hand
+            (of the remaining playable hands)
+        * dealer must take a card on a hard 16 or less if the soft score on
+            the hand does not beat any of the players' remaining hands
+    
+    INPUTS: three arguments
+        remainingHands, integer, the number of playable player hands
+        remainingPlayers, integer, the number of players still seated
+        rounds, integer, number of the current round
+    OUTPUTS: None. All outputs are to the screen. Any data changes are
+        made to the global tableObj object. This function uses the results
+        attribute to track remaining winners, losers, and ties.
+    """
+    # First, we need to set a few required variables. The first checks to see
+    # if the dealer has blackjack. If so, the dealer won all remaining hands.
+    # The second checks to see if any hands remain for the dealer to play
+    # against. The third is a check to see if any players remain. If not, we
+    # have a case of the user losing the game.
+    # Note: All of these variables are booleans using logical expression for
+    # variable assignment.
+    dealerBlackjack = (tableObj.results['dealer'] == 'blackjack')
+    noHandsRemain = (remainingHands == 0)
+    userLosesGame = (remainingPlayers == 0)
+    dealerLosses = 0
+    dealerWins = 0
+
+    # Now, clear the status corner and set the positionals.
+    clearStatusCorner()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+
+    # This function will tell the user they lost and terminate the game. We
+    # need to find out if it is necessary to do so. Other functions verify
+    # that additional bets exist that might save a player. If there are no
+    # players left at this point, all of them were eliminated by busting
+    # there banks without insurance reprieves.
+    if userLosesGame:
+        refreshTable('dealer', rounds)
+        userLostGame()
+
+    # Dealer reveals their hold card.
+    refreshTable('dealer', rounds)
+    if dealerBlackjack:
+        blackjackTextFirst  = "The dealer has blackjack."
+        blackjackTextSecond = "All insurance bets win."
+    else:
+        blackjackTextFirst  = "The dealer does not have blackjack."
+        blackjackTextSecond = "All insurance bets lose."
+
+    blackjackSurfFirst  = SCOREFONT.render(blackjackTextFirst, True, TEXTCOLOR)
+    blackjackSurfSecond = SCOREFONT.render(blackjackSurfSecond, True, TEXTCOLOR)
+    blackjackRectFirst  = blackjackSurfFirst.get_rect(topleft = (posX, posY))
+    posY += LINESPACING12
+    blackjackRectSecond = blackjackSurfSecond.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(blackjackSurfFirst, blackjackRectFirst)
+    DISPLAYSURF.blit(blackjackSurfSecond, blackjackRectSecond)
+    pygame.display.update()
+    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+
+    # Next, we need to resolve the insurance bets, as that might save a
+    # player facing elimination from a hand that busted.  resolveInsBets
+    # returns the number of players remaining in the game.
+    remainingPlayers = resolveInsBets(dealerBlackjack)
+    if remainingPlayers == 0:
+        refreshTable('dealer', rounds)
+        userLostGame()
+
+    # Next, we need to check to see if the dealer needs to play their hand.
+    # No remaining playable hands means that there is nothing to do. All of
+    # the player hands have already been resolved.
+    if noHandsRemain:
+        # Reset the status corner.
+        clearStatusCorner()
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        noHandsTextFirst  = "No playable hands remain. The dealer is not required"
+        noHandsTextSecond = "to play out their hand. The round is over."
+        noHandsSurfFirst  = SCOREFONT.render(noHandsTextFirst, True, TEXTCOLOR)
+        noHandsSurfSecond = SCOREFONT.render(noHandsTextSecond, True, TEXTCOLOR)
+        noHandsRectFirst  = noHandsSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING12
+        noHandsRectSecond = noHandsSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING12
+        DISPLAYSURF.blit(noHandsSurfFirst, noHandsRectFirst)
+        DISPLAYSURF.blit(noHandsSurfSecond, noHandsRectSecond)
+        pygame.display.update()
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        return
+
+    # Now, we need to check the case that the dealer has a blackjack. In this
+    # case, all other playable hands lose automatically.
+    if dealerBlackjack:
+        remainingPlayers = dealerHasBlackjack()
+        if remainingPlayers == 0:
+            refreshTable('dealer', rounds)
+            userLostGame()
+        return
+
+    # Since at least one playable hand remains, the dealer has to play their
+    # hand to determine the outcome of the game. We need the highest score
+    # and the lowest score among the playable hands. Remember, soft scores
+    # are always greater than or equal to the hard score because the soft
+    # score uses Ace = 11 whenever possible. The dealer has to take a card
+    # until the dealer's soft score beats at least one player's score or the
+    # dealer's hand score is 17 or greater. The minScore gives that to us.
+    # The maxScore tells us if the dealer beat all of the remining hands.
+    # We need the list of hands for a second purpose, determining win, tie,
+    # or lose on each playable hand. Since we are collecting scores for the
+    # hands, we can also collect keys for the hands as well.
+    playableScores = []
+    playableHands = []
+    for possibleHand in HANDLIST:
+        # The str.split() method turns a string into a list, or in this case,
+        # one or two list entries.
+        seat, handType = possibleHand.split(' ')
+        if isPlayerStillThere(seat):
+            handStatus = tableObj.results[possibleHand]
+            if handStatus == 'playable' and\
+               handType != 'split' and\
+               seat != 'dealer':
+                # This is a playable regular hand. First, we check the scores
+                # for the hand.
+                softScore = tableObj.players[seat].soft_hand_score
+                print("dealersTurn: Status: softScore is {0}.".format(softScore))
+                # Using a list allows us to sort it, pulling the highest
+                # and lowest scores out. We need the scores in order to
+                # ensure that the dealer plays their hand properly.
+                playableScores.append(softScore)
+                playableHands.append(possibleHand)
+            elif handStatus == 'playable' and\
+                 handType == 'split' and\
+                 seat != 'dealer':
+                # This is a split hand. Again, we check the scores and 
+                # append them to our list playableScores.
+                softScore = tableObj.players[seat].soft_split_score
+                print("dealersTurn: Status: softScore is {0}.".format(softScore))
+                playableScores.append(softScore)
+                playableHands.append(possibleHand)
+            # We don't need to look at any other conditions.
+    # We need to sort this list of scores in case the minScore is too small
+    # to use.
+    playableScores.sort
+    maxScore = max(playableScores)
+    minScore = min(playableScores)
+    while minScore < 17:
+        # The score must be greater than 17. It is possible for players to
+        # stand at 12 or 13 and wait to see if the dealer busts. So, we will
+        # remove the bottom score and get a new minScore until we reach the
+        # maxScore.
+        playableScores.pop(0)
+        print("dealersTurn: Status: playableScore is {0}.".format(playableScores))
+        print("dealersTurn: Status: minScore is {0}, maxScore is {1}.".format(minScore, maxScore))
+        minScore = min(playableScores)
+        if minScore == maxScore:
+            break
+
+    # Now, we set up a loop to play the dealer's hand. This loop uses the
+    # result value for the dealer's hand to determine when to stop the loop.
+    # There are three values that will stop it:
+    #   'stand' : The dealer's score met the criteria that forces the dealer
+    #               stand.
+    #   'bust'  : The dealer's hand busted.
+    while tablObj.results['dealer'] not in ('stand', 'bust'):
+        refreshTable('dealer', rounds)
+        dealerHardScore = tableObj.tableDealer.hard_hand_score
+        dealerSoftScore = tableObj.tableDealer.soft_hand_score
+        # Set positionals.
+        posX = LEFTMARGIN
+        poxY = TOPMARGIN
+        # First, we have to look at the scores that dealer has for its hand.
+        # This will determine what actions to take next. We are not starting
+        # with busts because Dealer.add_card_to_hand() will tell us if the
+        # next card added to the dealer's hand caused a bust.
+        if 21 >= dealerHardScore > 16:
+            # Dealer must stand on a hard 17 or higher.
+            tableObj.results['dealer'] = 'stand'
+            dealerStandText = "Dealer must stand on a {0}.".format(dealerHardScore)
+            dealerStandSurf = SCOREFONT.render(dealerStandText, True, TEXTCOLOR)
+            dealerStandRect = dealerStandSurf.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(dealerStandSurf, dealerStandRect)
+            pygame.display.update()
+            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+            # This will end this while loop.
+            continue
+
+        # Next, we need to see if the dealer's soft hand score beats at least
+        # one player and that the min score is above 16.
+        if dealerHardScore <= 16 and\
+           dealerSoftScore > minScore and\
+           minScore >= 16:
+            tableObj.results['dealer'] = 'stand'
+            dealerStandTextFirst  = "Dealer has a soft {0}, which is greater".format(dealerSoftScore)
+            dealerStandTextSecond = "than 16 and the minimum player score of {0}.".format(minScore)
+            dealerStandTextThird  = "Dealer must stand."
+            dealerStandSurfFirst  = SCOREFONT.render(dealerStandTextFirst, True, TEXTCOLOR)
+            dealerStandSurfSecond = SCOREFONT.render(dealerStandTextSecond, True, TEXTCOLOR)
+            dealerStandSurfThird  = SCOREFONT.render(dealerStandTextThird, True, TEXTCOLOR)
+            dealerStandRectFirst  = dealerStandSurfFirst.get_rect(topleft = (posX, posY))
+            posY += LINESPACING12
+            dealerStandRectSecond = dealerStandSurfSecond.get_rect(topleft = (posX, posY))
+            posY += LINESPACING12
+            dealerStandRectThird  = dealerStandSurfThird.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(dealerStandSurfFirst, dealerStandRectFirst)
+            DISPLAYSURF.blit(dealerStandSurfSecond, dealerStandRectSecond)
+            DISPLAYSURF.blit(dealerStandSurfThird, dealerStandRectThird)
+            pygame.display.update()
+            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+            continue
+
+        # Since we got to this point, the dealer must take a card.
+        card = tableObj.deck.remove_top()
+        result = tableObj.tableDealer.add_card_to_hand(card)
+        refreshTable('dealer', rounds)
+        if result = 'bust':
+            hardScore = tableObj.tableDealer.hard_hand_score
+            dealerBustTextFirst  = "Dealer busts with a hard {0}.".format(hardScore)
+            dealerBustTextSecond = "All remaining players win their bets."
+            dealerBustSurfFirst  = SCOREFONT.render(dealerBustTextFirst, True, TEXTCOLOR)
+            dealerBustSurfSecond = SCOREFONT.render(dealerBustTextSecond, True, TEXTCOLOR)
+            dealerBustRectFirst  = dealerBustSurfFirst.get_rect(topleft = (posX, posY))
+            posY += LINESPACING12
+            dealerBustRectSecond = dealerBustSurfSecond.get_rect(topleft = (posX, posY))
+            posY += LINESPACING12
+            DISPLAYSURF.blit(dealerBustSurfFirst, dealerBustRectFirst)
+            DISPLAYSURF.blit(dealerBustSurfSecond, dealerBustRectSecond)
+            pygame.display.update()
+            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+            dealerBusts():
+            return
+        # The result can only be 'playable' at this point. A playable hand
+        # requires that the loop continue until the dealer busts or has to
+        # stand.
+    # End of while loop of dealer taking cards for its hand.
+
+    # To get this far, the dealer had to stand with a playable hand. Now, we
+    # to determine who wins and loses individually based on the scores for the
+    # dealer's hand. dealerHardScore and dealerSoftScore should be correct,
+    # since the dealer would not have taken another card. We also collected
+    # the playable hands, so we can find them again.
+    for hand in playableHands:
+        seat, split = hand.split(' ')
+        if split == 'split':
+            # This is a split hand. To determine a winner, we only need the
+            # highest score the dealer or the player could achieve, which is
+            # the soft score. Remember, blackjack is a hand formed by the
+            # first two cards dealt to a player or dealer that contain an
+            # ace and a ten value card. This hand has a soft score of 21 and
+            # a hard score of 11.
+            playerSoftScore = tableObj.players[seat].soft_split_score
+        else: # This is the regular hand.
+            playerSoftScore = tableObj.players[seat].soft_hand_score
+        # Now, none of steps that follow require anything specific about
+        # hand in the tableObj. So, we can use the same code for regular
+        # hands and split hands. The hand key is unchanged.
+        if dealerSoftScore > playerSoftScore:
+            # The player lost their bet. For now, we are going to change
+            # the results from playable to 'loss'.
+            tableObj.results[hand] = 'loss'
+        elif dealerSoftScore = playerSoftScore:
+            # This is a tie. Ties are treated as a draw.
+            tableObj.results[hand] = 'tie'
+        else: # dealerSoftScore < playerSoftScore
+            # The player won against the dealer.
+            tableObj.results[hand] = 'win'
+
+    # All of the results have been tabulated, but we have only distributed
+    # the wins and losses for blackjack and busted hands. Now, we need to
+    # go through and pull out the winner and losers. We will use the collect
+    # the dealer's wins and losses, then use the Dealer.wins and Dealer.losses
+    # methods to apply them, since they will give us feedback if it breaks
+    # the dealer's bank. Likewise, as we roll through the hands, we will
+    # give players their winning and deduct losses using the Player wins,
+    # tie, and loss for each hand. These methods also give feedback, so that
+    # we will know if a player has to be eliminated.
+    # Reset the ordinals. All of these results should be printable in the
+    # status window with the right spacing.
+    clearStatusCorner()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    for hand in HANDLIST:
+        seat, split = hand.split(' ')
+        if tableObj.results[hand] == 'win':
+            playerName = tableObj.players[seat].name
+            # Players cannot be eliminated by a win. If they were already
+            # insolvent and this win is not enough to save their bank, the
+            # function findDefunctPlayer will identify and remove them.
+            if split == 'split':
+                betAmt = tableObj.players[seat].split_bet
+                playerStatus = tableObj.players[seat].split_win()
+                playerHandText = "{0} won the bet of ${1} on their split hand.".format(playerName, betAmt)
+            else: # It is a regular hand.
+                betAmt = tableObj.players[seat].bet
+                playerStatus = tableObj.players[seat].win()
+                playerHandText = "{0} won the bet of ${1} on their regular hand.".format(playerName, betAmt)
+            dealerLosses += betAmt
+            playerHandSurf = SCOREFONT.render(playerHandText, True, TEXTCOLOR)
+            playerHandRect = playerHandSurf.get_rect(topleft = (posX, posY))
+            posY += LINESPACING12
+            DISPLAYSURF.blit(playerHandSurf, playerHandRect)
+            pygame.display.update()
+            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+
+        elif tableObj.results[seat] == 'tie':
+            playerName = tableObj.players[seat].name
+            # Players cannot be eliminated by a tie. If they were already
+            # insolvent, findDefunctPlayer will identify and remove them.
+            if split == 'split':
+                betAmt = tableObj.players[seat].split_bet
+                playerStatus = tableObj.players[seat].split_tie()
+                playerHandText = "{0} tied on their split hand.".format(playerName)
+            else: # It is a regular hand.
+                betAmt = tableObj.players[seat].bet
+                playerStatus = tableObj.players[seat].tie()
+                playerHandText = "{0} tied on their regular hand.".format(playerName)
+            # With a tie, neither side loses any money.
+            playerHandSurf = SCOREFONT.render(playerHandText, True, TEXTCOLOR)
+            playerHandRect = playerHandSurf.get_rect(topleft = (posX, posY))
+            posY += LINESPACING12
+            DISPLAYSURF.blit(playerHandSurf, playerHandRect)
+            pygame.display.update()
+            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        
+        elif tableObj.results[seat] == 'loss':
+            playerName = tableObj.players[seat].name
+            # Players losing bets can be eliminated from the game at this
+            # point. For that reason, all of these outcomes had to be
+            # handled separately.
+            if split == 'split':
+                betAmt = tableObj.players[seat].split_bet
+                playerStatus = tableObj.players[seat].split_loss()
+                dealerWins += betAmt
+                playerHandText = "{0} lost the bet of {1} on their split hand.".format(playerName, betAmt)
+                playerHandSurf = SCOREFONT.render(playerHandText, True, TEXTCOLOR)
+                playerHandRect = playerHandSurf.get_rect(topleft = (posX, posY))
+                posY += LINESPACING12
+            else: # It is a regular hand.
+                betAmt = tableObj.players[seat].bet
+                playerStatus = tableObj.players[seat].loss()
+                dealerWins += betAmt
+                playerHandText = "{0} lost the bet of {1} on their split hand.".format(playerName, betAmt)
+                playerHandSurf = SCOREFONT.render(playerHandText, True, TEXTCOLOR)
+                playerHandRect = playerHandSurf.get_rect(topleft = (posX, posY))
+                posY += LINESPACING12
+            # Now, we have to determine if the player should be eliminated.
+            if playerStatus:
+                # The player is still solvent.
+                playerStatusText = "This player is still solvent."
+                playerStatusSurf = SCOREFONT.render(playerStatusText, True, TEXTCOLOR)
+                playerStatusRect = playerStatusSurf.get_rect(topleft = (posX, posY))
+                posY += LINESPACING12
+                eliminatePlayer(seat)
+            else: # The player is insolvent.
+                playerStatusText = "This player is insolvent and was eliminated."
+                playerStatusSurf = PROMPTFONT.render(playerStatusText, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                playerStatusRect = playerStatusSurf.get_rect(topleft = (posX, posY))
+                posY += LINESPACING18
+                # The line spacing needs to be greater because PROMPTFONT
+                # is bigger.
+            DISPLAYSURF.blit(playerHandSurf, playerHandRect)
+            DISPLAYSURF.blit(playerStatusSurf, playerStatusRect)
+            pygame.display.update()
+            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+    # All wins and losses for the players have been applied to their banks.
+    # Now, we need to apply the dealer's aggregate wins and losses to its
+    # bank. We start with the wins, since they cannot affect the dealer's
+    # status, but may prevent a bust on the other bets. Then, we apply the
+    # losses and see if the dealer breaks their bank over it. The methods
+    # we use are Dealer.dealer_won(amt) and Dealer.dealer_lost(amt).
+    tableObj.tableDealer.dealer_won(dealerWins)
+    dealerStatus = tableObj.tableDealer.dealer_lost(dealerLosses)
+    if dealerStatus:
+        refreshTable('dealer', rounds)
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        dealerStatusText = "Dealer remains solvent."
+        dealerStatusSurf = PROMPTFONT.render(dealerStatusText, True, TEXTCOLOR)
+        dealerStatusRect = dealerStatusSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(dealerStatusSurf, dealerStatusRect)
+        pygame.display.update()
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        return
+    else: # Dealer busted their bank.
+        DISPLAYSURF.fill(BLACK)
+        posX = WINCENTERX
+        posY = WINCENTERY
+        dealerStatusText = "Dealer is now insolvent and has been eliminated."
+        dealerStatusSurf = PROMPTFONT.render(dealerStatusText. True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+        dealerStatusRect = dealerStatusSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(dealerStatusSurf, dealerStatusRect)
+        pygame.display.update()
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        playersWinGame()
+    return # dealersTurn
+
+def resolveInsBets(dealerBlackjack):
+    """
+    This function resolves all insurance bets. It will remove any player
+    that becomes insolvent due to losing the insurance bet, but only if the
+    player has no other playable hand left.
+    INPUTS: dealerBlackjack, boolean, True for dealer having blackjack, False
+        otherwise
+    OUTPUTS: remainingPlayers, integer from 0 to 3
+    """
+    # Initialize player counter, so this function can return the number of
+    # remainingPlayers.
+    remainginPlayers = 0
+    # Per usual, we need to set positionals and clear the status corner.
+    clearStatusCorner()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+
+    # Go through all seats and see who is left and has an insurance bet. It 
+    # will be non-zero if the player has one.
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            # The seat is occupied. Reset the status corner each iteration.
+            print("resolveInsBet: Status: Checking seat {0} and printing {1}.".format(seat, tableObj.players[seat]))
+            remainginPlayers += 1
+            clearStatusCorner()
+            posY = TOPMARGIN
+            if tableObj.players[seat].insurance != 0:
+                # The player has an insurance bet. We need to populate a few
+                # easier to read variables.
+                playerName = tableObj.players[seat].name
+                betAmt = tableObj.players[seat].insurance
+                # Player.ins() method handles the bet based on the value of
+                # the boolean it is given. result will be True if the player's
+                # bank is still solvent, False otherwise.
+                result = tableObj.players[seat].ins(dealerBlackjack)
+
+                # Now, we have a few different outcomes:
+                #   1) dealer had blackjack (player won)
+                #   2) dealer did not have blackjack (player lost) but they
+                #       are solvent still
+                #   3) dealer did not have blackjack (player lost) and their
+                #       is insolvent.
+                # This function takes place after the hold card is revealed
+                # but before the dealer finishes playing out its hand.
+
+                if dealerBlackjack:
+                    resultTextFirst  = "{0} won ${1}.".format(playerName, betAmt)
+                    resultTextSecond = "{0} remains solvent.".format(playerName)
+                    resultTextThird  = "This player will not eliminated, yet."
+                elif dealerBlackjack == False and result == True:
+                    # The player lost this bet, but has a solvent bank.
+                    resultTextFirst  = "{0} lost ${1}, but still has ${2}".format(playerName, betAmt, playerBank)
+                    resultTextSecond = "in the bank. This player is still solvent."
+                    resultTextThird  = "This player will not eliminated, yet."
+                else:
+                    resultTextFirst  = "{0} lost ${1} on this bet and is insolvent.".format(playerName, betAmt)
+                    # We need to check to see if the player still has a
+                    # playable hand. If so, they will not be eliminated.
+                    if tableObj.results[seat] == 'playable' or\
+                       tableobj.results[seat + ' split'] == 'playable':
+                        resultTextSecond = "{0} has at least one playable hand.".format(playerName)
+                        resultTextThird  = "This player will not eliminated, yet."
+                    else: # The player has no other means of survival.
+                        resultTextSecond = "{0} has no playable hands left.".format(playerName)
+                        resultTextThird  = "This player has been eliminated."
+                        eliminatePlayer(seat)
+                        remainginPlayers -= 1
+                        # This block uses a different set of colors. So,
+                        # these messages need their own print block. The rest
+                        # use the common block further below.
+                        resultSurfFirst  = PROMPTFONT.render(resultTextFirst, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                        resultSurfSecond = PROMPTFONT.render(resultTextSecond, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                        resultSurfThird  = PROMPTFONT.render(resultTextThird, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                        resultRectFirst  = resultSurfFirst.get_rect(topleft = (posX, posY))
+                        posY += LINESPACING18
+                        resultRectSecond = resultSurfSecond.get_rect(topleft = (posX, posY))
+                        posY += LINESPACING18
+                        resultRectThird  = resultSurfThird.get_rect(topleft = (posX, posY))
+                        DISPLAYSURF.blit(resultSurfFirst, resultRectFirst)
+                        DISPLAYSURF.blit(resultSurfSecond, resultRectSecond)
+                        DISPLAYSURF.blit(resultSurfThird, resultRectThird)
+                        pygame.display.update()
+                        # Go to the next seat.
+                        continue
+                
+                # Now, we print whichever set of text messages to the screen.
+                # All of these messages do not involve eliminating players. So,
+                # they can use a common block of render commands.
+                resultSurfFirst  = SCOREFONT.render(resultTextFirst, True, TEXTCOLOR)
+                resultSurfSecond = SCOREFONT.render(resultTextSecond, True, TEXTCOLOR)
+                resultSurfThird  = SCOREFONT.render(resultTextThird, True, TEXTCOLOR)
+                resultRectFirst  = resultSurfFirst.get_rect(topleft = (posX, posY))
+                posY += LINESPACING12
+                resultRectSecond = resultSurfSecond.get_rect(topleft = (posX, posY))
+                posY += LINESPACING12
+                resultRectThird  = resultSurfThird.get_rect(topleft = (posX, posY))
+                DISPLAYSURF.blit(resultSurfFirst, resultRectFirst)
+                DISPLAYSURF.blit(resultSurfSecond, resultRectSecond)
+                DISPLAYSURF.blit(resultSurfThird, resultRectThird)
+                pygame.display.update()
+            
+            else: # Player does not have an insurance bet. Go to the next seat.
+                continue
+        # Skip the empty seat.
+    # The final step is to see if the dealer's bank busted after paying out
+    # the insurance bets.
+    dealerBank = tableObj.tableDealer.bank
+    if dealerBank <= 0:
+        # The user beat the dealer.
+        playersWinGame()
+    return remainginPlayers # resolveInsBets
+
+def dealerHasBlackjack():
+    """
+    This function collects the user losses due to a dealer blackjack. It
+    returns the number of players remaining in the game.
+    INPUTS: None
+    OUTPUTS: remainingPlayers, integer between 0 and 3
+    """
+    # First, we need to set up an aggregator for the dealer's winnings. We
+    # also need to clear the status corner and reset the positionals. All
+    # losses will printed out in the status corner together.  The dealer
+    # cannot be eliminated by wins, but players may be eliminated by their
+    # losses. We also need to tabulate surviving players.
+    clearStatusCorner()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    dealerWins = 0
+    remainingPlayers = 0
+    # We need to process all of the hands marked "playable". All of them 
+    # are losses for the players in question.
+    for hand in HANDLIST:
+        seat, split = hand.split(' ')
+        if isPlayerStillThere(seat):
+            # Incremement the player counter.
+            remainingPlayers += 1
+            if tableObj.results[hand] == 'playable':
+                # Set this one to a loss.
+                tableObj.results[hand] = 'loss'
+                playerName = tableObj.players[seat].name
+                if split == 'split':
+                    # This is a split hand.
+                    betAmt = tableObj.players[seat].split_bet
+                    playerStatus = tableObj.players[seat].split_loss()
+                else: # This is regular hand.
+                    betAmt = tableObj.players[seat].bet
+                    playerStatus = tableObj.players[seat].reg_loss()
+                dealerWins += betAmt
+                # The player lost their bet regardless of what else happens.
+                playerHandText = "{0} lost ${1} to dealer's blackjack.".format(playerName, betAmt)
+                playerHandSurf = SCOREFONT.render(playerHandText, True, TEXTCOLOR)
+                playerHandRect = playerHandSurf.get_rect(topleft = (posX, posY))
+                posY += LINESPACING12
+                DISPLAYSURF.blit(playerHandSurf, playerHandRect)
+                # Now, we need to check the player's status. If they busted,
+                # the status must indicated that.
+                if playerStatus:
+                    # Player survived the round.
+                    playerStatusText = "{0} is still solvent.".format(playerName)
+                    playerStatusSurf = SCOREFONT.render(playerStatusText, True, TEXTCOLOR)
+                    playerStatusRect = playerStatusSurf.get_rect(topleft = (posX, posY))
+                    posY += LINESPACING12
+                else: # Player busted their bank.
+                    playerStatusText = "{0} is insolvent and was eliminated.".format(playerName)
+                    playerStatusSurf = PROMPTFONT.render(playerStatusText, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                    playerStatusRect = playerStatusSurf.get_rect(topleft = (posX, posY))
+                    posY += LINESPACING18
+                    eliminatePlayer(seat)
+                    # Reduce the player counter.
+                    remainingPlayers -+ 1
+                # The status printout can use a common blit command block.
+                DISPLAYSURF()playerStatusSurf, playerStatusRect
+                pygame.display.update()
+                pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+            # End of hand filter
+        # End of check for occupied seat
+    # End of for loop through HANDLIST
+    return remainingPlayers # dealerHasBlackjack
+
+def dealerBusts():
+    """
+    This function handles the automatic wins for players with playable hands.
+    It returns True if the dealer is solvent, or False otherwise.
+    """
+    # First, clear the status corner and reset the positionals. We need an
+    # aggregator for the dealer's losses, in case this causes the dealer to
+    # break their bank. We don't need a player counter because none of the
+    # remaining players will be eliminated by winning these hands.
+    clearStatusCorner()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    dealerLosses = 0
+    # We need find and process all of the playable hands.
+    for hand in HANDLIST:
+        seat, split = hand.split(' ')
+        if isPlayerStillThere(seat):
+            if tableObj.results[hand] == 'playable':
+                # Change the result to 'win'
+                tableObj.results[hand] = 'win'
+                playerName = tableObj.players[seat].name
+                if split == 'split':
+                    # This is a split hand.
+                    betAmt = tableObj.players[seat].split_bet
+                    # We do not need a status since players are not eliminated
+                    # for winning bets.
+                    tableObj.players[seat].split_win()
+                else: # This is a regular hand.
+                    betAmt = tableObj.players[seat].bet
+                    tableObj.players[seat].reg_win()
+                dealerLosses += betAmt
+                playerHandText = "{0} won their bet of ${1}.".format(playerName, betAmt)
+                playerHandSurf = SCOREFONT.render(playerHandText, True, TEXTCOLOR)
+                playerHandRect = playerHandSurf.get_rect(topleft = (posX, posY))
+                posY += LINESPACING12
+                DISPLAYSURF.blit(playerHandSurf, playerHandRect)
+                pygame.display.update()
+                pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+            # End of hand filter
+        # End of check for occupied seat
+    # End of for loop through HANDLIST
+    # Now, we need to apply the dealer's losses and see if the dealer has
+    # broken their bank.
+    dealerStatus = tableObj.tableDealer.dealer_lost(dealerLosses)
+    if dealerStatus:
+        # The dealer survived busting their hand.
+        refreshTable('dealer', rounds)
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        dealerStatusText = "Dealer remains solvent."
+        dealerStatusSurf = PROMPTFONT.render(dealerStatusText, True, TEXTCOLOR)
+        dealerStatusRect = dealerStatusSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(dealerStatusSurf, dealerStatusRect)
+        pygame.display.update()
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        return
+    else: # Dealer busted their bank.
+        DISPLAYSURF.fill(BLACK)
+        posX = WINCENTERX
+        posY = WINCENTERY
+        dealerStatusText = "Dealer is now insolvent and has been eliminated."
+        dealerStatusSurf = PROMPTFONT.render(dealerStatusText. True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+        dealerStatusRect = dealerStatusSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(dealerStatusSurf, dealerStatusRect)
+        pygame.display.update()
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        playersWinGame()
+    return # dealersBusts   
+
+def findDefunctPlayer():
+    """
+    This function checks all remaining players to see if any should be
+    eliminated. It notifies the user of each deletion.
+    INPUTS:
+    OUTPUTS: remainingPlayers, integer from 0 to 3
+    """
+    # First, we need to clear the status corners, reset positionals, and 
+    # start a player counter.
+    clearStatusCorner()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    remainingPlayers = 0
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            # Increment player counter.
+            remainingPlayers += 1
+            # Now, we need to check their bank and their name.
+            playerName = tableObj.players[seat].name
+            playerBank = tableObj.players[seat].bank
+            if playerBank <= 0:
+                # This player busted their bank at some point.
+                playerStatusTextFirst  = "{0} has a bank of {1}.".format(playerName, playerBank)
+                playerStatusTextSecond = "This player has been eliminated."
+                playerStatusSurfFirst  = PROMPTFONT.render(playerStatusTextFirst, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                playerStatusSurfSecond = PROMPTFONT.render(playerStatusTextSecond, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+                playerStatusRectFirst  = playerStatusSurfFirst.get_rect(topleft = (posX, posY))
+                posY += LINESPACING18
+                playerStatusRectSecond = playerStatusSurfSecond.get_rect(topleft = (posX, posY))
+                posY += LINESPACING18
+                DISPLAYSURF.blit(playerStatusSurfFirst, playerStatusRectFirst)
+                DISPLAYSURF.blit(playerStatusSurfSecond, playerStatusRectSecond)
+                eliminatePlayer(seat)
+                remainingPlayers -= 1
+            # End of check for player insolvency
+        # End of check for occupied seat
+    # End of for loop through table seats
+    return remainingPlayers # findDefunctPlayers                
+
+def endOfRound():
+    """
+    This function clears out the bets and hands from the round. It finishs
+    distributing wins and losses by the players and the dealer. Finally, it
+    gives the user an analysis of the viability of the remaining players to
+    help the user decide who to withdraw (if any) at the start of the next
+    round. This analysis is similar to the report main() prints out when the
+    user chooses a dealer.
+    """
+    pass
+
 def playersWinGame():
     """
     This function will handle the players breaking the bank for the table
     they were playing at.
+    """
+    pass
+
+def userLostGame():
+    """
+    This function will handle the case of all players being eliminated from
+    the game. In that case, the user should be prompted about whether or not
+    they want to keep a saved game file, if one exists. A thank you message
+    should also be issued, then the game will spacebar pause and then exit.
     """
     pass
 
