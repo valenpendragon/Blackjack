@@ -127,7 +127,7 @@ TABLESEATSALL = ('left', 'middle', 'right', 'dealer')
 # This tuple stores all of the keys used in the Table object dictionary
 # attribute results (tableObj.results). This is used in the dealer's turn
 # to iterate through all of the possible hand options.
-HANDLIST = ('left', 'left split', 'middle', 'middle split', 'right', 'right split', 'dealer')
+HANDLIST = ('left reg', 'left split', 'middle reg', 'middle split', 'right reg', 'right split', 'dealer reg')
 
 
 def main(): # main game function
@@ -2117,14 +2117,15 @@ def playBlackjack():
             # remainginPlayers as well.
             tableObj.phase = 'dealer'
             dealersTurn(remainingHands, remainingPlayers, roundCounter)
-
-            # Finally, we have the endRound. This resets function will reset
+            
+            # Finally, we have the endOfRound. This resets function will reset
             # results, eliminate players who busted, reset hands and bets for
             # players who remain in the game.
-            
-            # pygame.display.update()  # This pair of commands ends the game's
-            # pygame.time.wait(33)     # event loop by refreshing the screen.
-            # FPSCLOCK.tick()          # 33ms wait = 30fps.
+            tableObj.phase = 'end'
+            endOfRound(roundCounter)
+            endRound = True
+            # The endRound variable ends the while loop for each round.
+        # End of game while loop
     return # playBlackjack
 
 def removeActivePlayer(seat, rounds):
@@ -2276,13 +2277,17 @@ def isPlayerStillThere(seat):
     OUTPUTS: boolean, True if occupied, False otherwise.
     """
     # Some player positions may be empty.
+    print("isPlayerStillThere: Status: seat is {0}.".format(seat))
     try:
         playerName = tableObj.players[seat].name
     except:
         # Player position is empty. Skip it.
         print("isPlayerStillThere: No player at seat {}. Skipping it.".format(seat))
+        # pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
         return False
     else:
+        print("isPlayerStillThere: Player {0} is in seat {1}.".format(playerName, seat))
+        # pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
         return True
 
 def getBet(betType = 'reg'):
@@ -2662,13 +2667,13 @@ def dealRound(rounds):
     CardShoe.remove_top() to produce the card to be dealt. The results of each
     card dealt are stored in tableObj.results. This is a nested dictionary
     object. The keys point to:
-        'left'         : player in left seat, regular hand
+        'left reg'     : player in left seat, regular hand
         'left split'   : player in left seat, split hand
-        'middle'       : player in middle seat, regular hand
+        'middle reg'   : player in middle seat, regular hand
         'middle split' : player in middle seat, split hand
-        'right'        : player in right seat, regular hand
+        'right reg'    : player in right seat, regular hand
         'right split'  : player in right seat, split hand
-        'dealer'       : dealer's hand
+        'dealer reg'   : dealer's hand
     The statuses for these hands are:
         'blackjack'    : natural 21
         'playable'     : the hand is still playable
@@ -2695,37 +2700,34 @@ def dealRound(rounds):
     for seat in TABLESEATSALL:
         card = tableObj.deck.remove_top()
         if seat != 'dealer':
-            tableObj.results[seat] = tableObj.players[seat].add_card_to_hand(card)
+            tableObj.results[seat + ' reg'] = tableObj.players[seat].add_card_to_hand(card)
         else:
-            # Added to test fixes to checkForInsBet
-            if len(tableObj.tableDealer.hand) == 1:
-                card = ('K', card[1])
-            tableObj.results[seat] = tableObj.tableDealer.add_card_to_hand(card)
+            tableObj.results[seat + ' reg'] = tableObj.tableDealer.add_card_to_hand(card)
     refreshTable(tableObj.phase, rounds)
     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
     # Print out and deal with all blackjack results from the players. This is
-    # now an attribute of the class CasinoTable.
-    for seat in TABLESEATSALL:
+    # now an attribute of the class CasinoTable. The dealer having a hidden
+    # blackjack will dealt with on the Dealer's turn.
+    for seat in TABLESEATS:
         dealerLosses = 0
-        if tableObj.results[seat] == 'blackjack':
-            if seat != 'dealer':
-                winnings = int(tableObj.players[seat].bet * blackjackMultiplier)
-                dealerLosses += winnings
-                blackjackTextFirst  = "Congratulations, {}. You have a blackjack".format(tableObj.players[seat].name) 
-                blackjackTextSecond = "that paid out ${}.".format(winnings)
-                blackjackSurfFirst  = SCOREFONT.render(blackjackTextFirst, True, TEXTCOLOR)
-                blackjackRectFirst  = blackjackSurfFirst.get_rect(topleft = (posX, posY))
-                DISPLAYSURF.blit(blackjackSurfFirst, blackjackRectFirst)
-                posY += LINESPACING12
-                blackjackSurfSecond = SCOREFONT.render(blackjackTextSecond, True, TEXTCOLOR)
-                blackjackRectSecond = blackjackSurfSecond.get_rect(topleft = (posX, posY))
-                DISPLAYSURF.blit(blackjackSurfSecond, blackjackRectSecond)
-                pygame.display.update()
-                posY += LINESPACING12
-                # We need to add the winning to the player's bank. This method
-                # does it for us.
-                tableObj.players[seat].blackjack(blackjackMultiplier)
-                pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        if tableObj.results[seat + ' reg'] == 'blackjack':
+            winnings = int(tableObj.players[seat].bet * blackjackMultiplier)
+            dealerLosses += winnings
+            blackjackTextFirst  = "Congratulations, {}. You have a blackjack".format(tableObj.players[seat].name) 
+            blackjackTextSecond = "that paid out ${}.".format(winnings)
+            blackjackSurfFirst  = SCOREFONT.render(blackjackTextFirst, True, TEXTCOLOR)
+            blackjackRectFirst  = blackjackSurfFirst.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(blackjackSurfFirst, blackjackRectFirst)
+            posY += LINESPACING12
+            blackjackSurfSecond = SCOREFONT.render(blackjackTextSecond, True, TEXTCOLOR)
+            blackjackRectSecond = blackjackSurfSecond.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(blackjackSurfSecond, blackjackRectSecond)
+            pygame.display.update()
+            posY += LINESPACING12
+            # We need to add the winning to the player's bank. This method
+            # does it for us.
+            tableObj.players[seat].blackjack(blackjackMultiplier)
+            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
         # Now, we need to deduct the immediate losses the dealer suffered
         # from player blackjacks. The method below returns True if the
         # Dealer's bank survived the losses, False if this round of player
@@ -2880,7 +2882,7 @@ def checkForPairs(rounds):
     for seat in TABLESEATS:
         # Resetting playerTotalBets for the next iteration.
         playerTotalBets = 0
-        if isPlayerStillThere(seat) and tableObj.results[seat] == 'playable':
+        if isPlayerStillThere(seat) and tableObj.results[seat + ' reg'] == 'playable':
             # The player needs to exist before we can set these variables.
             playerName = tableObj.players[seat].name
             playerBank = tableObj.players[seat].bank
@@ -2968,13 +2970,13 @@ def dealSingleCard(seat, rounds, handType):
 
     This function also updates the results dictionary that is part of the 
         tableObj (tableObj.results). The keys for this dictionary are:
-        'left'         : player in left seat, regular hand
+        'left reg'     : player in left seat, regular hand
         'left split'   : player in left seat, split hand
-        'middle'       : player in middle seat, regular hand
+        'middle reg'   : player in middle seat, regular hand
         'middle split' : player in middle seat, split hand
-        'right'        : player in right seat, regular hand
+        'right reg'    : player in right seat, regular hand
         'right split'  : player in right seat, split hand
-        'dealer'       : dealer's hand
+        'dealer reg'   : dealer's hand
     The statuses for these hands are:
         'blackjack'    : natural 21
         'playable'     : the hand is still playable
@@ -3002,7 +3004,7 @@ def dealSingleCard(seat, rounds, handType):
     if handType == 'regular':
         result = tableObj.players[seat].add_card_to_hand(newCard)
         promptText = "Here is another card for your regular hand."
-        tableObj.results[seat] = result
+        tableObj.results[seat + ' reg'] = result
 
     elif handType == 'split regular':
         result = tableObj.players[seat].add_card_to_hand(newCard)
@@ -3010,7 +3012,7 @@ def dealSingleCard(seat, rounds, handType):
         # Blackjacks only count before splitting hands, not after.
         if result == 'blackjack':
             result = 'playable'
-        tableObj.results[seat] = result
+        tableObj.results[seat + ' reg'] = result
 
     elif handType == 'split new':
         result = tableObj.players[seat].add_card_to_split(newCard)
@@ -3025,7 +3027,7 @@ def dealSingleCard(seat, rounds, handType):
     elif handType == 'dealer':
         result = tableObj.tableDealer.add_card_to_hand(newCard)
         promptText = "Dealer takes another card."
-        tableObj.results['dealer'] = result
+        tableObj.results['dealer reg'] = result
     
     # Now, we need to update the whole table layout and add to it the text
     # for the hand that will receive the newly dealt card.
@@ -3123,7 +3125,7 @@ def doubleDown(rounds):
             posY = TOPMARGIN
 
             # A hand that is 'playable' has neither won already nor busted.
-            if tableObj.results[seat] == 'playable':
+            if tableObj.results[seat + ' reg'] == 'playable':
                 print("doubleDown: Asking Player {0} to raise bet.".format(playerName))
                 raiseText = "{0}, would like to raise your regular bet?".format(playerName)
                 raiseSurf = PROMPTFONT.render(raiseText, True, TEXTCOLOR)
@@ -3204,7 +3206,7 @@ def hitOrStand(rounds):
             remainingPlayers += 1
             playerLosses = 0
             # This loop continues until the player says stop or the hand busts.
-            while tableObj.results[seat] == 'playable':
+            while tableObj.results[seat + ' reg'] == 'playable':
                 # Reset the position to the upper left of the status corner
                 # and clear the status corner. Increment the hands counter.
                 remainingHands += 1
@@ -3224,7 +3226,7 @@ def hitOrStand(rounds):
                     # Breaks the loop if the user does not want another card.
                     break
                 refreshTable(partOfRound, rounds)
-                if tableObj.results[seat] == 'bust':
+                if tableObj.results[seat + ' reg'] == 'bust':
                     # Decrement hand counter since this one is defunct.
                     remainingHands -= 1
                     # Increment the player's losses
@@ -3409,15 +3411,12 @@ def eliminatePlayer(seat):
     function.
     INPUTS: seat, string, indicating the seat the player was in before
         breaking their bank
-    OUTPUTS: Boolean
-        True: Player successfully removed
-        False: Player could not be removed
     """
+    playerName = tableObj.players[seat].name
+    print("eliminatePlayer: Status: seat for elimination is {0}.".format(seat))
+    print("eliminatePlayer: Status: Player to be eliminated is {0}.".format(playerName))
     del tableObj.players[seat]
-    if isPlayerStillThere(seat):
-        return False
-    else:
-        return True
+    return
 
 def dealersTurn(remainingHands, remainingPlayers, rounds):
     """
@@ -3459,7 +3458,7 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     # have a case of the user losing the game.
     # Note: All of these variables are booleans using logical expression for
     # variable assignment.
-    dealerBlackjack = (tableObj.results['dealer'] == 'blackjack')
+    dealerBlackjack = (tableObj.results['dealer reg'] == 'blackjack')
     noHandsRemain = (remainingHands == 0)
     userLosesGame = (remainingPlayers == 0)
     dealerLosses = 0
@@ -3489,7 +3488,7 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
         blackjackTextSecond = "All insurance bets lose."
 
     blackjackSurfFirst  = SCOREFONT.render(blackjackTextFirst, True, TEXTCOLOR)
-    blackjackSurfSecond = SCOREFONT.render(blackjackSurfSecond, True, TEXTCOLOR)
+    blackjackSurfSecond = SCOREFONT.render(blackjackTextSecond, True, TEXTCOLOR)
     blackjackRectFirst  = blackjackSurfFirst.get_rect(topleft = (posX, posY))
     posY += LINESPACING12
     blackjackRectSecond = blackjackSurfSecond.get_rect(topleft = (posX, posY))
@@ -3554,11 +3553,14 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
         # The str.split() method turns a string into a list, or in this case,
         # one or two list entries.
         seat, handType = possibleHand.split(' ')
-        if isPlayerStillThere(seat):
+        # This keeps kicking out a 'dealer is not there message'. So, I am 
+        # going to swap the order of the booleans.
+        if seat != 'dealer' and isPlayerStillThere(seat):
+            print("dealersTurn: Status: possibleHand is {0}. seat is {1}. handType is {2}. result is {3}.".format(possibleHand, seat, handType, tableObj.results[possibleHand]))
+            # We are skipping the dealer because we are collecting data on 
+            # players' hands.
             handStatus = tableObj.results[possibleHand]
-            if handStatus == 'playable' and\
-               handType != 'split' and\
-               seat != 'dealer':
+            if handStatus == 'playable' and handType != 'split':
                 # This is a playable regular hand. First, we check the scores
                 # for the hand.
                 softScore = tableObj.players[seat].soft_hand_score
@@ -3568,9 +3570,7 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
                 # ensure that the dealer plays their hand properly.
                 playableScores.append(softScore)
                 playableHands.append(possibleHand)
-            elif handStatus == 'playable' and\
-                 handType == 'split' and\
-                 seat != 'dealer':
+            elif handStatus == 'playable' and handType == 'split':
                 # This is a split hand. Again, we check the scores and 
                 # append them to our list playableScores.
                 softScore = tableObj.players[seat].soft_split_score
@@ -3581,9 +3581,11 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     # We need to sort this list of scores in case the minScore is too small
     # to use.
     playableScores.sort
+    print("dealersTurn: Status: playableScores is {0}.".format(playableScores))
+    print("dealersTurn: Status: playableHands is {0}.".format(playableHands))
     maxScore = max(playableScores)
     minScore = min(playableScores)
-    while minScore < 17:
+    while minScore < 17 and len(playableScores) > 1:
         # The score must be greater than 17. It is possible for players to
         # stand at 12 or 13 and wait to see if the dealer busts. So, we will
         # remove the bottom score and get a new minScore until we reach the
@@ -3601,20 +3603,20 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     #   'stand' : The dealer's score met the criteria that forces the dealer
     #               stand.
     #   'bust'  : The dealer's hand busted.
-    while tablObj.results['dealer'] not in ('stand', 'bust'):
+    while tableObj.results['dealer reg'] not in ('stand', 'bust'):
         refreshTable('dealer', rounds)
         dealerHardScore = tableObj.tableDealer.hard_hand_score
         dealerSoftScore = tableObj.tableDealer.soft_hand_score
         # Set positionals.
         posX = LEFTMARGIN
-        poxY = TOPMARGIN
+        posY = TOPMARGIN
         # First, we have to look at the scores that dealer has for its hand.
         # This will determine what actions to take next. We are not starting
         # with busts because Dealer.add_card_to_hand() will tell us if the
         # next card added to the dealer's hand caused a bust.
         if 21 >= dealerHardScore > 16:
             # Dealer must stand on a hard 17 or higher.
-            tableObj.results['dealer'] = 'stand'
+            tableObj.results['dealer reg'] = 'stand'
             dealerStandText = "Dealer must stand on a {0}.".format(dealerHardScore)
             dealerStandSurf = SCOREFONT.render(dealerStandText, True, TEXTCOLOR)
             dealerStandRect = dealerStandSurf.get_rect(topleft = (posX, posY))
@@ -3629,7 +3631,7 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
         if dealerHardScore <= 16 and\
            dealerSoftScore > minScore and\
            minScore >= 16:
-            tableObj.results['dealer'] = 'stand'
+            tableObj.results['dealer reg'] = 'stand'
             dealerStandTextFirst  = "Dealer has a soft {0}, which is greater".format(dealerSoftScore)
             dealerStandTextSecond = "than 16 and the minimum player score of {0}.".format(minScore)
             dealerStandTextThird  = "Dealer must stand."
@@ -3652,7 +3654,7 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
         card = tableObj.deck.remove_top()
         result = tableObj.tableDealer.add_card_to_hand(card)
         refreshTable('dealer', rounds)
-        if result = 'bust':
+        if result == 'bust':
             hardScore = tableObj.tableDealer.hard_hand_score
             dealerBustTextFirst  = "Dealer busts with a hard {0}.".format(hardScore)
             dealerBustTextSecond = "All remaining players win their bets."
@@ -3666,7 +3668,7 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
             DISPLAYSURF.blit(dealerBustSurfSecond, dealerBustRectSecond)
             pygame.display.update()
             pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
-            dealerBusts():
+            dealerBusts(rounds)
             return
         # The result can only be 'playable' at this point. A playable hand
         # requires that the loop continue until the dealer busts or has to
@@ -3679,8 +3681,9 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     # since the dealer would not have taken another card. We also collected
     # the playable hands, so we can find them again.
     for hand in playableHands:
-        seat, split = hand.split(' ')
-        if split == 'split':
+        seat, handType = hand.split(' ')
+        print("dealersTurn: Status: Determining win/lose/tie. seat is {0}. handType is {1}. result is {2}".format(seat, handType, tableObj.results[hand]))
+        if handType == 'split':
             # This is a split hand. To determine a winner, we only need the
             # highest score the dealer or the player could achieve, which is
             # the soft score. Remember, blackjack is a hand formed by the
@@ -3697,12 +3700,13 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
             # The player lost their bet. For now, we are going to change
             # the results from playable to 'loss'.
             tableObj.results[hand] = 'loss'
-        elif dealerSoftScore = playerSoftScore:
+        elif dealerSoftScore == playerSoftScore:
             # This is a tie. Ties are treated as a draw.
             tableObj.results[hand] = 'tie'
         else: # dealerSoftScore < playerSoftScore
             # The player won against the dealer.
             tableObj.results[hand] = 'win'
+        print("dealersTurn: Status: win/lose/tie determined. seat is {0}. handType is {1}. result is {2}".format(seat, handType, tableObj.results[hand]))
 
     # All of the results have been tabulated, but we have only distributed
     # the wins and losses for blackjack and busted hands. Now, we need to
@@ -3713,19 +3717,22 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     # give players their winning and deduct losses using the Player wins,
     # tie, and loss for each hand. These methods also give feedback, so that
     # we will know if a player has to be eliminated.
+    # Note: playableHands is the list of hands that players had after the
+    # players' turns were over.
     # Reset the ordinals. All of these results should be printable in the
     # status window with the right spacing.
     clearStatusCorner()
     posX = LEFTMARGIN
     posY = TOPMARGIN
-    for hand in HANDLIST:
-        seat, split = hand.split(' ')
+    for hand in playableHands:
+        seat, handType = hand.split(' ')
+        print("dealersTurn: Status: Distributing wins and losses. seat is {0}. handType is {1}. result is {2}".format(seat, handType, tableObj.results[hand]))
         if tableObj.results[hand] == 'win':
             playerName = tableObj.players[seat].name
             # Players cannot be eliminated by a win. If they were already
             # insolvent and this win is not enough to save their bank, the
             # function findDefunctPlayer will identify and remove them.
-            if split == 'split':
+            if handType == 'split':
                 betAmt = tableObj.players[seat].split_bet
                 playerStatus = tableObj.players[seat].split_win()
                 playerHandText = "{0} won the bet of ${1} on their split hand.".format(playerName, betAmt)
@@ -3741,11 +3748,11 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
             pygame.display.update()
             pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
 
-        elif tableObj.results[seat] == 'tie':
+        elif tableObj.results[hand] == 'tie':
             playerName = tableObj.players[seat].name
             # Players cannot be eliminated by a tie. If they were already
             # insolvent, findDefunctPlayer will identify and remove them.
-            if split == 'split':
+            if handType == 'split':
                 betAmt = tableObj.players[seat].split_bet
                 playerStatus = tableObj.players[seat].split_tie()
                 playerHandText = "{0} tied on their split hand.".format(playerName)
@@ -3761,12 +3768,12 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
             pygame.display.update()
             pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
         
-        elif tableObj.results[seat] == 'loss':
+        elif tableObj.results[hand] == 'loss':
             playerName = tableObj.players[seat].name
             # Players losing bets can be eliminated from the game at this
             # point. For that reason, all of these outcomes had to be
             # handled separately.
-            if split == 'split':
+            if handType == 'split':
                 betAmt = tableObj.players[seat].split_bet
                 playerStatus = tableObj.players[seat].split_loss()
                 dealerWins += betAmt
@@ -3776,9 +3783,9 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
                 posY += LINESPACING12
             else: # It is a regular hand.
                 betAmt = tableObj.players[seat].bet
-                playerStatus = tableObj.players[seat].loss()
+                playerStatus = tableObj.players[seat].reg_loss()
                 dealerWins += betAmt
-                playerHandText = "{0} lost the bet of {1} on their split hand.".format(playerName, betAmt)
+                playerHandText = "{0} lost the bet of {1} on their regular hand.".format(playerName, betAmt)
                 playerHandSurf = SCOREFONT.render(playerHandText, True, TEXTCOLOR)
                 playerHandRect = playerHandSurf.get_rect(topleft = (posX, posY))
                 posY += LINESPACING12
@@ -3789,12 +3796,12 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
                 playerStatusSurf = SCOREFONT.render(playerStatusText, True, TEXTCOLOR)
                 playerStatusRect = playerStatusSurf.get_rect(topleft = (posX, posY))
                 posY += LINESPACING12
-                eliminatePlayer(seat)
             else: # The player is insolvent.
                 playerStatusText = "This player is insolvent and was eliminated."
                 playerStatusSurf = PROMPTFONT.render(playerStatusText, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
                 playerStatusRect = playerStatusSurf.get_rect(topleft = (posX, posY))
                 posY += LINESPACING18
+                eliminatePlayer(seat)
                 # The line spacing needs to be greater because PROMPTFONT
                 # is bigger.
             DISPLAYSURF.blit(playerHandSurf, playerHandRect)
@@ -3891,7 +3898,7 @@ def resolveInsBets(dealerBlackjack):
                     resultTextFirst  = "{0} lost ${1} on this bet and is insolvent.".format(playerName, betAmt)
                     # We need to check to see if the player still has a
                     # playable hand. If so, they will not be eliminated.
-                    if tableObj.results[seat] == 'playable' or\
+                    if tableObj.results[seat + ' reg'] == 'playable' or\
                        tableobj.results[seat + ' split'] == 'playable':
                         resultTextSecond = "{0} has at least one playable hand.".format(playerName)
                         resultTextThird  = "This player will not eliminated, yet."
@@ -3965,7 +3972,8 @@ def dealerHasBlackjack():
     # We need to process all of the hands marked "playable". All of them 
     # are losses for the players in question.
     for hand in HANDLIST:
-        seat, split = hand.split(' ')
+        seat, handType = hand.split(' ')
+        print("dealerHasBlackjack: Status: Looking for playable hands. seat is {0}. handType is {1}. result is {2}".format(seat, handType, tableObj.results[hand]))
         if isPlayerStillThere(seat):
             # Incremement the player counter.
             remainingPlayers += 1
@@ -3973,7 +3981,7 @@ def dealerHasBlackjack():
                 # Set this one to a loss.
                 tableObj.results[hand] = 'loss'
                 playerName = tableObj.players[seat].name
-                if split == 'split':
+                if handType == 'split':
                     # This is a split hand.
                     betAmt = tableObj.players[seat].split_bet
                     playerStatus = tableObj.players[seat].split_loss()
@@ -4004,7 +4012,7 @@ def dealerHasBlackjack():
                     # Reduce the player counter.
                     remainingPlayers -+ 1
                 # The status printout can use a common blit command block.
-                DISPLAYSURF()playerStatusSurf, playerStatusRect
+                DISPLAYSURF(playerStatusSurf, playerStatusRect)
                 pygame.display.update()
                 pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
             # End of hand filter
@@ -4012,10 +4020,12 @@ def dealerHasBlackjack():
     # End of for loop through HANDLIST
     return remainingPlayers # dealerHasBlackjack
 
-def dealerBusts():
+def dealerBusts(rounds):
     """
     This function handles the automatic wins for players with playable hands.
     It returns True if the dealer is solvent, or False otherwise.
+    INPUTS: rounds, integer current number of the round of play
+    OUTPUTS: None. All output is to the game screen.
     """
     # First, clear the status corner and reset the positionals. We need an
     # aggregator for the dealer's losses, in case this causes the dealer to
@@ -4027,13 +4037,14 @@ def dealerBusts():
     dealerLosses = 0
     # We need find and process all of the playable hands.
     for hand in HANDLIST:
-        seat, split = hand.split(' ')
+        seat, handType = hand.split(' ')
+        print("dealerBusts: Status: Looking for playable hands. seat is {0}. handType is {1}. result is {2}.".format(seat, handType, tableObj.results[hand]))
         if isPlayerStillThere(seat):
             if tableObj.results[hand] == 'playable':
                 # Change the result to 'win'
                 tableObj.results[hand] = 'win'
                 playerName = tableObj.players[seat].name
-                if split == 'split':
+                if handType == 'split':
                     # This is a split hand.
                     betAmt = tableObj.players[seat].split_bet
                     # We do not need a status since players are not eliminated
@@ -4041,7 +4052,7 @@ def dealerBusts():
                     tableObj.players[seat].split_win()
                 else: # This is a regular hand.
                     betAmt = tableObj.players[seat].bet
-                    tableObj.players[seat].reg_win()
+                    tableObj.players[seat].win()
                 dealerLosses += betAmt
                 playerHandText = "{0} won their bet of ${1}.".format(playerName, betAmt)
                 playerHandSurf = SCOREFONT.render(playerHandText, True, TEXTCOLOR)
@@ -4120,16 +4131,157 @@ def findDefunctPlayer():
     # End of for loop through table seats
     return remainingPlayers # findDefunctPlayers                
 
-def endOfRound():
+def endOfRound(rounds):
     """
     This function clears out the bets and hands from the round. It finishs
-    distributing wins and losses by the players and the dealer. Finally, it
+    distributing wins and losses by the players and the dealer. It also
     gives the user an analysis of the viability of the remaining players to
     help the user decide who to withdraw (if any) at the start of the next
     round. This analysis is similar to the report main() prints out when the
-    user chooses a dealer.
+    user chooses a dealer. The final thing it does is give the user the
+    option to replace the CardShoe. If the CardShoe is down to 100 cards or
+    less, it will do it automatically.
+    INPUTS: rounds, integer number of the current round
+    OUTPUTS: None. All output is to the game screen
     """
-    pass
+    # First, we start with resetting the data for the players. The Player
+    # and Dealer Classes have an end_round() method that resets eveything
+    # except the name and bank of both.
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            # We cannot reset data that isn't there to begin with.
+            tableObj.players[seat].end_round()
+    # Now, run the end_round() method for the Dealer.
+    tableObj.tableDealer.end_round()
+    refreshTable('end', rounds)
+    
+    # Now, all of the bets, hands, and flags have been reset. The next step
+    # is to analyze the viability of each player, so that the user can make
+    # an informed decision about which players to withdraw at the beginining
+    # of the next round.
+    # Clear the status corner and reset positionals.
+    clearStatusCorner()
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            playerName = tableObj.players[seat].name
+            playerBank = tableObj.players[seat].bank
+            tableMin = tableObj.min_bet
+            # We need to calculate how many rounds the player can survive
+            # with only a minimum ante bet.
+            playerSurvival = 0
+            while (playerSurvival <= 20) and (playerSurvival * tableMin < playerBank):
+                playerSurvival += 1
+            # The routine the main() function is a little less complete than
+            # this one will be. First, we need to determine if any players
+            # will be unable to make the ante next round.
+            if playerBank < tableMin:
+                warningTextFirst  = "{0} cannot afford the ante next round.".format(playerName)
+                warningTextSecond = "Withdraw this player at the start of."
+                warningTextThird  = "the next round to prevent elimination."
+            elif 1 <= playerSurvival <= 20:
+                # This player can ante up at least. They can survive up to
+                # ten rounds as well.
+                warningTextFirst  = "{0} can survive at least {1} rounds making".format(playerName, playerSurvival)
+                warningTextSecond = "minimum bets. This is a small number."
+                warningTextThird  = "Consider withdrawing this player soon."
+            else: # The player is viable.
+                warningTextFirst  = "{0} can survive more than {1} round making".format(playerName, playerSurvival)
+                warningTextSecond = "minmum bets. This player should be viable"
+                warningTextThird  = "for several more rounds."
+            warningSurfFirst  = PROMPTFONT.render(warningTextFirst, True, TEXTCOLOR)
+            warningSurfSecond = PROMPTFONT.render(warningTextSecond, True, TEXTCOLOR)
+            warningSurfThird  = PROMPTFONT.render(warningTextThird, True, TEXTCOLOR)
+            warningRectFirst  = warningSurfFirst.get_rect(topleft = (posX, posY))
+            posY += LINESPACING18
+            warningRectSecond = warningSurfSecond.get_rect(topleft = (posX, posY))
+            posY += LINESPACING18
+            warningRectThird  = warningSurfThird.get_rect(topleft = (posX, posY))
+            posY += LINESPACING18
+            DISPLAYSURF.blit(warningSurfFirst, warningRectFirst)
+            DISPLAYSURF.blit(warningSurfSecond, warningRectSecond)
+            DISPLAYSURF.blit(warningSurfThird, warningRectThird)
+            pygame.display.update()
+        # End of occupied seat filter.
+    # End of for loop through seats.
+    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+
+    # Now, we need to check the CardShoe to see if it has at least 100 cards
+    # left in it. Each round, the user can ask for a new shoe (six decks of
+    # 52 cards each). When the deck drop to 100 cards, it is replaced
+    # automatically. The replaceDeck boolean allows us to use a common set of
+    # display commands.
+    # The analysis can run fairly far down the screen. So, it is better to
+    # refresh the entire screen this time.
+    refreshTable('end', rounds)
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    remainingCards = len(tableObj.deck)
+    replaceDeck = False
+    if remainingCards < 100:
+        deckReplaceTextFirst  = "The casino replaces card shoes below 100"
+        deckReplaceTextSecond = "cards remaining. This one has {0}.".format(remainingCards)
+        deckReplaceTextThird  = "The card shoe will be replaced with a new one."
+        replaceDeck = True
+        # Flipping this flag to True means that the checkForYesNo will be
+        # skipped further below.
+    else:
+        deckReplaceTextFirst  = "The current deck show has {0} card left.".format(remainingCards)
+        deckReplaceTextSecond = "While this is higher than the 100 card"
+        deckReplaceTextThird  = "minimum, I will replace it if you want me to."
+    # Here is the common printout block.
+    deckReplaceSurfFirst  = PROMPTFONT.render(deckReplaceTextFirst, True, TEXTCOLOR)
+    deckReplaceSurfSecond = PROMPTFONT.render(deckReplaceTextSecond, True, TEXTCOLOR)
+    deckReplaceSurfThird  = PROMPTFONT.render(deckReplaceTextThird, True, TEXTCOLOR)
+    deckReplaceRectFirst  = deckReplaceSurfFirst.get_rect(topleft = (posX, posY))
+    posY += LINESPACING18
+    deckReplaceRectSecond = deckReplaceSurfSecond.get_rect(topleft = (posX, posY))
+    posY += LINESPACING18
+    deckReplaceRectThird  = deckReplaceSurfThird.get_rect(topleft = (posX, posY))
+    posY += LINESPACING18
+    DISPLAYSURF.blit(deckReplaceSurfFirst, deckReplaceRectFirst)
+    DISPLAYSURF.blit(deckReplaceSurfSecond, deckReplaceRectSecond)
+    DISPLAYSURF.blit(deckReplaceSurfThird, deckReplaceRectThird)
+    pygame.display.update()
+    if replaceDeck:
+        tableObj.deck.replace_cardshoe()
+        deckReplaceTextFourth = "Deck shoe has been replaced."
+        deckReplaceSurfFourth = PROMPTFONT.render(deckReplaceTextFourth, True, TEXTCOLOR)
+        deckReplaceRectFourth = deckReplaceSurfFourth.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(deckReplaceSurfFourth, deckReplaceRectFourth)
+        pygame.display.update()
+        refreshTable('end', rounds)
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+    else: # The user can choose to replace it.
+        deckReplaceTextFourth = "Would like me to replace the deck shoe?"
+        deckReplaceSurfFourth = PROMPTFONT.render(deckReplaceTextFourth, True, TEXTCOLOR)
+        deckReplaceRectFourth = deckReplaceSurfFourth.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(deckReplaceSurfFourth, deckReplaceRectFourth)
+        pygame.display.update()
+        replaceDeck = checkForYesNo(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        # Now, we will replace it depending on the players choice. Either way
+        # we need to clear the screen and reset the positionals.
+        refreshTable('end', rounds)
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        if replaceDeck:
+            tableObj.replace_cardshoe()
+            deckReplaceTextFifth = "Deck shoe has been replaced."
+        else: # User kept the deck shoe as is.
+            deckReplaceTextFifth = "Deck shoe has not been replaced."
+        # Common display block.
+        deckReplaceSurfFifth = PROMPTFONT.render(deckReplaceTextFifth, True, TEXTCOLOR)
+        deckReplaceRectFifth = deckReplaceSurfFifth.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(deckReplaceSurfFifth, deckReplaceRectFifth)
+        pygame.display.update()
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+    
+    # Finally, we need to return the hand results to None.
+    for hand in HANDLIST:
+        tableObj.results[hand] = None
+    print("endOfRound: Hand Results are now {0}.".format(tableObj.results))
+    return # endOfRound
 
 def playersWinGame():
     """

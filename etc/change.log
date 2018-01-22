@@ -665,3 +665,11 @@ Casino (game): findDefunctPlayer: Created this function to check at the end of a
 Casino (game): endOfRound: This is a stub for the function that will clear bets, hands, and results at the end of the round.
 Casino (game): playerWinGame: This is s stub for the function that will handle the case of the dealer breaking its bank (and the user and players winning).
 Casino (game): userLostGame: This a stub for the function that will handle the aftermath of all players being eliminated by breaking their banks.
+
+1/21/18 21:43 Pushed to origin pygame
+
+Casino (game): Constants: To fix bugs in dealersTurn and its related functions, changed HANDLIST to ('left reg', 'left split', 'middle reg', 'middle split', 'right reg', 'dealer reg'). The required changes to dealRound (references to regular hands), checkForPairs (references to regular hands), dealSingleCard (references to regular hands), doubleDown (references to regular hands), hitOrStand (references to regular hands), dealersTurn (references to regular hands), resolveInsBets (references to regular hands), CasinoTable comment block, CasinoTable.__init__ (changed how the results are initialized), and CasinoTable constant HANDLIST (created).
+Casino (game): dealRound: Removed code used to test checkInsBets.
+Casino (game): isPlayerStillThere: Fixed a bug that allowed this function to used to check the dealer's status. Fix affects dealersTurn.
+Casino (game): endOfRound: Changed the screen refresh after player analysis from clearStatusCorner to refreshTable to clear out wandering text.
+Casino (game): dealersTurn: Fixed a typo that caused all losing playable hands to print out as split hands. Also fixed a bug in the logic underlying the stanza regarding changing cardshoes to ask the player, perform the action or not as directed, clear the status corner, and print out a message confirming that the player's request had been performed.

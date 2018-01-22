@@ -1301,6 +1301,7 @@ class CasinoTable(object):
         TABLESEATS: maps players number to a table seat.
         TABLESIZE:  TABLESIZE: integer, max number of players seatable at
             the table, currently 3 at 1024x768 resolution
+        HANDLIST: lists all possible hands players and dealer might have
 
     
     Attributes:
@@ -1332,19 +1333,20 @@ class CasinoTable(object):
                'middle' : middle player's turn (if there is one)
                'right'  : right player's turn (if there is one)
                'dealer' : dealer's turn
+               'end'    : end of round
         seat: This is the current player position, indicating which player is
             the focus of the game. Valid values are: None, 'left', middle',
             'right', or 'dealer'
         results: This dictionary stores the status of the player's hand after
             a card has been added to it or the hands split. It also stores
             dealer's hand status. The key set maps as follows:
-                'left'         : player in left seat, regular hand
+                'left reg'     : player in left seat, regular hand
                 'left split'   : player in left seat, split hand
-                'middle'       : player in middle seat, regular hand
+                'middle reg'   : player in middle seat, regular hand
                 'middle split' : player in middle seat, split hand
-                'right'        : player in right seat, regular hand
+                'right reg'    : player in right seat, regular hand
                 'right split'  : player in right seat, split hand
-                'dealer'       : dealer's hand
+                'dealer reg'   : dealer's hand
             The statuses for these hands are:
                 'blackjack'    : natural 21
                 'playable'     : the hand is still playable
@@ -1424,6 +1426,9 @@ class CasinoTable(object):
 
     # This resolution restriction also restricts the TABLESIZE to 3 as well.
     TABLESIZE = 3
+
+    # This constant lists all of the possible hand types.
+    HANDLIST = ('left reg', 'left split', 'middle reg', 'middle split', 'right reg', 'right split', 'dealer reg')
     
     def __init__(self,
                  playerNames          = list({'name' : 'Fred', 'bank' : 50000}),
@@ -1464,13 +1469,13 @@ class CasinoTable(object):
             results: This dictionary stores the status of the player's hand
                 after a card has been added to it or the hands split. It also
                 stores dealer's hand status. The key set maps as follows:
-                    'left'         : player in left seat, regular hand
+                    'left reg'     : player in left seat, regular hand
                     'left split'   : player in left seat, split hand
-                    'middle'       : player in middle seat, regular hand
+                    'middle reg'   : player in middle seat, regular hand
                     'middle split' : player in middle seat, split hand
-                    'right'        : player in right seat, regular hand
+                    'right reg'    : player in right seat, regular hand
                     'right split'  : player in right seat, split hand
-                    'dealer'       : dealer's hand
+                    'dealer reg'   : dealer's hand
                 The statuses for these hands are:
                     'blackjack'    : natural 21
                     'playable'     : the hand is still playable
@@ -1515,22 +1520,8 @@ class CasinoTable(object):
         # Now, we prepare a new attribute, results, which stores the current
         # status of any hands a player or dealer has.
         self.results = {}
-        for seat in ('left', 'middle', 'right', 'dealer'):
-            if seat != 'dealer':
-                try:
-                    nameTest = self.players[seat].name
-                except:
-                    # Skip it because the player's seat is empty.
-                    continue
-                else:
-                    hand = seat
-                    split_hand = seat + ' split'
-                    self.results[hand] = 'none'
-                    self.results[split_hand] = 'none'
-            else: # The seat is the dealer.
-                hand = seat
-                self.results[hand] = 'none'
-
+        for hand in self.HANDLIST:
+            self.results[hand] = None
 
         # Finally, we need to create a deck using the CardShoe class.
         self.deck = CardShoe()
