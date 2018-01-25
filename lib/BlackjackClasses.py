@@ -1324,16 +1324,17 @@ class CasinoTable(object):
         numPlayers: the actual number of players the user has for this game.
         phase: This is the current phase of the game round. There are several
             values for this variable:
-               'pregame': indicates that the game has not started.
-               'start'  : allows the user to withdraw players before ante
-               'ante'   : collecting initial bets from players
-               'deal'   : dealing the cards, split hands and insurance bets
-               'raise'  : option to raise bets
-               'left'   : left player's turn (must be one)
-               'middle' : middle player's turn (if there is one)
-               'right'  : right player's turn (if there is one)
-               'dealer' : dealer's turn
-               'end'    : end of round
+               'pregame' : indicates that the game has not started.
+               'start'   : allows the user to withdraw players before ante
+               'ante'    : collecting initial bets from players
+               'deal'    : dealing the cards, split hands and insurance bets
+               'raise'   : option to raise bets
+               'left'    : left player's turn (must be one)
+               'middle'  : middle player's turn (if there is one)
+               'right'   : right player's turn (if there is one)
+               'dealer'  : dealer's turn
+               'end'     : end of round
+               'postgame': ends the current game
         seat: This is the current player position, indicating which player is
             the focus of the game. Valid values are: None, 'left', middle',
             'right', or 'dealer'

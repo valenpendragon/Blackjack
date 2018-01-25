@@ -66,7 +66,7 @@ BUTTONHEIGHT       =   50  # height of action buttons
 BUTTONSPACING      =   75  # Spacing between action buttons
 OUTLINEWIDTH       =    5  # width of the outlines of butttons
 STATUSBLOCKWIDTH   =  400  # width of the status block (upper left corner)
-STATUSBLOCKHEIGHT  =  150  # height of the status block (upper left corner)
+STATUSBLOCKHEIGHT  =  145  # height of the status block (upper left corner)
 PHASEBLOCKWIDTH    =  100  # width of round phase block (upper right corner)
 PHASEBLOCKHEIGHT   =  100  # height of round phase block (upper right corner)
 
@@ -427,22 +427,24 @@ def main(): # main game function
     # Note: The following turn controls are also initialized with tableObj:
     # tableObj.phase: string indicating the current phase of the round of
     #       play. There are several values. This is a global variable.
-    #           'pregame': indicates that the game has not started.
-    #           'start'  : allows the user to withdraw players before ante
-    #           'ante'   : collecting initial bets from players
-    #           'deal'   : dealing the cards, split hands and insurance bets
-    #           'raise'  : option to raise bets
-    #           'left'   : left player's turn (must be one)
-    #           'middle' : middle player's turn (if there is one)
-    #           'right'  : right player's turn (if there is one)
-    #           'dealer' : dealer's turn
-    #           'end'    : end of the current round (clean up phase)
+    #           'pregame' : indicates that the game has not started.
+    #           'start'   : allows the user to withdraw players before ante
+    #           'ante'    : collecting initial bets from players
+    #           'deal'    : dealing the cards, split hands and insurance bets
+    #           'raise'   : option to raise bets
+    #           'left'    : left player's turn (must be one)
+    #           'middle'  : middle player's turn (if there is one)
+    #           'right'   : right player's turn (if there is one)
+    #           'dealer'  : dealer's turn
+    #           'end'     : end of the current round (clean up phase)
+    #           'postgame': ends the current game.
     # tableObj.seat: string indicating the seat of the player, used to
     #       indicate which player turn it is and as a dictionary key to get
     #       player data out of the tableObj.player dictionary. Valid values
     #       are None, 'left', 'middle', or 'right'.
     # Out of __init__, phase = 'pregame' and seat = None
     playBlackjack()
+    # main
 
 def terminate():
     """
@@ -574,15 +576,13 @@ def printTableDealer(tableDealer, output = 'player turn'):
     # Dealer's name and bank always print out regardless of the mode in this
     # function call.
     posY = 2 * LINESPACING12
-    if output == 'dealer turn':
-        outputTypeSurf = DATAFONT.render("Dealer's Turn", True, TEXTCOLOR)
-    elif output == 'diagnostic':
+    if output == 'diagnostic':
         outputTypeSurf = DATAFONT.render("Diagnostic Printout", True, TEXTCOLOR)
-    else: # Default behavior as 'player turn'.
-        outputTypeSurf = DATAFONT.render("Players' Turn", True, TEXTCOLOR)
-    outputTypeRect = outputTypeSurf.get_rect()
-    outputTypeRect.center = (WINCENTERX, posY)
-    DISPLAYSURF.blit(outputTypeSurf, outputTypeRect)
+        outputTypeRect = outputTypeSurf.get_rect()
+        outputTypeRect.center = (WINCENTERX, posY)
+        DISPLAYSURF.blit(outputTypeSurf, outputTypeRect)
+    # The dealer and player turn banners are no longer needed with the phase
+    # and turn numbers in the upper right corner.
     posY += 2 * LINESPACING12
     dealerNameSurf = BASICFONT.render("Dealer's Name: %s" % (tableDealer['name']), True, TEXTCOLOR)
     dealerNameRect = dealerNameSurf.get_rect()
@@ -1359,6 +1359,7 @@ def writeSavedGame(listPlayers, filename = './etc/savedgame.txt'):
             for lineOut in savedGameData:
                 savedGame.write(lineOut)
         return True
+    # writeSavedGame
 
 def pressSpaceToContinue(posX = WINDOWWIDTH, posY = WINDOWHEIGHT):
     """
@@ -1374,6 +1375,7 @@ def pressSpaceToContinue(posX = WINDOWWIDTH, posY = WINDOWHEIGHT):
                 Default: bottom corner of the screen
     OUTPUTS: All outputs are to the screen.
     """
+    displayRect = DISPLAYSURF.get_rect()
     while True:
         # In the lower right corner, print this message.
         textSurf = BASICFONT.render("Press spacebar to continue.", True, TEXTCOLOR)
@@ -1386,14 +1388,19 @@ def pressSpaceToContinue(posX = WINDOWWIDTH, posY = WINDOWHEIGHT):
             if event.key == K_ESCAPE:        # ESCAPE is also a 'quit' event
                 terminate()
 
-        for event in pygame.event.get(KEYDOWN):
+        for event in pygame.event.get():     # Removed KEYDOWN only type
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:    # These are also QUIT events.
                     terminate()
                 elif event.key == K_SPACE:
                     return
+            # This stanza is an effort to make the game screen become active
+            # after a change of focus.
+            elif event.type == MOUSEBUTTONDOWN and event.button == 1:
+                active = displayRect.collidepoint(event.pos)
         pygame.display.update()
         FPSCLOCK.tick()
+    return # pressSpaceToContinue
 
 def createPlayers():
     """
@@ -1449,7 +1456,8 @@ def createPlayers():
         nameTextboxRect.center = (WINCENTERX, posY)
         pNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = setupPlayer,
                                charFilter = 'alpha', enterClears = True, enterDeactivates = True)
-        playerName   = getTextboxNameEvents(pNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)            
+        playerName   = getTextboxNameEvents(pNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)
+    return # createPlayers
 
 def getTextboxNameEvents(Textbox, promptSurf, promptRect, Surface):
     """
@@ -1630,7 +1638,7 @@ def offerTableChoices(listDealers):
     dNameTextbox = Textbox((nameTextboxRect), fontSize = 18, command = getTableChoice,
                             charFilter = 'alpha', enterClears = True, enterDeactivates = True)
     dealerName   = getTextboxEvents(dNameTextbox, instTextSurf, instTextRect, DISPLAYSURF)
-    return
+    return # offerTableChoices
 
 def getTextboxEvents(Textbox, promptSurf, promptRect, Surface):
     """
@@ -1661,7 +1669,7 @@ def getTextboxEvents(Textbox, promptSurf, promptRect, Surface):
         Surface.blit(promptSurf, promptRect)
         pygame.display.update()
         FPSCLOCK.tick()
-    return
+    return # getTextboxEvents
         
 def getTableChoice(id, name):
     """
@@ -1796,6 +1804,7 @@ def checkForYesNo(posX = RIGHTMARGIN, posY = BOTTOMMARGIN, rectLocation = 'botto
         Note: There is also input from pygame.events.KEYDOWN events.
     OUTPUTS: True if Y was pressed, False is N was pressed.
     """
+    displayRect = DISPLAYSURF.get_rect()
     while True:  # event loop
         # In the lower right corner, print this message.
         textSurf = DATAFONT.render("Press Y or N to respond.", True, TEXTCOLOR)
@@ -1816,7 +1825,7 @@ def checkForYesNo(posX = RIGHTMARGIN, posY = BOTTOMMARGIN, rectLocation = 'botto
             if event.key == K_ESCAPE:        # ESCAPE is also a 'quit' event
                 terminate()
 
-        for event in pygame.event.get(KEYDOWN):
+        for event in pygame.event.get():     # Removed KEYDOWN only type
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:    # These are also QUIT events.
                     terminate()
@@ -1824,8 +1833,13 @@ def checkForYesNo(posX = RIGHTMARGIN, posY = BOTTOMMARGIN, rectLocation = 'botto
                     return True
                 elif event.key == K_n:
                     return False
+            # This stanza is an effort to make the game screen become active
+            # after a change of focus.
+            elif event.type == MOUSEBUTTONDOWN and event.button == 1:
+                active = displayRect.collidepoint(event.pos)
         pygame.display.update()
         FPSCLOCK.tick()
+    return # checkForYesNo
 
 
 def scrollText(filename):
@@ -1838,6 +1852,8 @@ def scrollText(filename):
     installError = False
     # Clear the screen.
     DISPLAYSURF.fill(BLACK)
+    # Extract a Rect object for the game screen. Normally, this is not needed.
+    displayRect = DISPLAYSURF.get_rect()
     # We have no way of knowing if the program is installed correctly or if
     # that are any potiential rights issues that might crop up. So, we are
     # going to "try" to open the file for reading. The installError is a flag
@@ -1893,6 +1909,17 @@ def scrollText(filename):
     # a line of text and replacing lines to make it scroll up. The loop
     # shifts all of the lines up one position.
     for fileLine in f:
+        # To keep this window active, we also need a loop in here to capture
+        # pygame events.
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    # Allow the user to escape out when they have read as
+                    # much text as they want to.
+                    return
+                elif event.type == MOUSEBUTTONDOWN and event.button == 1:
+                    # This code keeps the game active when it is in focus.
+                    active = displayRect.collidepoint(event.pos)
         # Clear the screen before each iteration.
         DISPLAYSURF.fill(BLACK)
         # Reset posY. posX is effectively a constant here.
@@ -1902,16 +1929,15 @@ def scrollText(filename):
             # changing the coordinates of the rect.topleft after
             # we copy the contents over.
             nextIndex = i + 1
-            # print("scrollText: textLines[i] equals {}.".format(textLines[i]))
+            print("scrollText: textLines[{0}] equals {1}.".format(i, textLines[i]))
             textLines[i] = textLines[nextIndex]
             textLines[i]['rect'].topleft = (posX, posY)
-            # print("scrollText: textLines[i] equals {}.".format(textLines[i]))
-            # print("scrollText: Blitting text {} on screen.".format(textLines[i]['text']))
+            print("scrollText: textLines[{0}] equals {1}.".format(i, textLines[i]))
+            print("scrollText: Blitting text {0} on screen.".format(textLines[i]['text']))
             DISPLAYSURF.blit(textLines[i]['surface'], textLines[i]['rect'])
             posY += LINESPACING18
         # Before we import the line from the file, we need to drop the newline
         # character at the end of the line.
-        # fileLineCleaned = filter(lambda x: x in string.printable, fileLine)
         fileLineCleaned = string.strip(fileLine)
         # Now, we need to import the line of text from the file and create
         # irs initial surface and rect object. It will use lastLine as its
@@ -1959,7 +1985,7 @@ def playBlackjack():
         tableObj, a CasinoTable object
         listPlayers. the global list of player dictionaries which must be
             updated as the game progresses
-    OUTPUT: listPlayers, updated with new bank amounts, removal of players who
+    OUTPUTS: listPlayers, updated with new bank amounts, removal of players who
         busted, and new table options (represented by the player's skill level)
     """
     roundCounter = 0
@@ -1987,145 +2013,147 @@ def playBlackjack():
     endGame = False
     while not endGame:  # This is the actual game loop. main() sets it up.
         roundCounter += 1
-        endRound = False
         tableObj.phase = 'start'
-        while not endRound:  # This is the primary event loop for the game.
-            # First, we print the table, the dealer, and the players.
-            DISPLAYSURF.fill(BGCOLOR)
-            refreshTable(tableObj.phase, roundCounter)
-            print("playBlackjack: tableObj contains {}".format(tableObj))
-            print("playBlackjack: Current Status: phase = {}".format(tableObj.phase))
-            # Before a round starts, the user may pull any player out of the
-            # game to keep them from being eliminated, including all three.
-            posX = LEFTMARGIN
-            posY = TOPMARGIN
-            leaveText = "Would you like to withdraw any players before this round starts?"
-            leaveSurf = BASICFONT.render(leaveText, True, TEXTCOLOR)
-            leaveRect = leaveSurf.get_rect(topleft = (posX, posY))
-            DISPLAYSURF.blit(leaveSurf, leaveRect)
+        # First, we print the table, the dealer, and the players.
+        DISPLAYSURF.fill(BGCOLOR)
+        refreshTable(tableObj.phase, roundCounter)
+        print("playBlackjack: tableObj contains {}".format(tableObj))
+        print("playBlackjack: Current Status: phase = {}".format(tableObj.phase))
+        # Before a round starts, the user may pull any player out of the
+        # game to keep them from being eliminated, including all three.
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        leaveText = "Would you like to withdraw any players before this round starts?"
+        leaveSurf = BASICFONT.render(leaveText, True, TEXTCOLOR)
+        leaveRect = leaveSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(leaveSurf, leaveRect)
+        posY += LINESPACING12
+        pygame.display.update()
+        # Clear the answer before resetting.
+        answer = checkForYesNo(posX, posY, 'topleft')
+        if answer == True:
+            # We need to ask about each player that still remains in the
+            # game. Note, we use seat here because we do not want to
+            # use the global variable, seat that will be very
+            # important in the player turns.
             posY += LINESPACING12
-            pygame.display.update()
-            # Clear the answer before resetting.
-            answer = checkForYesNo(posX, posY, 'topleft')
-            if answer == True:
-                # We need to ask about each player that still remains in the
-                # game. Note, we use seat here because we do not want to
-                # use the global variable, seat that will be very
-                # important in the player turns.
-                posY += LINESPACING12
-                for seat in TABLESEATS:
-                    if isPlayerStillThere(seat):
-                        withdrawText = "Would like to withdraw {}?".format(tableObj.players[seat].name)
-                        withdrawSurf = BASICFONT.render(withdrawText, True, TEXTCOLOR)
-                        withdrawRect = withdrawSurf.get_rect(topleft = (posX, posY))
-                        DISPLAYSURF.blit(withdrawSurf, withdrawRect)
-                        pygame.display.update()
-                        posY += LINESPACING12
-                        answer = checkForYesNo(posX, posY, 'topleft')
-                        if answer == True:
-                            # This function alters the tableObj.
-                            removeActivePlayer(seat, roundCounter)
-                            print("playBlackjack: tableObj is now {0}. Number of players remaining: {1}.".format(tableObj, tableObj.numPlayers))
-                        posY += LINESPACING12
-                    
-                # We need to offer the user a chance to save their players'
-                # progress if they pulled all of their players from the table.
-                if tableObj.numPlayers == 0:
-                    DISPLAYSURF.fill(BLACK)
-                    pygame.display.update()
-                    checkForQuit()
-                    print("playBlackjack: checkForQuit() completed.")
-                    # Even if the user does not want to quit, control must be
-                    # returned to main() to start a new game.
-                    return
-
-            # There was a flaw in the logic that would lock a player in a
-            # loop if the player had a non-zero bank, but one that is not
-            # sufficient to make an ante bet. (It also effected insurance
-            # and split hand bets.) Here, we prevent it by eliminating any
-            # player that cannot make the ante bet.
-            checkPlayerViability()
-
-            # Now, the game will call for ante amounts for initial bets on the
-            # hands. This also sets the maximum raise later in the round.
-            # This is a very interactive phase of the round, requiring that
-            # user ante up for each player. It will user another set of Textbox
-            # objects to get each initial bet.
-            # pdb.set_trace()
-            tableObj.phase = 'ante'
-            # Clear the screen and redraw the table.
-            DISPLAYSURF.fill(BGCOLOR)
-            pygame.display.update()
-            refreshTable(tableObj.phase, roundCounter)
             for seat in TABLESEATS:
                 if isPlayerStillThere(seat):
-                    while tableObj.players[seat].bet == 0:
-                        tableObj.seat = seat
-                        # This loop will continue until the player's ante
-                        # is a valid amount. There are other functions that
-                        # provide error messages, but not this one.
-                        getBet()
+                    withdrawText = "Would like to withdraw {}?".format(tableObj.players[seat].name)
+                    withdrawSurf = BASICFONT.render(withdrawText, True, TEXTCOLOR)
+                    withdrawRect = withdrawSurf.get_rect(topleft = (posX, posY))
+                    DISPLAYSURF.blit(withdrawSurf, withdrawRect)
+                    pygame.display.update()
+                    posY += LINESPACING12
+                    answer = checkForYesNo(posX, posY, 'topleft')
+                    if answer == True:
+                        # This function alters the tableObj.
+                        removeActivePlayer(seat, roundCounter)
+                        print("playBlackjack: tableObj is now {0}. Number of players remaining: {1}.".format(tableObj, tableObj.numPlayers))
+                    posY += LINESPACING12
+                    
+            # We need to offer the user a chance to save their players'
+            # progress if they pulled all of their players from the table.
+            if tableObj.numPlayers == 0:
+                DISPLAYSURF.fill(BLACK)
+                pygame.display.update()
+                checkForQuit()
+                print("playBlackjack: checkForQuit() completed.")
+                # Even if the user does not want to quit, control must be
+                # returned to main() to start a new game.
+                return
 
-            # Now, we refresh the screen to show the bets in place.
-            DISPLAYSURF.fill(BGCOLOR)
-            refreshTable(tableObj.phase, roundCounter)
-            pygame.display.update()
-            pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        # There was a flaw in the logic that would lock a player in a
+        # loop if the player had a non-zero bank, but one that is not
+        # sufficient to make an ante bet. (It also effected insurance
+        # and split hand bets.) Here, we prevent it by eliminating any
+        # player that cannot make the ante bet.
+        checkPlayerViability()
 
-            # The next phase is dealing the cards. The first round of dealt
-            # card includes the Dealer's hold (facedown) card.
-            tableObj.phase = 'deal'
-            # Deal first card.
-            dealRound(roundCounter)
-            # Deal second card.
-            dealRound(roundCounter)
+        # Now, the game will call for ante amounts for initial bets on the
+        # hands. This also sets the maximum raise later in the round.
+        # This is a very interactive phase of the round, requiring that
+        # user ante up for each player. It will user another set of Textbox
+        # objects to get each initial bet.
+        tableObj.phase = 'ante'
+        # Clear the screen and redraw the table.
+        DISPLAYSURF.fill(BGCOLOR)
+        pygame.display.update()
+        refreshTable(tableObj.phase, roundCounter)
+        for seat in TABLESEATS:
+            if isPlayerStillThere(seat):
+                while tableObj.players[seat].bet == 0:
+                    tableObj.seat = seat
+                    # This loop will continue until the player's ante
+                    # is a valid amount. There are other functions that
+                    # provide error messages, but not this one.
+                    getBet()
 
-            # Now that all players (dealer included) have a full hand and any
-            # player blackjacks have been resolved, we need to see if the
-            # dealer has a ten value card or an ace showing. If so, the
-            # players can bet on the dealer having a blackjack.
-            checkForInsBet()
+        # Now, we refresh the screen to show the bets in place.
+        DISPLAYSURF.fill(BGCOLOR)
+        refreshTable(tableObj.phase, roundCounter)
+        pygame.display.update()
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
 
-            # Next, we need to offer any players who have received a pair the
-            # opportuntity to split their hand. Once that is done, a 21 for
-            # either hand is not considered a blackjack. At best, it can tie
-            # dealer if the dealer has non-blackjack.
-            checkForPairs(roundCounter)
+        # The next phase is dealing the cards. The first round of dealt
+        # card includes the Dealer's hold (facedown) card.
+        tableObj.phase = 'deal'
+        # Deal first card.
+        dealRound(roundCounter)
+        # Deal second card.
+        dealRound(roundCounter)
 
-            # Now that all of the hands have been dealt, including split
-            # hands, and ante bets have been placed on all existing hands,
-            # it is time to offer the user the option of doubling down on
-            # some of the better looking blackjack hands.
-            tableObj.phase = 'raise'
-            doubleDown(roundCounter)
+        # Now that all players (dealer included) have a full hand and any
+        # player blackjacks have been resolved, we need to see if the
+        # dealer has a ten value card or an ace showing. If so, the
+        # players can bet on the dealer having a blackjack.
+        checkForInsBet()
 
-            # Bets have been raised on all hands. It is time for the player
-            # turns to begin. They will go counterclockwise, left, middle,
-            # then right. For each playable hand, the player has the option
-            # to hit or stand. Each time a card is dealt, the Player method
-            # add_card_to_hand or add_card_to_split will update the results
-            # dictionary with the status of their hand. The function
-            # checkForHitStand works very similarly to checkForYesNo.
-            # The function hitOrStand calls the others as it progresses.
-            # When finished, it will return a value indicating how many
-            # hands were still playable by the time the dealer's turn begins.
-            # The value determines if a dealer automatically wins all 
-            # remaining hands or has to actually play the turn.
-            remainingHands, remainingPlayers = hitOrStand(roundCounter)
+        # Next, we need to offer any players who have received a pair the
+        # opportuntity to split their hand. Once that is done, a 21 for
+        # either hand is not considered a blackjack. At best, it can tie
+        # dealer if the dealer has non-blackjack.
+        checkForPairs(roundCounter)
 
-            # Now, it is time for the dealer's turn. This could change the
-            # remainginPlayers as well.
-            tableObj.phase = 'dealer'
-            dealersTurn(remainingHands, remainingPlayers, roundCounter)
+        # Now that all of the hands have been dealt, including split
+        # hands, and ante bets have been placed on all existing hands,
+        # it is time to offer the user the option of doubling down on
+        # some of the better looking blackjack hands.
+        tableObj.phase = 'raise'
+        doubleDown(roundCounter)
+
+        # Bets have been raised on all hands. It is time for the player
+        # turns to begin. They will go counterclockwise, left, middle,
+        # then right. For each playable hand, the player has the option
+        # to hit or stand. Each time a card is dealt, the Player method
+        # add_card_to_hand or add_card_to_split will update the results
+        # dictionary with the status of their hand. The function
+        # checkForHitStand works very similarly to checkForYesNo.
+        # The function hitOrStand calls the others as it progresses.
+        # When finished, it will return a value indicating how many
+        # hands were still playable by the time the dealer's turn begins.
+        # The value determines if a dealer automatically wins all 
+        # remaining hands or has to actually play the turn.
+        remainingHands, remainingPlayers = hitOrStand(roundCounter)
+
+        # Now, it is time for the dealer's turn. This could change the
+        # remainginPlayers as well.
+        tableObj.phase = 'dealer'
+        dealersTurn(remainingHands, remainingPlayers, roundCounter)
+
+        # Now, we need to check to see if any players should have been
+        # eliminated, but were spared for outstanding bets. This should
+        # not happen, but it is a good idea to check anyway.
+        # This code is designed to test findDefunctPlayer
+       remainingPlayers = findDefunctPlayer()
             
-            # Finally, we have the endOfRound. This resets function will reset
-            # results, eliminate players who busted, reset hands and bets for
-            # players who remain in the game.
-            tableObj.phase = 'end'
-            endOfRound(roundCounter)
-            endRound = True
-            # The endRound variable ends the while loop for each round.
-        # End of game while loop
+        # Finally, we have the endOfRound. This resets function will reset
+        # results, eliminate players who busted, reset hands and bets for
+        # players who remain in the game.
+        tableObj.phase = 'end'
+        endOfRound(roundCounter)
+        endGame = (tableObj.phase == 'postgame')
+    # End of game while loop
     return # playBlackjack
 
 def removeActivePlayer(seat, rounds):
@@ -2238,7 +2266,7 @@ def refreshTable(phase, rounds):
     if phase != 'dealer':
         printTableDealer(tableObj.tableDealer.extract_data())
     else:
-        printTableDealer(tableObj.tableDealer.extract_data(), output = 'dealer turn')
+        printTableDealer(tableObj.tableDealer.extract_data(), 'dealer turn')
     for seat in TABLESEATS:
         if isPlayerStillThere(seat):
             printTablePlayer(tableObj.players[seat].extract_data(), seat)
@@ -2262,9 +2290,35 @@ def refreshTable(phase, rounds):
         roundText = "End of round {0}.".format(rounds)
     posX = RIGHTMARGIN
     posY = TOPMARGIN
-    roundSurf = BASICFONT.render(roundText, True, TEXTCOLOR)
+    roundSurf = DATAFONT.render(roundText, True, TEXTCOLOR)
     roundRect = roundSurf.get_rect(topright = (posX, posY))
     DISPLAYSURF.blit(roundSurf, roundRect)
+    # New functionality added to inform the user on the table aspects min
+    # bet, max bet, and blackjack multiplier.
+    posY += LINESPACING12
+    tableMin = tableObj.min_bet
+    tableMax = tableObj.max_bet
+    blackjackRatio, blackjackFloat = tableObj.blackjack_multiplier
+    minBetText = "Table minimum:    ${:7d}.".format(tableMin)
+    maxBetText = "Table maximum:    ${:7d}.".format(tableMax)
+    minBetSurf = DATAFONT.render(minBetText, True, TEXTCOLOR)
+    maxBetSurf = DATAFONT.render(maxBetText, True, TEXTCOLOR)
+    minBetRect = minBetSurf.get_rect(topright = (posX, posY))
+    posY += LINESPACING12
+    maxBetRect = maxBetSurf.get_rect(topright = (posX, posY))
+    posY += LINESPACING12
+    DISPLAYSURF.blit(minBetSurf, minBetRect)
+    DISPLAYSURF.blit(maxBetSurf, maxBetRect)
+    blackjackMultTextFirst  = "Blackjack Multiplier: {:>4}.".format(blackjackRatio)
+    blackjackMultTextSecond = "Decimal Equivalent:   {:4.2f}.".format(blackjackFloat)
+    blackjackMultSurfFirst  = DATAFONT.render(blackjackMultTextFirst, True, TEXTCOLOR)
+    blackjackMultSurfSecond = DATAFONT.render(blackjackMultTextSecond, True, TEXTCOLOR)
+    blackjackMultRectFirst  = blackjackMultSurfFirst.get_rect(topright = (posX, posY))
+    posY += LINESPACING12
+    blackjackMultRectSecond = blackjackMultSurfSecond.get_rect(topright = (posX, posY))
+    posY += LINESPACING12
+    DISPLAYSURF.blit(blackjackMultSurfFirst, blackjackMultRectFirst)
+    DISPLAYSURF.blit(blackjackMultSurfSecond, blackjackMultRectSecond)
     pygame.display.update()
     return # refreshTable
 
@@ -2698,10 +2752,15 @@ def dealRound(rounds):
     pygame.display.update()
     posY += LINESPACING18
     for seat in TABLESEATSALL:
-        card = tableObj.deck.remove_top()
+        # Removing a card from the top of the deck has to take place after
+        # a player has been verified present to receive it.
         if seat != 'dealer':
-            tableObj.results[seat + ' reg'] = tableObj.players[seat].add_card_to_hand(card)
-        else:
+            if isPlayerStillThere(seat):
+                # Draw and deal if the seat is occupied.
+                card = tableObj.deck.remove_top()
+                tableObj.results[seat + ' reg'] = tableObj.players[seat].add_card_to_hand(card)
+        else: # Seat is the dealer's, which is always occupied during the game.
+            card = tableObj.deck.remove_top()
             tableObj.results[seat + ' reg'] = tableObj.tableDealer.add_card_to_hand(card)
     refreshTable(tableObj.phase, rounds)
     pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
@@ -3197,11 +3256,12 @@ def hitOrStand(rounds):
     playerLosses = 0
     for seat in TABLESEATS:
         tableObj.phase = partOfRound = seat
-        playerName = tableObj.players[seat].name
         # A player might have been withdrawn or busted the bank in previous
         # rounds, or the player may have already hit blackjack. So, we have
         # to check both before proceeding. This part checks the regular hand.
         if isPlayerStillThere(seat):
+            # The player's name is only available if the seat is occupied.
+            playerName = tableObj.players[seat].name
             # Increment the player counter and reset playerLosses.
             remainingPlayers += 1
             playerLosses = 0
@@ -3370,6 +3430,7 @@ def checkForHitStand():
     INPUTS: None
     OUTPUTS: True, if Y or H were pressed, False is N or S were pressed
     """
+    displayRect = DISPLAYSURF.get_rect()
     while True: # event loop
         # Note: Unlike checkForYesNo, this function works only in the bottom
         # right corner of the status block.
@@ -3392,7 +3453,7 @@ def checkForHitStand():
             if event.key == K_ESCAPE:        # ESCAPE is also a 'quit' event
                 terminate()
 
-        for event in pygame.event.get(KEYDOWN):
+        for event in pygame.event.get():     # Removed KEYDOWN only type
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:    # Another QUIT event
                     terminate()
@@ -3400,6 +3461,10 @@ def checkForHitStand():
                     return True
                 elif event.key in (K_n, K_s):
                     return False
+            # This stanza is an effort to make the game screen become active
+            # after a change of focus.
+            elif event.type == MOUSEBUTTONDOWN and event.button == 1:
+                active = displayRect.collidepoint(event.pos)
         pygame.display.update()
         FPSCLOCK.tick()
     return # checkForHitStand
@@ -3459,10 +3524,24 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     # Note: All of these variables are booleans using logical expression for
     # variable assignment.
     dealerBlackjack = (tableObj.results['dealer reg'] == 'blackjack')
+    insuranceBets = False
     noHandsRemain = (remainingHands == 0)
     userLosesGame = (remainingPlayers == 0)
     dealerLosses = 0
     dealerWins = 0
+    print("dealersTurn: Status: remainingHands is {0}. remainingPlayers is {1}.".format(remainingHands, remainingPlayers))
+    print("dealersTurn: Status: dealerBlackjack is {0}. noHandsRemain is {1}.".format(dealerBlackjack, noHandsRemain))
+    print("dealersTurn: Status: userLosesGame is {0}. dealerLosses is {1}. dealerWins is {2}.".format(userLosesGame, dealerLosses, dealerWins))
+
+    # Next, we need to determine if any insurance were made.
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            insBetAmt = tableObj.players[seat].insurance
+            if insBetAmt != 0:
+                insuranceBets = True
+                break
+    # All we need is one non-zero bet to make it a reality.
+
 
     # Now, clear the status corner and set the positionals.
     clearStatusCorner()
@@ -3480,13 +3559,32 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
 
     # Dealer reveals their hold card.
     refreshTable('dealer', rounds)
-    if dealerBlackjack:
+    # First, we look as the case that the dealer has blackjack and there are
+    # insurance bets. Note, there is a separate function that handles dealer
+    # blackjack and the actual insurance bets. This is just a notification
+    # block.
+    if dealerBlackjack and insuranceBets:
         blackjackTextFirst  = "The dealer has blackjack."
         blackjackTextSecond = "All insurance bets win."
-    else:
+    # Next, we look at the case that the dealer did not have blackjack and
+    # there are insurance bets.
+    elif not dealerBlackjack and insuranceBets:
         blackjackTextFirst  = "The dealer does not have blackjack."
         blackjackTextSecond = "All insurance bets lose."
-
+    # Next, we look at the case in which the dealer has blackjack but none
+    # of players made insurance bets. Again, this is a notification block.
+    # The function, dealerHasBlackjack(), deals with insurance and player
+    # losses.
+    elif dealerBlackjack and not insuranceBets:
+        blackjackTextFirst  = "The dealer has blackjack, but"
+        blackjackTextSecond = "there are no insurance bets."
+    # Finally, we look at the case that the dealer does not have blackjack
+    # and there are no insurance bets.
+    else:
+        blackjackTextFirst  = "The dealer does not have blackjack."
+        blackjackTextSecond = "There are no insurance bets either."
+    
+    # Common print block following reveal of the hold card.
     blackjackSurfFirst  = SCOREFONT.render(blackjackTextFirst, True, TEXTCOLOR)
     blackjackSurfSecond = SCOREFONT.render(blackjackTextSecond, True, TEXTCOLOR)
     blackjackRectFirst  = blackjackSurfFirst.get_rect(topleft = (posX, posY))
@@ -3870,6 +3968,7 @@ def resolveInsBets(dealerBlackjack):
                 # The player has an insurance bet. We need to populate a few
                 # easier to read variables.
                 playerName = tableObj.players[seat].name
+                playerBank = tableObj.players[seat].bank
                 betAmt = tableObj.players[seat].insurance
                 # Player.ins() method handles the bet based on the value of
                 # the boolean it is given. result will be True if the player's
@@ -4012,7 +4111,7 @@ def dealerHasBlackjack():
                     # Reduce the player counter.
                     remainingPlayers -+ 1
                 # The status printout can use a common blit command block.
-                DISPLAYSURF(playerStatusSurf, playerStatusRect)
+                DISPLAYSURF.blit(playerStatusSurf, playerStatusRect)
                 pygame.display.update()
                 pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
             # End of hand filter
@@ -4124,8 +4223,10 @@ def findDefunctPlayer():
                 posY += LINESPACING18
                 DISPLAYSURF.blit(playerStatusSurfFirst, playerStatusRectFirst)
                 DISPLAYSURF.blit(playerStatusSurfSecond, playerStatusRectSecond)
+                pygame.display.update()
                 eliminatePlayer(seat)
                 remainingPlayers -= 1
+                pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
             # End of check for player insolvency
         # End of check for occupied seat
     # End of for loop through table seats
@@ -4282,6 +4383,13 @@ def endOfRound(rounds):
         tableObj.results[hand] = None
     print("endOfRound: Hand Results are now {0}.".format(tableObj.results))
     return # endOfRound
+
+def checkPlayerExperienceLevels():
+    """
+    This function checks the number of rounds the players have played and
+    levels them up in listPlayers if they have played enough rounds. This
+    function also informs the user of the changes.
+    """
 
 def playersWinGame():
     """

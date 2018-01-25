@@ -673,3 +673,29 @@ Casino (game): dealRound: Removed code used to test checkInsBets.
 Casino (game): isPlayerStillThere: Fixed a bug that allowed this function to used to check the dealer's status. Fix affects dealersTurn.
 Casino (game): endOfRound: Changed the screen refresh after player analysis from clearStatusCorner to refreshTable to clear out wandering text.
 Casino (game): dealersTurn: Fixed a typo that caused all losing playable hands to print out as split hands. Also fixed a bug in the logic underlying the stanza regarding changing cardshoes to ask the player, perform the action or not as directed, clear the status corner, and print out a message confirming that the player's request had been performed.
+
+1/22/18 Pushed to origin pygame
+
+This update is not a 'release' but was made in response to several hard drive errors on my primary development machine.
+
+Casino (game): Constants: Adjusted STATUSBLOCKHEIGHT slightly to keep clearStatusCorner from erasing part of the dealer's station.
+Casino (game): refreshTable: Changed argument for printTableDealer from output = 'dealer turn' to 'dealer turn'. Added printouts for table min/max bets and blackjack multipliers, both the ratio and decimal equivalents.
+Casino (game): printTableDealer: Removed the turn banners for dealer's turn and player's turn, as they are inaccurate now and redundant with the phase and round banner in the upper right corner of the screen. Diagnostic banners have been left intact.
+Casino (game): Finished testing the routines that run when the dealer has blackjack. dealerHasBlackjack had a bad surface call that was corrected. No errors found in resolveInsBets.
+Casino (game): createPlayers: Added a return with a comment to the end of the function to make it easier to find.
+Casino (game): pressSpaceToContinue: Added a return with a comment to the end of the function to make it easier to find.
+Casino (game): writeSavedGame: Added a comment to the end of the function to make it easier to find.
+Casino (game): offerTableChoices: Added a comment to the end of the function to make it easier to find.
+Casino (game): getTextboxEvents: Added a comment to the end of the function to make it easier to find.
+Casino (game): checkForYesNo: Added a return and a comment to the end of the function to make it easier to find. Removed KEYDOWN from the pygame.get.event loop (and commented the change), then added a (commented) elif stanza that looks for MOUSEBUTTONDOWN events and reactivates the window if the mouse click occurred inside the game screen. Added a Rect object, displayRect, which is a get_rect() from DISPLAYSURF.
+Casino (game): checkForHitStand:  Removed KEYDOWN from the pygame.get.event loop (and commented the change), then added a (commented) elif stanza that looks for MOUSEBUTTONDOWN events and reactivates the window if the mouse click occurred inside the game screen. Added a Rect object, displayRect, which is a get_rect() from DISPLAYSURF.
+Casino (game): pressSpaceToContinue:  Removed KEYDOWN from the pygame.get.event loop (and commented the change), then added a (commented) elif stanza that looks for MOUSEBUTTONDOWN events and reactivates the window if the mouse click occurred inside the game screen. Added a Rect object, displayRect, which is a get_rect() from DISPLAYSURF.
+Casino (game): main: Added a comment to the end of the function to make it easier to find.
+CasinoTable: Added a new phase, 'postgame' to alert the game that the current game is over. This change required comment updates to Casino function main() and CasinoTable_init__() method comment block. This also necessitated a change to playBlackjack (see below).
+Casino (game): playBlackjack: Eliminated the round while loop. Removed endRound variable completely. At the end of the game loop, endGame is set to whether or not phase equals 'postgame'. The initialization of endGame as False was not altered.
+Casino (game): resolveInsBets: Added a line defining variable playerBank, eliminating a fatal bug.
+Casino (game): dealRound: Discovered a bug that allowed it to deal cards to players that no longer exist. It also drew cards before checking to see if a player is present in the seat.
+Casino (game): scrollText: A bug is causing this function's output to freeze on screen. Certain applications may interfere with it, but it also needs a stanza to capture events. That fixed the bug for the most part. Added the ability to escape out of the scrolling to a pressSpaceToContinue() prompt.
+Casino (game): playBlackjack, dealersTurn, hitOrStand: There is a bug that caused a crash while a single player was present in seat 'right'. Somehow, remainingHands = 0 is not propagating from hitOrStand through playBlackjack to dealersTurn. This bug shows up after two players have been eliminated from the left and middle seats. Several different possible triggers (low stand scores, player blackjack, busts, and winnable hands). However, multiples tries to replicate the error have been unsuccessful.
+Casino (game): dealersTurn: (bug fix) Added functionality to determine if any insurance bets had been placed, and to print out more appropriate messages around dealer blackjack and insurance bets.
+Casino (game): findDefunctPlayer: Tested this function and found that it needed a pressSpaceToContinue to keep the banner warning about player elimination on screen long enough to be read.

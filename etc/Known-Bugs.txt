@@ -3,4 +3,6 @@ Known Bugs:
 1. There is a problem that locks up pygame in a continuous loop if the window
 focus shifts to another window. This problem only appears when pygame is
 waiting for a KEYDOWN event. Textbox objects do not seem to suffer from this
-problem.
+problem. --- Some changes to the event loops seem to have mitigated these problems.
+
+2. A bug appeared in which the function hitOrStand attempts to get a name from an unoccupied seat, causing a fatal crash. --- Repeated attempts to recreate the conditions that produced this crash failed to replicate the disaster.

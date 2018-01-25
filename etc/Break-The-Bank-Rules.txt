@@ -21,7 +21,7 @@ At the end of any round of play, the user can pull the player from the table.
 The best reason is to keep them from losing their bank and/or being eliminated
 from the game. Players who 'leave the table' will be saved when the game ends
 just like any other surviving players. The caveat is that they cannot return
-to play until the next game. Note: While the game in later phases of a round
+to play until the next game. NOTE: While the game in later phases of a round
 prevents players from splitting hands or making insurance bets without enough
 in their bank to cover them, at the START of a round, any player who cannot
 cover the table minimum ante bet WILL BE ELIMINATED IF THE USER DOES NOT
