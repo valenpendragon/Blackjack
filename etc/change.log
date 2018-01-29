@@ -699,3 +699,10 @@ Casino (game): scrollText: A bug is causing this function's output to freeze on 
 Casino (game): playBlackjack, dealersTurn, hitOrStand: There is a bug that caused a crash while a single player was present in seat 'right'. Somehow, remainingHands = 0 is not propagating from hitOrStand through playBlackjack to dealersTurn. This bug shows up after two players have been eliminated from the left and middle seats. Several different possible triggers (low stand scores, player blackjack, busts, and winnable hands). However, multiples tries to replicate the error have been unsuccessful.
 Casino (game): dealersTurn: (bug fix) Added functionality to determine if any insurance bets had been placed, and to print out more appropriate messages around dealer blackjack and insurance bets.
 Casino (game): findDefunctPlayer: Tested this function and found that it needed a pressSpaceToContinue to keep the banner warning about player elimination on screen long enough to be read.
+
+1/29/18 01:55 Pushed to origin pygame
+
+Casino (game): Constants: Added a new text color for game win messages GAMEWINTEXTCOLOR. I added another  background color to make it easier to see, GAMEWINBGCOLOR.
+Casino (game): main: Added a comment block explaining how tableChoice is structured.
+Casino (game): playersWinGame: Created this function to award the players with extra winnings for break the bank, copy their new bank amounts to listPlayers, give the players a skill increase (if possible), save the data to the saved game, and end the game. This has a bug due to straggler output from refreshTable that still needs to be cleaned up.
+Casino (game): dealersTurn: Changed the wording of the message that the dealer lost the game.

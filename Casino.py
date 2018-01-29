@@ -42,6 +42,8 @@ ELIMINATIONCOLOR   = RED
 ELIMINATIONBGCOLOR = WHITE
 BUTTONOUTLINE   = BLACK
 BUTTONTEXTCOLOR = BLACK
+GAMEWINTEXTCOLOR = MAGENTA
+GAMEWINBGCOLOR   = BLACK
 
 # Pygame Constants. All of these values are in pixels
 FPS = 30
@@ -316,7 +318,21 @@ def main(): # main game function
     
     # Initialize tableChoice and call offerTableChoice to get the user's
     # choice of dealer. The while loop ensures we actually get a name that
-    # matches a dealer. Capitalization does not matter.
+    # matches a dealer. Capitalization does not matter. The structure of 
+    # tableChoice is a dictionary with the following keys:
+    #   'name'  : Dealer's name (string)
+    #   'type'  : This is type of CasinoTable that this "dealer" normally works
+    #               'high'    : only works high roller tables, banks over $1m
+    #               'starter' : best for new players, bank under $100k
+    #               'normal'  : banks 100-250k
+    #               'special' : dealer only works special events
+    #   'bank' : A value calculated from a base determined by table type
+    #            and adjusted by a random amount
+    #   'blackjack_multiplier : A value chosen randomly from a set of ratios
+    #            controlled by the table type
+    #   'table color' : This the color of the felt of the table. The rim is
+    #            always leather.
+    #   'table bets'  : Tuple storing the min and max bets that table allows
     tableChoice = {}
     print("main: tableChoice is {0}".format(tableChoice))
     while tableChoice == {}:
@@ -2145,7 +2161,7 @@ def playBlackjack():
         # eliminated, but were spared for outstanding bets. This should
         # not happen, but it is a good idea to check anyway.
         # This code is designed to test findDefunctPlayer
-       remainingPlayers = findDefunctPlayer()
+        remainingPlayers = findDefunctPlayer()
             
         # Finally, we have the endOfRound. This resets function will reset
         # results, eliminate players who busted, reset hands and bets for
@@ -2153,6 +2169,10 @@ def playBlackjack():
         tableObj.phase = 'end'
         endOfRound(roundCounter)
         endGame = (tableObj.phase == 'postgame')
+
+        # The final step is to migrate changes to player bank data and
+        # removing eliminated players.
+        updatePlayerData()
     # End of game while loop
     return # playBlackjack
 
@@ -2173,7 +2193,6 @@ def removeActivePlayer(seat, rounds):
     # We need to match their name. The playerObj should have it. We need to
     # update the bank for that player once found. If they played sufficient
     # rounds, the player's skill should be updated as well.
-    # pdb.set_trace()
     playerObj = tableObj.players[seat]
     for i in range(0, len(listPlayers)):
         if listPlayers[i]['name'] == playerObj.name:
@@ -3542,6 +3561,9 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
                 break
     # All we need is one non-zero bet to make it a reality.
 
+    # This is a handicap to get the dealer to bust quickly to test the
+    # playersWinGame function.
+    # tableObj.tableDealer.dealer_lost(1000000 * dieRoll(10, 4, 14, 4))
 
     # Now, clear the status corner and set the positionals.
     clearStatusCorner()
@@ -3929,8 +3951,8 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
         DISPLAYSURF.fill(BLACK)
         posX = WINCENTERX
         posY = WINCENTERY
-        dealerStatusText = "Dealer is now insolvent and has been eliminated."
-        dealerStatusSurf = PROMPTFONT.render(dealerStatusText. True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
+        dealerStatusText = "Dealer is now insolvent and has lost this game."
+        dealerStatusSurf = PROMPTFONT.render(dealerStatusText, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
         dealerStatusRect = dealerStatusSurf.get_rect(topleft = (posX, posY))
         DISPLAYSURF.blit(dealerStatusSurf, dealerStatusRect)
         pygame.display.update()
@@ -4384,19 +4406,128 @@ def endOfRound(rounds):
     print("endOfRound: Hand Results are now {0}.".format(tableObj.results))
     return # endOfRound
 
-def checkPlayerExperienceLevels():
+def updatePlayerData():
     """
-    This function checks the number of rounds the players have played and
-    levels them up in listPlayers if they have played enough rounds. This
-    function also informs the user of the changes.
+    This function keeps the player bank data in sync between listPlayers and
+    tableObj.players. deletePlayer handles all player removals from the
+    listPlayers global object. removeActivePlayer keeps the removed player's
+    bank updated, and their experience level. playersWinGame will level up
+    any players still in the game when the dealer's bank is broken.
+    INPUTS: None. All data is in global objects.
+    OUTPUTS: None. All changes are made to listPlayers, a global object.
     """
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            playerName = tableObj.players[seat].name
+            playerBank = tableObj.players[seat].bank
+            for i in range(0, len(listPlayers)):
+                # We only update players who are still seated. Other functions
+                # do the updates for withdrawn or eliminated players.
+                listName = listPlayers[i]['name']
+                if playerName == listName:
+                    listPlayers[i]['bank'] = playerBank
+                    print("updatePlayerData: Status: Match found for Player {0}.".format(playerName))
+                    print("updatePlayerData: Status: {0} now has a bank of ${1}.".format(listName, listPlayers[i]['bank']))
+    return
 
 def playersWinGame():
     """
-    This function will handle the players breaking the bank for the table
-    they were playing at.
+    This function levels up all of the players still seated when the dealer's
+    bank is broken. This ends the current game. It will award a cash prize for
+    break the dealer's bank, then update their banks and skill levels 
+    accordingly, then save their data to disk.
+    INPUTS: None. All work is done with global variables.
+    OUTPUTS: None. All changes are made to the global variable, listPlayers.
     """
-    pass
+    # First, we award the current players with special prize (since the bank
+    # breaking may have shorted someone their bets). They get 
+    #       $1000*[2d6**(table level)]
+    # in extra winnings.
+    if tableChoice['type'] == 'starter':
+        tableLevel = 1
+    elif tableChoice['type'] == 'normal':
+        tableLevel = 2
+    elif tableChoice['type'] == 'special':
+        tableLevel = 3
+    else: # type == 'high'
+        tableLevel = 4
+    winnersAward = 1000 * ((dieRoll(6, 1, 6) + dieRoll(6, 1, 6)) ** tableLevel)
+    refreshTable('end', 0) 
+    posX = LEFTMARGIN
+    posY = TOPMARGIN
+    playerWinTextFirst  = "Congratulations on breaking the bank."
+    playerWinTextSecond = "Each player has earned an extra ${:,}.".format(winnersAward)
+    playerWinSurfFirst  = PROMPTFONT.render(playerWinTextFirst, True, GAMEWINTEXTCOLOR, GAMEWINBGCOLOR)
+    playerWinSurfSecond = PROMPTFONT.render(playerWinTextSecond, True, GAMEWINTEXTCOLOR, GAMEWINBGCOLOR)
+    playerWinRectFirst  = playerWinSurfFirst.get_rect(topleft = (posX, posY))
+    posY += LINESPACING18
+    playerWinRectSecond = playerWinSurfSecond.get_rect(topleft = (posX, posY))
+    DISPLAYSURF.blit(playerWinSurfFirst, playerWinRectFirst)
+    DISPLAYSURF.blit(playerWinSurfSecond, playerWinRectSecond)
+    pygame.display.update()
+    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+
+    # Second, we update the player's banks, including adding this award. This
+    # will migrate the increased banks to listPlayers. The pressSpaceToContinue
+    # makes the screen reflect the award given to the players.
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            tableObj.players[seat].bank += winnersAward
+    updatePlayerData()
+    refreshTable('end', 0)
+    pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)    
+
+    # Now, we need to update the skill level of the players, if possible.
+    # We start with the tableObj list, because those are the only players
+    # left in the game at the time the dealer broke its bank,
+    for seat in TABLESEATS:
+        if isPlayerStillThere(seat):
+            # Find the player in listPlayers.
+            playerName = tableObj.players[seat].name
+            for i in range(0, len(listPlayers)):
+                listName = listPlayers[i]['name']
+                if listName == playerName:
+                    # Now, we check the player's skill level and raise to
+                    # the next level, if a new level exists.
+                    playerSkill = listPlayers[i]['skill']
+                    if playerSkill == 'starter':
+                        listPlayers[i]['skill'] = 'normal'
+                    elif playerSkill == 'normal':
+                        listPlayers[i]['skill'] = 'special'
+                    elif playerSkill == 'special':
+                        listPlayers[i]['skill'] = 'high'
+                    # There is no higher sklll than high roller currently.
+    writeAttempt = writeSavedGame(listPlayers)
+    # Clear the screen.
+    DISPLAYSURF.fill(BLACK)
+    posX = WINCENTERX
+    posY = WINCENTERY
+    if writeAttempt:
+        gameSaveTextFirst  = "Game data successfully saved to disk."
+        gameSaveTextSecond = "Good luck on your next game. Exiting...."
+        gameSaveSurfFirst  = PROMPTFONT.render(gameSaveTextFirst, True, TEXTCOLOR)
+        gameSaveSurfSecond = PROMPTFONT.render(gameSaveTextSecond, True, TEXTCOLOR)
+        gameSaveRectFirst  = gameSaveSurfFirst.get_rect(center = (posX, posY))
+        posY += LINESPACING18
+        gameSaveRectSecond = gameSaveSurfSecond.get_rect(center = (posX, posY))
+        DISPLAYSURF.blit(gameSaveSurfFirst, gameSaveRectFirst)
+        DISPLAYSURF.blit(gameSaveSurfSecond, gameSaveRectSecond)
+        pygame.display.update()
+        pressSpaceToContinue()
+    else: # Save attempt failed.
+        gameSaveTextFirst  = "A error occurred while trying to save game."
+        gameSaveTextSecond = "Check your rights to write to filesystem. Exiting.."
+        gameSaveSurfFirst  = PROMPTFONT.render(gameSaveTextFirst, True, TEXTCOLOR)
+        gameSaveSurfSecond = PROMPTFONT.render(gameSaveTextSecond, True, TEXTCOLOR)
+        gameSaveRectFirst  = gameSaveSurfFirst.get_rect(center = (posX, posY))
+        posY += LINESPACING18
+        gameSaveRectSecond = gameSaveSurfSecond.get_rect(center = (posX, posY))
+        DISPLAYSURF.blit(gameSaveSurfFirst, gameSaveRectFirst)
+        DISPLAYSURF.blit(gameSaveSurfSecond, gameSaveRectSecond)
+        pygame.display.update()
+        pressSpaceToContinue()
+    terminate()
+    # End of playersWinGame
 
 def userLostGame():
     """
