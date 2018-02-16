@@ -706,3 +706,23 @@ Casino (game): Constants: Added a new text color for game win messages GAMEWINTE
 Casino (game): main: Added a comment block explaining how tableChoice is structured.
 Casino (game): playersWinGame: Created this function to award the players with extra winnings for break the bank, copy their new bank amounts to listPlayers, give the players a skill increase (if possible), save the data to the saved game, and end the game. This has a bug due to straggler output from refreshTable that still needs to be cleaned up.
 Casino (game): dealersTurn: Changed the wording of the message that the dealer lost the game.
+
+2/11/18
+
+Casino (game): eliminatePlayer: Added reduction to tableObj.numPlayers.
+Casino (game): userLostGame: Created this function to handle the user losing the game to the house. It handles protecting saved games from deletion. It also handles saving a withdrawn player (which overwrites the saved game).
+Casino (game): printPlayers: Created this function to print player data from files or data in memory to the game screen. I should have created it earlier in the build process. This required moving an internal constant COLUMNSPACING in offerTableChoices to the status of global constant.
+Casino (game): removeSavedGame: Created this function to handle users wanting to remove a saved game.
+Casino (game): hitOrStand: Removed unnecessary check for successful or unsuccessful player removal.
+Casino (game): checkForQuit: Moved the verification from center screen to left margin for aesthetic reasons.
+Casino (game): pressSpaceToContinue: Added an optional argument to indicate where on the screen to put the text, making its behavior similar to checkForHitStand and checkForYesNo.
+Casino (game): checkForQuit: Moved all text and prompt to the left margin of the game screen for aesthetic reasons.
+Casino (game): findPlayers: Removed file handler testOpen that was not being used. Added a close() method call to ensure the savedGame file is closed properly.
+Bug Fixes:
+Casino (game): writeSavedGame: Discovered a bug that was causing problems with conversions of integer values for the bank when the file was read. It was adding a leading space after the comma in the saved game data. Removed this comma.
+Casino (game): dealersTurn: Found a bug that causes the game to crash while calculating max and min scores. This only occurs when all players have busted. Added a stanza to set minScore and maxScore to 0 if the playableScores is a zero length list.
+Casino (game): dealersTurn: Found a bug that causes the game to make the dealer play its hand when all players' hands busted. Fixing this bug required the following additional changes:
+Casino (game): hitOrStand, dealersTurn, resolveInsBets, findDefunctPlayer, dealerHasBlackjack: Eliminated the remainingPlayers variable because eliminatePlayer already adjusts tableObj.numPlayers. dealerHasBlackjack, resolveInsBets, and findDefunctPlayer no longer return a value. hitOrStand, dealersTurn, playBlackjack: To eliminate this and a couple of other bugs, hitOrStand no longer attempts to count playable hands. playBlackjack no longer carries that number to dealersTurn. dealersTurn must now determine if there are any playable hands left. Once this is done, the code stanza for noHandsRemain being true, originally at the beginning of the function, has been moved to directly before the stanza for the dealer playing its hand.
+Casino (game): Major bug that could cause an eliminated player to be saved back to disk or a withdrawn player to be deleted from saved games. Fixing this bug required the following changes:
+Casino (game): eliminatePlayer: Added a call to deletePlayer to remove the player from listPlayers.
+Casino (game): deletePlayer: Created this function to remove the player data for eliminated players.

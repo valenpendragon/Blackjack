@@ -56,6 +56,7 @@ CARDSPACING        =    4  # Spacing between cards (both axes)
 CARDHEIGHT         =   60  # Height of a card image
 LINESPACING12      =   15  # Spacing between 12pt text Rect objects
 LINESPACING18      =   25  # Spacing between 18pt text Rect objects
+COLUMNSPACING      =  150  # Spacing between columns of data
 TABLEWIDTH         =  700  # width of playing table
 TABLEHEIGHT        =  400  # height of playing table
 TABLERIM           =   40  # width of band around table
@@ -448,7 +449,7 @@ def main(): # main game function
     #           'ante'    : collecting initial bets from players
     #           'deal'    : dealing the cards, split hands and insurance bets
     #           'raise'   : option to raise bets
-    #           'left'    : left player's turn (must be one)
+    #           'left'    : left player's turn (must be ojackne)
     #           'middle'  : middle player's turn (if there is one)
     #           'right'   : right player's turn (if there is one)
     #           'dealer'  : dealer's turn
@@ -1262,7 +1263,7 @@ def findPlayers(filename = './etc/savedgame.txt'):
     listPlayers = None
     try:
         # We try to open the saved game file. If it fails, we return None.
-        testOpen = open(filename)
+        savedGame = open(filename)
     except:
         # Something went wrong. So, we return None.
         listPlayers = None
@@ -1291,6 +1292,7 @@ def findPlayers(filename = './etc/savedgame.txt'):
                     break
                 # Assign the first string to playerName.
                 playerName = data[0]
+                print("findPlayers: Status: playerName is {}.".format(playerName))
                 # Now, we try to set the second string to an integer and
                 # assign it to playerBank
                 try:
@@ -1301,7 +1303,7 @@ def findPlayers(filename = './etc/savedgame.txt'):
                     # process and return None.
                     listPlayers = None
                     break
-
+                print("findPlayers: Status: playerBank is {}".format(playerBank))
                 # Now, we need to check the third string to see if it is valid.
                 # If it has an invalid value, again, we need to cancel reading
                 # the file and return None. If it is valid, we assign it to
@@ -1315,7 +1317,7 @@ def findPlayers(filename = './etc/savedgame.txt'):
                     break
                 else:
                     playerSkill = data[2]
-
+                print("findPlayers: Status: playerSkill is {}.".format(playerSkill))
                 # Since we got this far, all three data elements were usable.
                 # We need to assign them to a player dictionary.
                 listPlayers.append({ 'name'  : playerName,
@@ -1325,10 +1327,11 @@ def findPlayers(filename = './etc/savedgame.txt'):
                 # break out of the saved game file. We only need to read the
                 # data for three players successfully. The writeSavedGame
                 # function will overwrite the saved game later on.
+                print("findPlayers: Status: listPlayers is now {}.".format(listPlayers))
                 i += 1
                 if i > 3:
                     break
-
+    savedGame.close()
     # We have either read a file with good data and return that data or we
     # had problems along the way and have to return None.
     return listPlayers
@@ -1361,7 +1364,7 @@ def writeSavedGame(listPlayers, filename = './etc/savedgame.txt'):
     # We need to convert the player data back into a list of CSV text lines.
     savedGameData = []
     for i in range(0, len(listPlayers)):
-        newLine = listPlayers[i]['name'] + ', ' + str(listPlayers[i]['bank']) + ', ' + listPlayers[i]['skill'] + '\n'
+        newLine = listPlayers[i]['name'] + ',' + str(listPlayers[i]['bank']) + ',' + listPlayers[i]['skill'] + '\n'
         savedGameData.append(newLine)
         print("writeSavedGame: Data to save is now {}.".format(savedGameData))
     # Now, we try to write this data to disk.
@@ -1377,7 +1380,9 @@ def writeSavedGame(listPlayers, filename = './etc/savedgame.txt'):
         return True
     # writeSavedGame
 
-def pressSpaceToContinue(posX = WINDOWWIDTH, posY = WINDOWHEIGHT):
+def pressSpaceToContinue(posX = WINDOWWIDTH,
+                         posY = WINDOWHEIGHT, 
+                         rectLocation = 'bottomright'):
     """
     This function actually pauses the game so that the user can read the
     screen. It basically halts any progress until a key is pressed. It
@@ -1389,6 +1394,9 @@ def pressSpaceToContinue(posX = WINDOWWIDTH, posY = WINDOWHEIGHT):
                 Default: bottom corner of the screen
             posY (pixel y-coordinate of bottomright corner of rect object)
                 Default: bottom corner of the screen
+            optional rectLocation, string, valid locations are topleft,
+                topright, bottomright, and bottomleft
+                Default: bottomright
     OUTPUTS: All outputs are to the screen.
     """
     displayRect = DISPLAYSURF.get_rect()
@@ -1396,7 +1404,18 @@ def pressSpaceToContinue(posX = WINDOWWIDTH, posY = WINDOWHEIGHT):
         # In the lower right corner, print this message.
         textSurf = BASICFONT.render("Press spacebar to continue.", True, TEXTCOLOR)
         textRect = textSurf.get_rect()
-        textRect.bottomright = (posX, posY)
+        # rectLoction controls where the text goes on screen.
+        if rectLocation == 'topleft':
+            textRect.topleft = (posX, posY)
+        elif rectLocation == 'topright':
+            textRect.topright = (posX, posY)
+        elif rectLocation == 'bottomright':
+            textRect.bottomright = (posX, posY)
+        elif rectLocation == 'bottomleft':
+            textRect.bottomleft = (posX, posY)
+        else: # invalid choice
+            print("pressSpaceToContinue: Invalid option {}. Using default.".format(rectLocation))
+            textRect.bottomright = (posX, posY)
         DISPLAYSURF.blit(textSurf, textRect)
         for event in pygame.event.get(QUIT): # get all QUIT events
             terminate()                      # terminate if any QUIT events are present
@@ -1581,7 +1600,6 @@ def offerTableChoices(listDealers):
     OUTPUTS: tableChoice, a dealer dictionary object based on name choice,
         not actually returned directly, since tableChoice is a global
     """
-    COLUMNSPACING = 150
     # Clear the screen.
     DISPLAYSURF.fill(BGCOLOR)
     # First, we print the columns headers.
@@ -1597,14 +1615,14 @@ def offerTableChoices(listDealers):
     bankHeaderRect  = bankHeaderSurf.get_rect(topleft = (posX, posY))
     DISPLAYSURF.blit(bankHeaderSurf, bankHeaderRect)
     posX += COLUMNSPACING
-    skillHeader      = "Dealer's Table Type"
-    skillHeaderSurf  = BASICFONT.render(skillHeader, True, TEXTCOLOR)
-    skillHeaderRect  = skillHeaderSurf.get_rect(topleft = (posX, posY))
+    skillHeader     = "Dealer's Table Type"
+    skillHeaderSurf = BASICFONT.render(skillHeader, True, TEXTCOLOR)
+    skillHeaderRect = skillHeaderSurf.get_rect(topleft = (posX, posY))
     DISPLAYSURF.blit(skillHeaderSurf, skillHeaderRect)
     posX += COLUMNSPACING
-    betHeader     = "Min and Max Bets"
-    betHeaderSurf = BASICFONT.render(betHeader, True, TEXTCOLOR)
-    betHeaderRect = betHeaderSurf.get_rect(topleft = (posX, posY))
+    betHeader       = "Min and Max Bets"
+    betHeaderSurf   = BASICFONT.render(betHeader, True, TEXTCOLOR)
+    betHeaderRect   = betHeaderSurf.get_rect(topleft = (posX, posY))
     DISPLAYSURF.blit(betHeaderSurf, betHeaderRect)
     
 
@@ -1760,14 +1778,15 @@ def checkForQuit():
     # Now, we verify the choice.
     if verifyChoice == True:
         DISPLAYSURF.fill(BLACK)
-        posX, posY = (WINCENTERX, WINCENTERY)
+        posX = LEFTMARGIN
+        posY = WINCENTERY
         instText = "Are you sure you want to exit?(Y/N)"
         instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
-        instRect = instSurf.get_rect(center = (posX, posY))
+        instRect = instSurf.get_rect(topleft = (posX, posY))
         DISPLAYSURF.blit(instSurf, instRect)
         pygame.display.update()
         posY += LINESPACING18
-        answer = checkForYesNo(posX, posY, 'center')
+        answer = checkForYesNo(posX, posY, 'topleft')
         posY += LINESPACING18
         # answer will be True is Y was pressed, False if N is pressed.
         # True means the player wants to exit, but they may not want to
@@ -1784,11 +1803,11 @@ def checkForQuit():
         DISPLAYSURF.fill(BLACK)
         instText = "Do you want to save before exiting?(Y/N)"
         instSurf = INSTRUCTFONT.render(instText, True, TEXTCOLOR)
-        instRect = instSurf.get_rect(center = (posX, posY))
+        instRect = instSurf.get_rect(topleft = (posX, posY))
         DISPLAYSURF.blit(instSurf, instRect)
         pygame.display.update()
         posY += LINESPACING18
-        saveGame = checkForYesNo(posX, posY, 'center')
+        saveGame = checkForYesNo(posX, posY, 'topleft')
         if saveGame == True:
             # Note, this function does not care if players were eliminated or
             # were pulled from the game. Other function or methods would have
@@ -2086,6 +2105,12 @@ def playBlackjack():
         # player that cannot make the ante bet.
         checkPlayerViability()
 
+        # After each major step that can remove players from the game, we
+        # need to check to see if there are any players left, besides the
+        # dealer.
+        if tableObj.numPlayers == 0:
+            userLostGame()
+
         # Now, the game will call for ante amounts for initial bets on the
         # hands. This also sets the maximum raise later in the round.
         # This is a very interactive phase of the round, requiring that
@@ -2149,19 +2174,30 @@ def playBlackjack():
         # When finished, it will return a value indicating how many
         # hands were still playable by the time the dealer's turn begins.
         # The value determines if a dealer automatically wins all 
-        # remaining hands or has to actually play the turn.
-        remainingHands, remainingPlayers = hitOrStand(roundCounter)
+        # remaining hands or has to actually play the turn. hitOrStand
+        # also updates TableObj.numPlayers before returning.
+        hitOrStand(roundCounter)
 
-        # Now, it is time for the dealer's turn. This could change the
-        # remainginPlayers as well.
+        # After each major step that can remove players from the game, we
+        # need to check to see if there are any players left, besides the
+        # dealer.
+        if tableObj.numPlayers == 0:
+            userLostGame()
+
+
         tableObj.phase = 'dealer'
-        dealersTurn(remainingHands, remainingPlayers, roundCounter)
+        dealersTurn(roundCounter)
 
         # Now, we need to check to see if any players should have been
         # eliminated, but were spared for outstanding bets. This should
         # not happen, but it is a good idea to check anyway.
-        # This code is designed to test findDefunctPlayer
-        remainingPlayers = findDefunctPlayer()
+        findDefunctPlayer()
+
+        # Next, we need to check for the possibility that all players were
+        # either withdrawn or eliminated. This is a sanity check before the
+        # endRound function runs.
+        if tableObj.numPlayers == 0:
+            userLostGame()
             
         # Finally, we have the endOfRound. This resets function will reset
         # results, eliminate players who busted, reset hands and bets for
@@ -3262,17 +3298,10 @@ def hitOrStand(rounds):
     players. It uses the Player methods add_card_to_hand and add_card_to_split
     along with the function dealSingleCard to determine if a player busts.
     INPUTS: rounds, integer, the number of the current round of play
-    OUTPUTS: tuple of integers
-        remainingHands: number of hands remaining for the dealer's turn
-        remainingPlayers: number of players eliminated during this phase
+    OUTPUTS: None
     """
-    # Set our hand and player counters. playerLosses tabulates each players
-    # losses during their turn.
     # Note: Players cannot win until the dealer's turn if they did not hit
     # blackjack already.
-    remainingHands = 0
-    remainingPlayers = 0
-    playerLosses = 0
     for seat in TABLESEATS:
         tableObj.phase = partOfRound = seat
         # A player might have been withdrawn or busted the bank in previous
@@ -3282,13 +3311,11 @@ def hitOrStand(rounds):
             # The player's name is only available if the seat is occupied.
             playerName = tableObj.players[seat].name
             # Increment the player counter and reset playerLosses.
-            remainingPlayers += 1
             playerLosses = 0
             # This loop continues until the player says stop or the hand busts.
             while tableObj.results[seat + ' reg'] == 'playable':
                 # Reset the position to the upper left of the status corner
-                # and clear the status corner. Increment the hands counter.
-                remainingHands += 1
+                # and clear the status corner.
                 posX = TOPMARGIN
                 posY = LEFTMARGIN
                 clearStatusCorner()
@@ -3306,8 +3333,6 @@ def hitOrStand(rounds):
                     break
                 refreshTable(partOfRound, rounds)
                 if tableObj.results[seat + ' reg'] == 'bust':
-                    # Decrement hand counter since this one is defunct.
-                    remainingHands -= 1
                     # Increment the player's losses
                     playerLosses += tableObj.players[seat].bet
                     # This method updates the dealer's bank with the player's
@@ -3352,7 +3377,6 @@ def hitOrStand(rounds):
                         # This function removes the player from the tableObj.
                         # We also need to decrement the player counter.
                         eliminatePlayer(seat)
-                        remainingPlayers -= 1
                         # We have to break out because the player is gone now.
                         break
             # End of while loop for cards for the regular hand.
@@ -3366,8 +3390,7 @@ def hitOrStand(rounds):
 
             while tableObj.results[seat + ' split'] == 'playable':
                 # Reset the position to the upper left of the status corner
-                # and clear the status corner. Increment the hands counter.
-                remainingHands += 1
+                # and clear the status corner.
                 posX = TOPMARGIN
                 posY = LEFTMARGIN
                 clearStatusCorner()
@@ -3385,8 +3408,6 @@ def hitOrStand(rounds):
                     break
                 refreshTable(partOfRound, rounds)
                 if tableObj.results[seat + ' split'] == 'bust':
-                    # Decrement hand counter since this one is defunct.
-                    remainingHands -= 1
                     # Increment the player's losses
                     playerLosses += tableObj.players[seat].split_bet
                     # This method updates the dealer's bank with the player's
@@ -3424,19 +3445,11 @@ def hitOrStand(rounds):
                         pygame.display.update()
                         pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
                         # This function removes the player from the tableObj.
-                        # We also need to decrement the player counter.
-                        removeCheck = eliminatePlayer(seat)
-                        if removeCheck == True:
-                            remainingPlayers -= 1
-                        else:
-                            print("hitOrStand: Unable to remove player in seat {0}.".format(seat))
-                            terminate()
-                        # We have to break out because the player is gone now.
-                        break 
+                        eliminatePlayer(seat)
                 # End of while loop for cards for the split hand.
             # End of if statement checking for filled seats.
         # End of for loop checking seats.
-    return (remainingHands, remainingPlayers) # hitOrStand
+    return # hitOrStand
             
 def checkForHitStand():
     """
@@ -3500,9 +3513,13 @@ def eliminatePlayer(seat):
     print("eliminatePlayer: Status: seat for elimination is {0}.".format(seat))
     print("eliminatePlayer: Status: Player to be eliminated is {0}.".format(playerName))
     del tableObj.players[seat]
+    tableObj.numPlayers -= 1
+    # This step eliminates a bug that would have withdrawn players removed
+    # from saved games.
+    deletePlayer(playerName)
     return
 
-def dealersTurn(remainingHands, remainingPlayers, rounds):
+def dealersTurn(rounds):
     """
     This function plays out the dealers turn. First, it checks to see if any
     hands remain that the dealer has to play against. Here are a list of the
@@ -3527,10 +3544,7 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
         * dealer must take a card on a hard 16 or less if the soft score on
             the hand does not beat any of the players' remaining hands
     
-    INPUTS: three arguments
-        remainingHands, integer, the number of playable player hands
-        remainingPlayers, integer, the number of players still seated
-        rounds, integer, number of the current round
+    INPUTS: rounds, integer, number of the current round
     OUTPUTS: None. All outputs are to the screen. Any data changes are
         made to the global tableObj object. This function uses the results
         attribute to track remaining winners, losers, and ties.
@@ -3544,13 +3558,14 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     # variable assignment.
     dealerBlackjack = (tableObj.results['dealer reg'] == 'blackjack')
     insuranceBets = False
-    noHandsRemain = (remainingHands == 0)
-    userLosesGame = (remainingPlayers == 0)
+    userLosesGame = (tableObj.numPlayers == 0)
+    noHandsRemain = False
+    # These varaiables are integers.
     dealerLosses = 0
     dealerWins = 0
-    print("dealersTurn: Status: remainingHands is {0}. remainingPlayers is {1}.".format(remainingHands, remainingPlayers))
+    print("dealersTurn: Status: userLosesGame is {0}. Players left is {1}.".format(userLosesGame, tableObj.numPlayers))
     print("dealersTurn: Status: dealerBlackjack is {0}. noHandsRemain is {1}.".format(dealerBlackjack, noHandsRemain))
-    print("dealersTurn: Status: userLosesGame is {0}. dealerLosses is {1}. dealerWins is {2}.".format(userLosesGame, dealerLosses, dealerWins))
+    print("dealersTurn: Status: dealerLosses is {0}. dealerWins is {1}.".format(dealerLosses, dealerWins))
 
     # Next, we need to determine if any insurance were made.
     for seat in TABLESEATS:
@@ -3620,45 +3635,24 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     # Next, we need to resolve the insurance bets, as that might save a
     # player facing elimination from a hand that busted.  resolveInsBets
     # returns the number of players remaining in the game.
-    remainingPlayers = resolveInsBets(dealerBlackjack)
-    if remainingPlayers == 0:
+    resolveInsBets(dealerBlackjack)
+    if tableObj.numPlayers == 0:
         refreshTable('dealer', rounds)
         userLostGame()
-
-    # Next, we need to check to see if the dealer needs to play their hand.
-    # No remaining playable hands means that there is nothing to do. All of
-    # the player hands have already been resolved.
-    if noHandsRemain:
-        # Reset the status corner.
-        clearStatusCorner()
-        posX = LEFTMARGIN
-        posY = TOPMARGIN
-        noHandsTextFirst  = "No playable hands remain. The dealer is not required"
-        noHandsTextSecond = "to play out their hand. The round is over."
-        noHandsSurfFirst  = SCOREFONT.render(noHandsTextFirst, True, TEXTCOLOR)
-        noHandsSurfSecond = SCOREFONT.render(noHandsTextSecond, True, TEXTCOLOR)
-        noHandsRectFirst  = noHandsSurfFirst.get_rect(topleft = (posX, posY))
-        posY += LINESPACING12
-        noHandsRectSecond = noHandsSurfSecond.get_rect(topleft = (posX, posY))
-        posY += LINESPACING12
-        DISPLAYSURF.blit(noHandsSurfFirst, noHandsRectFirst)
-        DISPLAYSURF.blit(noHandsSurfSecond, noHandsRectSecond)
-        pygame.display.update()
-        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
-        return
 
     # Now, we need to check the case that the dealer has a blackjack. In this
     # case, all other playable hands lose automatically.
     if dealerBlackjack:
-        remainingPlayers = dealerHasBlackjack()
-        if remainingPlayers == 0:
+        dealerHasBlackjack()
+        if tableObj.numPlayers == 0:
             refreshTable('dealer', rounds)
             userLostGame()
         return
 
-    # Since at least one playable hand remains, the dealer has to play their
-    # hand to determine the outcome of the game. We need the highest score
-    # and the lowest score among the playable hands. Remember, soft scores
+    # We need to determine if any playable hands remain. While we do that,
+    # we also need to determine the min and max scores for any playable hands
+    # If at least one playable hand exists, the dealer has to play their
+    # hand to determine the outcome of the game. Remember, soft scores
     # are always greater than or equal to the hard score because the soft
     # score uses Ace = 11 whenever possible. The dealer has to take a card
     # until the dealer's soft score beats at least one player's score or the
@@ -3703,8 +3697,14 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
     playableScores.sort
     print("dealersTurn: Status: playableScores is {0}.".format(playableScores))
     print("dealersTurn: Status: playableHands is {0}.".format(playableHands))
-    maxScore = max(playableScores)
-    minScore = min(playableScores)
+    # This code keeps this function from crashing when no playable hands
+    # remain among the players' hands.
+    if len(playableScores) == 0:
+        maxScore = 0
+        minScore = 0
+    else: # There is at least one playable hand.
+        maxScore = max(playableScores)
+        minScore = min(playableScores)
     while minScore < 17 and len(playableScores) > 1:
         # The score must be greater than 17. It is possible for players to
         # stand at 12 or 13 and wait to see if the dealer busts. So, we will
@@ -3716,6 +3716,30 @@ def dealersTurn(remainingHands, remainingPlayers, rounds):
         minScore = min(playableScores)
         if minScore == maxScore:
             break
+
+    # Next, we need to check to see if the dealer needs to play their hand.
+    # No remaining playable hands means that there is nothing to do. All of
+    # the player hands have already been resolved.
+    noHandsRemain = (len(playableHands) == 0)
+    print("dealersTurn: Status: noHandsRemain is {}.".format(noHandsRemain))
+    if noHandsRemain:
+        # Reset the status corner.
+        clearStatusCorner()
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        noHandsTextFirst  = "No playable hands remain. The dealer is not required"
+        noHandsTextSecond = "to play out their hand. The round is over."
+        noHandsSurfFirst  = SCOREFONT.render(noHandsTextFirst, True, TEXTCOLOR)
+        noHandsSurfSecond = SCOREFONT.render(noHandsTextSecond, True, TEXTCOLOR)
+        noHandsRectFirst  = noHandsSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING12
+        noHandsRectSecond = noHandsSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING12
+        DISPLAYSURF.blit(noHandsSurfFirst, noHandsRectFirst)
+        DISPLAYSURF.blit(noHandsSurfSecond, noHandsRectSecond)
+        pygame.display.update()
+        pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+        return
 
     # Now, we set up a loop to play the dealer's hand. This loop uses the
     # result value for the dealer's hand to determine when to stop the loop.
@@ -3967,11 +3991,8 @@ def resolveInsBets(dealerBlackjack):
     player has no other playable hand left.
     INPUTS: dealerBlackjack, boolean, True for dealer having blackjack, False
         otherwise
-    OUTPUTS: remainingPlayers, integer from 0 to 3
+    OUTPUTS: updates tableObj.numbPlayers. Otherwise, none.
     """
-    # Initialize player counter, so this function can return the number of
-    # remainingPlayers.
-    remainginPlayers = 0
     # Per usual, we need to set positionals and clear the status corner.
     clearStatusCorner()
     posX = LEFTMARGIN
@@ -3983,7 +4004,6 @@ def resolveInsBets(dealerBlackjack):
         if isPlayerStillThere(seat):
             # The seat is occupied. Reset the status corner each iteration.
             print("resolveInsBet: Status: Checking seat {0} and printing {1}.".format(seat, tableObj.players[seat]))
-            remainginPlayers += 1
             clearStatusCorner()
             posY = TOPMARGIN
             if tableObj.players[seat].insurance != 0:
@@ -4020,14 +4040,15 @@ def resolveInsBets(dealerBlackjack):
                     # We need to check to see if the player still has a
                     # playable hand. If so, they will not be eliminated.
                     if tableObj.results[seat + ' reg'] == 'playable' or\
-                       tableobj.results[seat + ' split'] == 'playable':
+                       tableObj.results[seat + ' split'] == 'playable':
                         resultTextSecond = "{0} has at least one playable hand.".format(playerName)
                         resultTextThird  = "This player will not eliminated, yet."
                     else: # The player has no other means of survival.
                         resultTextSecond = "{0} has no playable hands left.".format(playerName)
                         resultTextThird  = "This player has been eliminated."
+                        # Note: eliminatePlayer automatically adjusts the
+                        # tableObj.numPlayers attribute for us.
                         eliminatePlayer(seat)
-                        remainginPlayers -= 1
                         # This block uses a different set of colors. So,
                         # these messages need their own print block. The rest
                         # use the common block further below.
@@ -4071,33 +4092,31 @@ def resolveInsBets(dealerBlackjack):
     if dealerBank <= 0:
         # The user beat the dealer.
         playersWinGame()
-    return remainginPlayers # resolveInsBets
+    return # resolveInsBets
 
 def dealerHasBlackjack():
     """
     This function collects the user losses due to a dealer blackjack. It
     returns the number of players remaining in the game.
     INPUTS: None
-    OUTPUTS: remainingPlayers, integer between 0 and 3
+    OUTPUTS: updates tableObj.numPlayers, otherwise none.
     """
     # First, we need to set up an aggregator for the dealer's winnings. We
     # also need to clear the status corner and reset the positionals. All
     # losses will printed out in the status corner together.  The dealer
     # cannot be eliminated by wins, but players may be eliminated by their
-    # losses. We also need to tabulate surviving players.
+    # losses. We also need to tabulate surviving players via
+    # tableObj.numPlayers.
     clearStatusCorner()
     posX = LEFTMARGIN
     posY = TOPMARGIN
     dealerWins = 0
-    remainingPlayers = 0
     # We need to process all of the hands marked "playable". All of them 
     # are losses for the players in question.
     for hand in HANDLIST:
         seat, handType = hand.split(' ')
         print("dealerHasBlackjack: Status: Looking for playable hands. seat is {0}. handType is {1}. result is {2}".format(seat, handType, tableObj.results[hand]))
         if isPlayerStillThere(seat):
-            # Incremement the player counter.
-            remainingPlayers += 1
             if tableObj.results[hand] == 'playable':
                 # Set this one to a loss.
                 tableObj.results[hand] = 'loss'
@@ -4131,7 +4150,6 @@ def dealerHasBlackjack():
                     posY += LINESPACING18
                     eliminatePlayer(seat)
                     # Reduce the player counter.
-                    remainingPlayers -+ 1
                 # The status printout can use a common blit command block.
                 DISPLAYSURF.blit(playerStatusSurf, playerStatusRect)
                 pygame.display.update()
@@ -4139,7 +4157,7 @@ def dealerHasBlackjack():
             # End of hand filter
         # End of check for occupied seat
     # End of for loop through HANDLIST
-    return remainingPlayers # dealerHasBlackjack
+    return # dealerHasBlackjack
 
 def dealerBusts(rounds):
     """
@@ -4217,19 +4235,15 @@ def findDefunctPlayer():
     """
     This function checks all remaining players to see if any should be
     eliminated. It notifies the user of each deletion.
-    INPUTS:
-    OUTPUTS: remainingPlayers, integer from 0 to 3
+    INPUTS: None
+    OUTPUTS: updates tableObj.numPlayers. Otherwise, none.
     """
-    # First, we need to clear the status corners, reset positionals, and 
-    # start a player counter.
+    # First, we need to clear the status corners and reset positionals.
     clearStatusCorner()
     posX = LEFTMARGIN
     posY = TOPMARGIN
-    remainingPlayers = 0
     for seat in TABLESEATS:
         if isPlayerStillThere(seat):
-            # Increment player counter.
-            remainingPlayers += 1
             # Now, we need to check their bank and their name.
             playerName = tableObj.players[seat].name
             playerBank = tableObj.players[seat].bank
@@ -4247,12 +4261,11 @@ def findDefunctPlayer():
                 DISPLAYSURF.blit(playerStatusSurfSecond, playerStatusRectSecond)
                 pygame.display.update()
                 eliminatePlayer(seat)
-                remainingPlayers -= 1
                 pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
             # End of check for player insolvency
         # End of check for occupied seat
     # End of for loop through table seats
-    return remainingPlayers # findDefunctPlayers                
+    return # findDefunctPlayers                
 
 def endOfRound(rounds):
     """
@@ -4529,14 +4542,426 @@ def playersWinGame():
     terminate()
     # End of playersWinGame
 
-def userLostGame():
+def userLostGame(savedGameFile = './etc/savedgame.txt'):
     """
-    This function will handle the case of all players being eliminated from
+    This function handles the case of all players being eliminated from
     the game. In that case, the user should be prompted about whether or not
     they want to keep a saved game file, if one exists. A thank you message
     should also be issued, then the game will spacebar pause and then exit.
+    There is a possibility that the user has a withdrawn player still held
+    in listPlayers that could be also be saved to disk. A lot of players use
+    the "creep and save" method of playing potentially difficult games, when
+    it is possible to do so. We need to help the player use that strategy, if
+    they want to.
+    INPUTS: option savedGameFile, string with path to saved game (defaults to
+        './etc/savedgame.txt')
+    OUTPUTS: None. All output is to disk or the game screen.
     """
-    pass
+    # There is a function, printPlayers, that can print data from listPlayers
+    # or from saved game files. It will also return True if there was data
+    # to print out, or False if it could not print any data. We can use it
+    # to give the user data on both, so that an informed decision can be made
+    # regarding whether or not to save the game after the seated players were
+    # eliminated.
+    withdrawnPlayers = printPlayers('memory')
+    goodSavedGame = printPlayers('file')
+    DISPLAYSURF.fill(BLACK)
+    posX = LEFTMARGIN
+    posY = WINCENTERY
+    if withdrawnPlayers and goodSavedGame:
+        # Some players have good data in memory and on disk. Some of the
+        # players will be deleted from the saved game, though, if the user
+        # opts to save anyway. This stanza explains that situation.
+        savePlayersTextFirst  = "You have unsaved player data and a good saved game."
+        savePlayersTextSecond = "Some of the players will be eliminated when you save the game."
+        savePlayersTextThird  = "Do you want to save the withdrawn players anyway?"
+        savePlayersSurfFirst  = PROMPTFONT.render(savePlayersTextFirst, True, TEXTCOLOR)
+        savePlayersSurfSecond = PROMPTFONT.render(savePlayersTextSecond, True, TEXTCOLOR)
+        savePlayersSurfThird  = PROMPTFONT.render(savePlayersTextThird, True, TEXTCOLOR)
+        savePlayersRectFirst  = savePlayersSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        savePlayersRectSecond = savePlayersSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        savePlayersRectThird  = savePlayersSurfThird.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        DISPLAYSURF.blit(savePlayersSurfFirst, savePlayersRectFirst)
+        DISPLAYSURF.blit(savePlayersSurfSecond, savePlayersRectSecond)
+        DISPLAYSURF.blit(savePlayersSurfThird, savePlayersRectThird)
+        pygame.display.update()
+        answer = checkForYesNo(posX, posY, 'topleft')
+        posY += LINESPACING18
+        # If yes, save over the existing saved game with player data. If the
+        # answer is no, then acknowledge it and exit the game. Either way, 
+        # we need to clear the screen and reset the positionals. We will use
+        # a common screen print block at the end.
+        if answer:
+            responseTextFirst  = "Saving over existing saved game."
+            saveStatus = writeSavedGame(listPlayers)
+            if saveStatus:
+                responseTextSecond = "Successfully saved game."
+            else: # Save failed.
+                responseTextSecond = "Saving game failed. Check your access to its directory."            
+        else: # The user opted not to save the data.
+            responseTextFirst  = "Existing saved game will be not overwritten."
+            responseTextSecond = "Better luck next time. Creep and save is a good strategy."
+        responseSurfFirst  = PROMPTFONT.render(responseTextFirst, True, TEXTCOLOR)
+        responseSurfSecond = PROMPTFONT.render(responseTextSecond, True, TEXTCOLOR)
+        responseRectFirst  = responseSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        responseRectSecond = responseSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        DISPLAYSURF.blit(responseSurfFirst, responseRectFirst)
+        DISPLAYSURF.blit(responseSurfSecond, responseRectSecond)
+        pygame.display.update()
+        pressSpaceToContinue(posX, posY, 'topleft')
+        terminate()
+
+    elif withdrawnPlayers and not goodSavedGame:
+        # In this case, as above, there are players that were withdrawn
+        # before elimination. There is no usable saved game. So, nothing
+        # will be lost if the user saves the surivivors.
+        statusMsgTextFirst  = "There are no valid saved games present."
+        statusMsgTextSecond = "There are {} withdrawn players which could".format(len(listPlayers))
+        statusMsgTextThird  = "be saved. Would you like to save those players?"
+        statusMsgSurfFirst  = PROMPTFONT.render(statusMsgTextFirst, True, TEXTCOLOR)
+        statusMsgSurfSecond = PROMPTFONT.render(statusMsgTextSecond, True, TEXTCOLOR)
+        statusMsgSurfThird  = PROMPTFONT.render(statusMsgTextThird, True, TEXTCOLOR)
+        statusMsgRectFirst  = statusMsgSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        statusMsgRectSecond = statusMsgSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        statusMsgRectThird  = statusMsgSurfThird.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        DISPLAYSURF.blit(statusMsgSurfFirst, statusMsgRectFirst)
+        DISPLAYSURF.blit(statusMsgSurfSecond, statusMsgRectSecond)
+        DISPLAYSURF.blit(statusMsgSurfThird, statusMsgRectThird)
+        pygame.display.update()
+        answer = checkForYesNo(posX, posY, 'topleft')
+        posY += LINESPACING18
+        # If yes, acknowledge the request and save the data to disk. If the
+        # answer is no, acknowledge and exit the game. Regardless of the 
+        # response, we need to clear the screen and reset positionals. As
+        # we did in the previous stanza, we can use a common screen printing
+        # block for this output as well.
+        if answer:
+            responseTextFirst  = "Saving new player data to disk."
+            saveStatus = writeSavedGame(listPlayers)
+            if saveStatus:
+                responseTextSecond = "Successfully saved game."
+            else: # Save failed.
+                responseTextSecond = "Saving game failed. Check your access to its directory."            
+        else: # The user opted not to save the data.
+            responseTextFirst  = "The data on your withdrawn players will not be saved. Better luck next time."
+            responseTextSecond = "Remember, you will need to create new players when you play again."
+        responseSurfFirst  = PROMPTFONT.render(responseTextFirst, True, TEXTCOLOR)
+        responseSurfSecond = PROMPTFONT.render(responseTextSecond, True, TEXTCOLOR)
+        responseRectFirst  = responseSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        responseRectSecond = responseSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        DISPLAYSURF.blit(responseSurfFirst, responseRectFirst)
+        DISPLAYSURF.blit(responseSurfSecond, responseRectSecond)
+        pygame.display.update()
+        pressSpaceToContinue(posX, posY, 'topleft')
+        terminate()
+
+    elif not withdrawnPlayers and goodSavedGame:
+        # There are no survivors from this round. The player can opt to
+        # remove the good saved game or leave it and play "creep and save".
+        statusMsgTextFirst  = "There is a valid saved game. No players"
+        statusMsgTextSecond = "survived the round nor were any withdrawn."
+        statusMsgTextThird  = "Would you like to keep the saved game?"
+        statusMsgSurfFirst  = PROMPTFONT.render(statusMsgTextFirst, True, TEXTCOLOR)
+        statusMsgSurfSecond = PROMPTFONT.render(statusMsgTextSecond, True, TEXTCOLOR)
+        statusMsgSurfThird  = PROMPTFONT.render(statusMsgTextThird, True, TEXTCOLOR)
+        statusMsgRectFirst  = statusMsgSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        statusMsgRectSecond = statusMsgSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        statusMsgRectThird  = statusMsgSurfThird.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        DISPLAYSURF.blit(statusMsgSurfFirst, statusMsgRectFirst)
+        DISPLAYSURF.blit(statusMsgSurfSecond, statusMsgRectSecond)
+        DISPLAYSURF.blit(statusMsgSurfThird, statusMsgRectThird)
+        pygame.display.update()
+        answer = checkForYesNo(posX, posY, 'topleft')
+        posY += LINESPACING18
+        # If yes, acknowledge and exit the game. If the answer is no, then
+        # delete the saved game. Regardless, we need to clear the screen and
+        # reset the positionals.
+        if answer:
+            responseTextFirst  = "Removing saved game from the disk."
+            removeStatus = removeSavedGame()
+            if removeStatus:
+                responseTextSecond = "Successfully removed saved game."
+            else: # Save failed.
+                responseTextSecond = "Removing saved game failed. Check your access to its directory."            
+        else: # The user opted not to save the data.
+            responseTextFirst  = "The saved game will not be removed from the disk."
+            responseTextSecond = "Creep and save is a workable strateg in this game."
+        responseSurfFirst  = PROMPTFONT.render(responseTextFirst, True, TEXTCOLOR)
+        responseSurfSecond = PROMPTFONT.render(responseTextSecond, True, TEXTCOLOR)
+        responseRectFirst  = responseSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        responseRectSecond = responseSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        DISPLAYSURF.blit(responseSurfFirst, responseRectFirst)
+        DISPLAYSURF.blit(responseSurfSecond, responseRectSecond)
+        pygame.display.update()
+        pressSpaceToContinue(posX, posY, 'topleft')
+        terminate()
+
+    else: # No players survived and there is no saved game data either.
+        statusMsgTextFirst  = "There are no valid saved gamea and no players survived"
+        statusMsgTextSecond = "the round nor were withdrawn. Better luck next time."
+        statusMsgTextThird  = "Exiting the game...."
+        statusMsgSurfFirst  = PROMPTFONT.render(statusMsgTextFirst, True, TEXTCOLOR)
+        statusMsgSurfSecond = PROMPTFONT.render(statusMsgTextSecond, True, TEXTCOLOR)
+        statusMsgSurfThird  = PROMPTFONT.render(statusMsgTextThird, True, TEXTCOLOR)
+        statusMsgRectFirst  = statusMsgSurfFirst.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        statusMsgRectSecond = statusMsgSurfSecond.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        statusMsgRectThird  = statusMsgSurfThird.get_rect(topleft = (posX, posY))
+        posY += LINESPACING18
+        DISPLAYSURF.blit(statusMsgSurfFirst, statusMsgRectFirst)
+        DISPLAYSURF.blit(statusMsgSurfSecond, statusMsgRectSecond)
+        DISPLAYSURF.blit(statusMsgSurfThird, statusMsgRectThird)
+        pygame.display.update()
+        pressSpaceToContinue(posX, posY, 'topleft')
+        terminate()
+    # End of userLostGame
+
+def printPlayers(source = 'file', savedGameFile = './etc/savedgame.txt'):
+    """
+    This function prints out any player data found in a saved game file. This
+    allows the user to verify that the player data is from the right saved
+    game file. The need for this function became apparent during late
+    development. That is why it is down here at the end.
+    INPUTS: two optional arguments
+        source, string indicating 'memory' or 'file' (default)
+        savedGameFile, string, defaults to './etc/savedgame.txt'
+    OUTPUTS: Boolean, True if the player data could be printed to the screen,
+        False if not.
+    """
+    # This function is primarily designed to print out data found in files
+    # like saved games, but it can be used to print out similar data in a
+    # list of dictionaries, like listPlayers.
+
+    # First, we need to initialize the object that will store this data for
+    # printout for us. We have three additional flags to initialize as well.
+    # usableSavedGame indicates that a good saved game exists. emptyList
+    # indicated that there are no players left in listPlayers.
+    # corruptSavedGame indicates that the file exists, but the data is either
+    # corrupted or is not formatted correctly for the game.
+    playerData = None
+    usableSavedGame = False
+    corruptSavedGame = False
+    emptyList = True
+
+    # Next, we need to check where we should look for the data.
+    if source == 'file':
+        # The source is on disk. We need to see if the file exists and is
+        # readable by the user. The easiest way is with try.
+        try:
+            testOpen = open(savedGameFile)
+        except:
+            # This variable flags bad or missing data on disk.
+            print("printPlayers: {} not found or not readable.".format(savedGameFile))
+        else:
+            # Successful fileopen. We need to read the data. There can be
+            # 1 to 3 players in a good save game, but no more than 3.
+            i = 0
+            usableSavedGame = True
+            with open(savedGameFile) as savedGame:
+                # playerData now needs to be reinitialized as a list. Saved
+                # games use CSV line in order 'name', 'bank', 'skill'.
+                print("printPlayers: Preparing to read {}.".format(savedGameFile))
+                playerData = []
+                for line in savedGame:
+                    print("printPlayers: Reading line {} of {}.".format(i, savedGameFile))
+                    data = line.split(',')
+                    # We must have three strings or the data is corrupt.
+                    print("printPlayers: Reading {} from {}.".format(data, savedGameFile))
+                    if len(data) < 3:
+                        usableSavedGame = False
+                        corruptSavedGame = True
+                        break
+                    # Assign the first string to name.
+                    playerName = data[0]
+                    print("printPlayers: Status: playerName is {}.".format(playerName))
+                    # The next value must be convertable into an integer.
+                    try:
+                        playerBank = int(data[1])
+                    except:
+                        # Again, this data is not usable for the game.
+                        usableSavedGame = False
+                        corruptSavedGame = True
+                        break
+                    print("printPlayers: Status: playerBank is {}".format(playerBank))
+                    # The last string must have valid values in it for the 
+                    # player's skill. We are going to filter out any 
+                    # whitespace characters, including linefeeds.
+                    for char in string.whitespace:
+                        data[2] = data[2].replace(char, '')
+                    if data[2] not in ('high', 'starter', 'normal', 'special'):
+                        usableSavedGame = False
+                        corruptSavedGame = True
+                        break
+                    else:
+                        playerSkill = data[2]
+                    print("printPlayers: Status: playerSkill is {}.".format(playerSkill))
+                    # We used breaks to end the process of collecing the first
+                    # three saved characters. Since are still running the loop,
+                    # this data is usable.
+                    playerData.append({ 'name'  : playerName,
+                                        'bank'  : playerBank,
+                                        'skill' : playerSkill})
+                    # Increment the counter and stop the loop once it reaches
+                    # the maximum of 3.
+                    i += 1
+                    if i > 3:
+                        break
+    
+    elif source == 'memory':
+        # The function calling it wants to print out the player data in
+        # memory. Now, we need to check to see if listPlayers is empty.
+        emptyList = (len(listPlayers) == 0)
+        if not emptyList:
+            playerData = listPlayers
+    
+    # Now, we either have the data we need in playerData or the flag variables
+    # will warn us about what we do not have.
+    if (source == 'file' and usableSavedGame) or\
+       (source == 'memory' and not emptyList):
+        # We have a good data in playerData. First, we need to clear the
+        # screen and set positionals.
+        DISPLAYSURF.fill(BGCOLOR)
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        # Report headers.
+        if source == 'file':
+            reportHeaderText = "SAVED GAME DATA"
+        else: # Withdrawn player data
+            reportHeaderText = "WITHDRAWN PLAYER DATA"
+        # Common printout block.
+        reportHeaderSurf = PROMPTFONT.render(reportHeaderText, True, TEXTCOLOR)
+        reportHeaderRect = reportHeaderSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(reportHeaderSurf, reportHeaderRect)
+        posY += LINESPACING18
+        # Column headers.
+        nameHeader      = "Player's Name"
+        nameHeaderSurf  = BASICFONT.render(nameHeader, True, TEXTCOLOR)
+        nameHeaderRect  = nameHeaderSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(nameHeaderSurf, nameHeaderRect)
+        posX += COLUMNSPACING
+        bankHeader      = "Player's Bank"
+        bankHeaderSurf  = BASICFONT.render(bankHeader, True, TEXTCOLOR)
+        bankHeaderRect  = bankHeaderSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(bankHeaderSurf, bankHeaderRect)
+        posX += COLUMNSPACING
+        skillHeader     = "Player's Skill Level"
+        skillHeaderSurf = BASICFONT.render(skillHeader, True, TEXTCOLOR)
+        skillHeaderRect = skillHeaderSurf.get_rect(topleft = (posX, posY))
+        DISPLAYSURF.blit(skillHeaderSurf, skillHeaderRect)
+        # Now, we need to popuplate the columns
+        for i in range(0, len(playerData)):
+            posX = LEFTMARGIN
+            posY += LINESPACING18
+            nameSurf  = BASICFONT.render(playerData[i]['name'], True, TEXTCOLOR)
+            nameRect  = nameSurf.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(nameSurf, nameRect)
+            posX += COLUMNSPACING
+            bankAmt   = "{:,}".format(playerData[i]['bank'])
+            bankSurf  = BASICFONT.render(bankAmt, True, TEXTCOLOR)
+            bankRect  = bankSurf.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(bankSurf, bankRect)
+            posX += COLUMNSPACING
+            if playerData[i]['skill'] == 'special':
+                skillValue = 'special events'
+            elif playerData[i]['skill'] == 'high':
+                skillValue = 'high rollers'
+            else:
+                skillValue = playerData[i]['skill']
+            skillSurf = BASICFONT.render(skillValue, True, TEXTCOLOR)
+            skillRect = skillSurf.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(skillSurf, skillRect)
+            posX += COLUMNSPACING
+        pygame.display.update()
+        pressSpaceToContinue(posX, posY, 'topleft')
+        return True
+    else:
+        # Something went wrong. We will split out the messages based on the
+        # the source of the data that was asked for. We need to reset the
+        # positionals and set the screen for error messages.
+        DISPLAYSURF.fill(BLACK)
+        posX = LEFTMARGIN
+        posY = TOPMARGIN
+        if source == 'file':
+            # There are three possibilities: missing, unreadable, or corrupt.
+            # Missing or corrupt files will flip the usableSavedGame False.
+            # Files with bad data flip the corruptSavedGame True as well.
+            if corruptSavedGame:
+                # The file is corrupt.
+                fileErrorText = "The saved game appears corrupt."
+            else: # Unreadable or missing file.
+                fileErrorText = "{} could not be found or is not readable.".format(savedGameFile)
+            fileErrorSurf = PROMPTFONT.render(fileErrorText, True, TEXTCOLOR)
+            fileErrorRect = fileErrorSurf.get_rect(topleft = (posX, posY))
+            posY += LINESPACING18
+            DISPLAYSURF.blit(fileErrorSurf, fileErrorRect)
+        else: # source is listPlayers in memory.
+            dataErrorText = "No players survived this game."
+            dataErrorSurf = PROMPTFONT.render(dataErrorText, True, TEXTCOLOR)
+            dataErrorRect = dataErrorSurf.get_rect(topleft = (posX, posY))
+            DISPLAYSURF.blit(dataErrorSurf, dataErrorRect)
+            posY += LINESPACING18
+        pygame.display.update()
+        pressSpaceToContinue(posX, posY, 'topleft')
+        return False
+    # End of printPlayers
+
+def removeSavedGame(f = './etc/savedgame.txt'):
+    """
+    This function removes an existing saved game from the disk. It returns
+    True if successful, False otherwise.
+    INPUTS: Optional f, filename, defaults to './etc/savedgame.txt'.
+    OUTPUTS: Boolean, True if removal succeeded, False otherwise.
+    """
+    # The functions that call this one have already verified that this file
+    # is a valid, readable saved game. So, we just need to see if we can it
+    # will allows us to remove it. We are going to attempt to remove it.
+    try:
+        os.remove(f)
+    except:
+        print("removeSavedGame: Could not remove file {}.".format(f))
+        return False
+    # We need to make sure that the file is really gone. Again, this is a
+    # we have already read once. So, we know it is readable.
+    try:
+        fobj = open(f)
+    except IOError:
+        # The file is gone.
+        return True
+    # If anying other than an IOError occurs, the file is probably still on
+    # disk. Return a failure.
+    return False
+
+def deletePlayer(playerName):
+    """
+    This function is called by eliminatePlayer to remove an eliminated
+    player's data from listPlayers.
+    INPUTS: playerName, string
+    OUTPUTS: None. All changes are made to listPlayers, a global object.
+    """
+    # The reason we have to search listPlayers is that it is a list of
+    # dictionary objects with keys 'name', 'bank', and 'skill'. We need the
+    # index of the player object to remove it.
+    for i in range(0, len(listPlayers)):
+        if playerName == listPlayers[i]['name']:
+            listPlayers.pop(i)
+            break
+    return
 
 if __name__ == '__main__':
     main()
