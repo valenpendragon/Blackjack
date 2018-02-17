@@ -707,7 +707,7 @@ Casino (game): main: Added a comment block explaining how tableChoice is structu
 Casino (game): playersWinGame: Created this function to award the players with extra winnings for break the bank, copy their new bank amounts to listPlayers, give the players a skill increase (if possible), save the data to the saved game, and end the game. This has a bug due to straggler output from refreshTable that still needs to be cleaned up.
 Casino (game): dealersTurn: Changed the wording of the message that the dealer lost the game.
 
-2/11/18
+2/16/18 14:07 Pushed to origin pygame
 
 Casino (game): eliminatePlayer: Added reduction to tableObj.numPlayers.
 Casino (game): userLostGame: Created this function to handle the user losing the game to the house. It handles protecting saved games from deletion. It also handles saving a withdrawn player (which overwrites the saved game).
@@ -726,3 +726,13 @@ Casino (game): hitOrStand, dealersTurn, resolveInsBets, findDefunctPlayer, deale
 Casino (game): Major bug that could cause an eliminated player to be saved back to disk or a withdrawn player to be deleted from saved games. Fixing this bug required the following changes:
 Casino (game): eliminatePlayer: Added a call to deletePlayer to remove the player from listPlayers.
 Casino (game): deletePlayer: Created this function to remove the player data for eliminated players.
+Still testing to make sure that this bug has been eliminated.
+
+2/17/18 16:15 Pushed to origin pygame
+
+Casino (game): playersWinGame: Added rounds as an argument for this function, so that the game can print out the round number for post-game.
+Bugs Fixed: 
+A bug that had userLostGame identify good saved games as corrupt ones.
+A bug that left Dealer data on screen after the dealer busts.  This was fixed by adding an output option to printTableDealer 'post-game' that skips the dealer completely. This output option was added to the refreshTable calls in playersWinGame. A 'post-game' option also had to be added to refreshTable.
+checkForQuit leaves the game without showing the user the player data in the saved game and in memory so the player can make an informed choice about saving the game or not saving it. Fixing this bug required removing checkForQuit and calling userLostGame instead. The flow shows the player data and allows the user to decide if they want to save or not.
+A bug that did not print out the contents of the saved game found by findPlayers, so that the user will know what they have in the saved game and can decide to use or ignore it. This required adding functionality to findPlayers to offer the user a choice. In findPlayers, changed listPlayers to tempListPlayers to clearly distinguish it from the global listPlayers. findPlayers now uses functionality similar to printPlayers to print out the player data (it cannot use printPlayers because listPlayers is not touched in this function). No changes were needed to main().
