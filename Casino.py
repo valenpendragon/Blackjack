@@ -2183,12 +2183,14 @@ def playBlackjack():
         # dealer has a ten value card or an ace showing. If so, the
         # players can bet on the dealer having a blackjack.
         checkForInsBet()
+        refreshTable(tableObj.phase, roundCounter)
 
         # Next, we need to offer any players who have received a pair the
         # opportuntity to split their hand. Once that is done, a 21 for
         # either hand is not considered a blackjack. At best, it can tie
         # dealer if the dealer has non-blackjack.
         checkForPairs(roundCounter)
+        refreshTable(tableObj.phase, roundCounter)
 
         # Now that all of the hands have been dealt, including split
         # hands, and ante bets have been placed on all existing hands,
@@ -2952,8 +2954,7 @@ def checkForInsBet():
         posY = TOPMARGIN
         # We need ask each "player" if they want to place an insurance bet.
         for seat in TABLESEATS:
-            # We need to reset the variables used to determine if a player
-            # can cover an insurance bet each iteration of the for loop.
+            # Reset playerTotalBets each time.
             playerTotalBets = 0
             # We need to clear the corner between loops. The statusSurf is the
             # entire upper left corner.
@@ -2971,7 +2972,7 @@ def checkForInsBet():
                 # We have to make sure that the player can cover the table
                 # minimum for an insurance bet before asking them if they
                 # want to make one.
-                if playerTotalBets + tableMin >= playerBank:
+                if playerTotalBets + tableMin > playerBank:
                     insBetTextFirst  = "{0}, you have insufficient money remaining".format(playerName)
                     insBetTextSecond = "to cover the table minimum for an insurance bet."
                     insBetSurfFirst  = PROMPTFONT.render(insBetTextFirst, True, TEXTCOLOR)
@@ -3055,7 +3056,7 @@ def checkForPairs(rounds):
                 # It is initialized to False for each player and when this
                 # function is called.
                 playerTotalBets = tableObj.players[seat].total_bets()
-                if playerTotalBets + tableMin >= playerBank:
+                if playerTotalBets + tableMin > playerBank:
                     splitHandTextFirst  = "{0}, you have insufficient money remaining".format(playerName)
                     splitHandTextSecond = "to cover the table minimum ante on a split hand."
                     splitHandSurfFirst  = PROMPTFONT.render(splitHandTextFirst, True, TEXTCOLOR)
@@ -4028,7 +4029,10 @@ def resolveInsBets(dealerBlackjack, rounds):
     """
     This function resolves all insurance bets. It will remove any player
     that becomes insolvent due to losing the insurance bet, but only if the
-    player has no other playable hand left.
+    player has no other playable hand left. It uses variables, approColor
+    and approBGColor, to produce the correct output appearance. We set 
+    approColor to the default TEXTCOLOR and approBGColor to BGCOLR each
+    round of the loop that checks for occupied seats and playable hands.
     INPUTS: two arguments
         dealerBlackjack, boolean, True for dealer having blackjack, False
             otherwise
@@ -4044,11 +4048,11 @@ def resolveInsBets(dealerBlackjack, rounds):
     # Go through all seats and see who is left and has an insurance bet. It 
     # will be non-zero if the player has one.
     for seat in TABLESEATS:
+        # Initializing the color to be used each round of this for loop.
+        approColor   = TEXTCOLOR
+        approBGColor = BGCOLOR
         if isPlayerStillThere(seat):
-            # The seat is occupied. Reset the status corner each iteration.
             print("resolveInsBet: Status: Checking seat {0} and printing {1}.".format(seat, tableObj.players[seat]))
-            clearStatusCorner()
-            posY = TOPMARGIN
             if tableObj.players[seat].insurance != 0:
                 # The player has an insurance bet. We need to populate a few
                 # easier to read variables.
@@ -4064,8 +4068,8 @@ def resolveInsBets(dealerBlackjack, rounds):
                 #   1) dealer had blackjack (player won)
                 #   2) dealer did not have blackjack (player lost) but they
                 #       are solvent still
-                #   3) dealer did not have blackjack (player lost) and their
-                #       is insolvent.
+                #   3) dealer did not have blackjack (player lost) and the
+                #       player is insolvent.
                 # This function takes place after the hold card is revealed
                 # but before the dealer finishes playing out its hand.
 
@@ -4087,48 +4091,36 @@ def resolveInsBets(dealerBlackjack, rounds):
                         resultTextSecond = "{0} has at least one playable hand.".format(playerName)
                         resultTextThird  = "This player will not eliminated, yet."
                     else: # The player has no other means of survival.
+                        approColor   = ELIMINATIONCOLOR
+                        approBGColor = ELIMINATIONBGCOLOR
                         resultTextSecond = "{0} has no playable hands left.".format(playerName)
                         resultTextThird  = "This player has been eliminated."
                         # Note: eliminatePlayer automatically adjusts the
                         # tableObj.numPlayers attribute for us.
                         eliminatePlayer(seat)
-                        # This block uses a different set of colors. So,
-                        # these messages need their own print block. The rest
-                        # use the common block further below.
-                        resultSurfFirst  = PROMPTFONT.render(resultTextFirst, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
-                        resultSurfSecond = PROMPTFONT.render(resultTextSecond, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
-                        resultSurfThird  = PROMPTFONT.render(resultTextThird, True, ELIMINATIONCOLOR, ELIMINATIONBGCOLOR)
-                        resultRectFirst  = resultSurfFirst.get_rect(topleft = (posX, posY))
-                        posY += LINESPACING18
-                        resultRectSecond = resultSurfSecond.get_rect(topleft = (posX, posY))
-                        posY += LINESPACING18
-                        resultRectThird  = resultSurfThird.get_rect(topleft = (posX, posY))
-                        DISPLAYSURF.blit(resultSurfFirst, resultRectFirst)
-                        DISPLAYSURF.blit(resultSurfSecond, resultRectSecond)
-                        DISPLAYSURF.blit(resultSurfThird, resultRectThird)
-                        pygame.display.update()
-                        # Go to the next seat.
-                        continue
-                
-                # Now, we print whichever set of text messages to the screen.
-                # All of these messages do not involve eliminating players. So,
-                # they can use a common block of render commands.
-                resultSurfFirst  = SCOREFONT.render(resultTextFirst, True, TEXTCOLOR)
-                resultSurfSecond = SCOREFONT.render(resultTextSecond, True, TEXTCOLOR)
-                resultSurfThird  = SCOREFONT.render(resultTextThird, True, TEXTCOLOR)
+                # All of the branches flow into this common print block.
+                # approColor is set to TEXTCOLOR and approBGColor to BGCOLOR
+                # at the start of each iteration. If the player is eliminated
+                # these variables change to ELIMINATIONCOLOR and 
+                # ELIMINATIONBGCOLOR. This allows us to use the common
+                # block below.
+                resultSurfFirst  = PROMPTFONT.render(resultTextFirst, True, approColor, approBGColor)
+                resultSurfSecond = PROMPTFONT.render(resultTextSecond, True, approColor, approBGColor)
+                resultSurfThird  = PROMPTFONT.render(resultTextThird, True, approColor, approBGColor)
                 resultRectFirst  = resultSurfFirst.get_rect(topleft = (posX, posY))
-                posY += LINESPACING12
+                posY += LINESPACING18
                 resultRectSecond = resultSurfSecond.get_rect(topleft = (posX, posY))
-                posY += LINESPACING12
+                posY += LINESPACING18
                 resultRectThird  = resultSurfThird.get_rect(topleft = (posX, posY))
+                posY += LINESPACING18
                 DISPLAYSURF.blit(resultSurfFirst, resultRectFirst)
                 DISPLAYSURF.blit(resultSurfSecond, resultRectSecond)
                 DISPLAYSURF.blit(resultSurfThird, resultRectThird)
                 pygame.display.update()
-            
-            else: # Player does not have an insurance bet. Go to the next seat.
-                continue
-        # Skip the empty seat.
+                pressSpaceToContinue(STATUSBLOCKWIDTH, STATUSBLOCKHEIGHT)
+            # This branch will skip the player if they do not have an
+            # insurance bet.
+        # Skips empty seats as well.
     # The final step is to see if the dealer's bank busted after paying out
     # the insurance bets.
     dealerBank = tableObj.tableDealer.bank
@@ -4424,7 +4416,7 @@ def endOfRound(rounds):
     DISPLAYSURF.blit(deckReplaceSurfThird, deckReplaceRectThird)
     pygame.display.update()
     if replaceDeck:
-        tableObj.deck.replace_cardshoe()
+        tableObj.replace_cardshoe()
         deckReplaceTextFourth = "Deck shoe has been replaced."
         deckReplaceSurfFourth = PROMPTFONT.render(deckReplaceTextFourth, True, TEXTCOLOR)
         deckReplaceRectFourth = deckReplaceSurfFourth.get_rect(topleft = (posX, posY))
@@ -4732,14 +4724,14 @@ def userLostGame(savedGameFile = './etc/savedgame.txt'):
         # If yes, acknowledge and exit the game. If the answer is no, then
         # delete the saved game. Regardless, we need to clear the screen and
         # reset the positionals.
-        if answer:
+        if answer == False:
             responseTextFirst  = "Removing saved game from the disk."
             removeStatus = removeSavedGame()
             if removeStatus:
                 responseTextSecond = "Successfully removed saved game."
             else: # Save failed.
                 responseTextSecond = "Removing saved game failed. Check your access to its directory."            
-        else: # The user opted not to save the data.
+        else: # The user opted to save the data.
             responseTextFirst  = "The saved game will not be removed from the disk."
             responseTextSecond = "Creep and save is a workable strateg in this game."
         responseSurfFirst  = PROMPTFONT.render(responseTextFirst, True, TEXTCOLOR)
