@@ -1,0 +1,13 @@
+Known Bugs:
+
+1. A bug appeared in which the function hitOrStand attempts to get a name from an unoccupied seat, causing a fatal crash. --- Repeated attempts to recreate the conditions that produced this crash failed to replicate the disaster.
+
+2. It is possible for a very large hand in blackjack to run into another player's hand. This requires resizing the board and rearranging the hand placement to fix it, and it still might remain regardless if a player gets all the aces and twos in the deck. This is a very rare occurrence in any event.
+
+3. The text on the Welcome to Casino Blackjack screen has an error in it. Printing out the rules is offered before the table choices.
+
+4. On the screen that offers the user table choices (dealer with dealer stats), the dealers' banks are not printing with a dollar sign.
+
+5. Occasionally, a bit of a player's textbox remains on screen, but it generally vanishes moments later.
+
+6. Insurance bets appear on screen after all of them have been placed, unlike antes, raises, and split hand bets.

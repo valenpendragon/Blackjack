@@ -313,3 +313,434 @@ Added missing entries in master change log (this file).
 
 Missed in last push (updated immediately after):
 Converted card lists for suit and rank to tuples to make them constants.
+
+10/11/17 06:04
+
+General: Added import for os, os.path, and pygame. Using the import to eliminate need for pygame.locals on many calls.
+CardShoe: Creating much better comments on the class and methods, including the ones with printout in iPython or IDLE.
+CardShoe: __del__ returns its print string instead printing. This is a change from a boolean.
+Player: Minor comment cleanup to get comments to less than 80 characters per line.
+Player: Added clear comments on the definition of round, showing the full breakdown of each game round.
+Player: __str__() returns  a dict data type with the full data on the player. 0 bets and non-existent hands are set to None. The layout of the playerData dict is:
+The layout of the data is:
+'name'            : player's name
+'bank'            : player's bank
+'hand'            : player's regular hand or None
+'split hand'      : player's split hand or None
+'soft score'      : soft score for player's hand or None
+'hard score'      : hard score for player's hand or None
+'soft score split hand' : soft score for split hand or None
+'hard score split hand' : hard score for split hand or None
+'regular bet'     : bet amount on regular hand or None
+'split hand bet'  : bet amount on split hand or None
+'insurance bet'   : bet amount on dealer blackjack or None
+
+10/17/17 07:15
+
+Player: __del__: returns a string indicating that a player has been removed from the game, instead of a boolean.
+Player: print_split: now calls __str__ and returns the same result.
+Player: more fixes to comments in almost all methods to make them clearer.
+Player: add_card_to_hand: Improved the readability of the code.
+
+10/24/17 23:10 Pushed to origin
+
+Player: Updated the main comment block to reflect previous changes made to the methods in this class. Cleaned up comments for other methods. Reduced all comments to under 80 characters in length for readability.
+Player: Removed all print statements from update_bet, update_split_bet, and update_ins. Rendering for messages associated with the return codes from these methods needs to be handled in other classes. Also cleaned up the comments in these methods.
+Player: double_down method takes a bet amount (integer) and split (boolean). Based on split (boolean), it calls either update_bet or update_split_bet with  whatever 'bet_amt' contains,  0 as min and self.bet as max arguments. It returns the string returned by the bet update methods.
+
+11/15/17 16:55 Pushed to origin
+
+Player: More cleanup of the main comment block.
+Player: __str__: Fixed a major error mixing the hands up in the dict object creation.
+Player: values constant: Made the dict initialization easier to read.
+Player: split_check: Made the code easier to read.
+Dealer: Made sure the comment block  fits within an 80 character limit. Updated comments on in this block on __init__, __str__, and dealer_print.
+Dealer: __init__: Default bank is 100,000 now.
+Dealer: __str__: Updated the comments to reflect that is no longer prints data and returns a dict object  (like the player version).
+Dealer: dealer_print: Now calls __str__ method to create dealerData dict object, changes the 'dealer turn' to True and returns dealerData to the calling function or method.
+Dealer: add_card_to_hand: Made the code and comments easier to read.
+Dealer: end_round: cleaned up the comments
+Dealer: dealer_lost: Cleaned up comments and removed print statements.
+Dealer: dealer_wins: Cleaned up comments.
+Dealer: diagnostic_print: Cleaned up comments.
+
+11/16/17 22:15
+
+Added inflection module to convert integers to ordinals to be used for seating around the table. This helps convert players from a list to a dict object {'ordinal': playerObject}
+Dealer: Dealer.name is no longer a constant.
+Dealer: __init__:  A name is now accepted as the first argument and defaults to 'dealer'. A bank was already accepted with a default.
+CasinoTable: Attributes are now blackjack_multiplier (unchanged), table_size (unchanged), deck (unchanged), tableDealer (new Dealer only object), players (new player dict object using seat ordinals to match playerObjects), and tableSeats (a dict object matching ordinals and seat numbers).
+CasinoTable: __init__: Initializes all the objects with new defaults for playerNames, blackjack_multiplier, name, and bank.
+
+11/19/17 20:40 Pushed to origin/pygame.
+
+CasinoTable: Cleaned up the class comment block for __init__(), __str__(),  diagnostic_print(), and rules() methods.
+CasinoTable: attributes: Added dealerLosses to track dealer's losses during a round
+CasinoTable: __str__: returns the CasinoTable object. Cleaned up its comment block.
+CasinoTable: diagnostic_print: Cleaned up its comment block.
+CasinoTable: rules: returns the rules text or an error message if the rules file is not found.
+Casino (game): Added Constants: Colors, FPS, game window specs.
+Casino (game): main(): added global constants TABLEIMAGE, CARDIMAGES (maps card tuples to card images). Initialized pygame and the DISPLAYSURF and game caption.
+
+11/22/17 02:10
+
+Casino (game): Added an extra brown color (PERU). Added GNU fonts for BASICFONT, SCOREFONT, and DATAFONT pygame font.  The fonts default to freesansbolf if not found. Added BGCOLOR and TEXTCOLOR. Created Surface and Rect objects for a five player table. This is a preparation for building the table image in the program.
+
+11/26/17 04:00 Pushed to origin/pygame
+
+Casino (game): Added import of collections to get OrderedDict objects.
+Casino (game): Converted CARDIMAGES into a nested ordered dict object that generates pygame.Surface and Rect objects for card images.
+Casino (game): Added cardImagesDiagnosticPrint as a diagnostic routine to printout the card images.
+Casino (game): Added BLANKCARD dict (image import, surface, and rect for a blank card image). Also added an Rect.inflate() call to ensure all card images were CARDWIDTH x CARDHEIGHT in size.
+Casino (game): Determined the constants: CARDWIDTH, CARDHEIGHT, CARDSPACING, LINESPACING, BLANKCARD (dict object)
+Casino (game): Better comments on the pygame constants.
+Casino (game): Added data printing routines diagnosticPrint (placeholders for player printouts) and printTableDealer. These routines need to be tested next.
+Dealer: Clarified comments regarding __str__ output.
+Added Blank.png (a blankcard dictionary)
+
+11/27/17 09:36 Pushed to origin/pygame
+
+Casino (game): cardImagesDiagnosticPrint: changed the default values of posX and posY to adjustments to make the printouts appear in a different part of the screen.
+Casino (game): Debugging diagnostic routines, since these routines also print information players need during game play.
+Casino (game): Increased the size of the DATAFONT to 14pt to make more noticeable and readable on screen.
+Casino (game): Built the table out of ovals and rectangles.
+
+11/27/17 Pushed to origin/pygame
+
+Casino (game): Removed old comments from the block for the table image.
+Casino (game): Produced a more readable version of the table creation.
+Casino (game): Finished testing printTableDealer. Positioning bug and all functionality is working.
+Casino (game): Trying to resolve an issue with screen space being insufficient for the game. This required creating a better set of constants to generate the Dealer's station.
+Casino (game): Added 'scaled image' to CARDIMAGES to fix the image scaling problem.
+
+12/1/17 17:00 Pushed to origin/pygame
+
+Casino (game): printTablePlayer: Score section prints correctly for all three players. Diagnostic printouts work as well. The cards also appear exactly where they are supposed to appear for each player.
+Casino (game); printTableDealer: This function works with 'regular play' modes.
+
+12/1/17 20:45
+
+Casino (game): generateTable: Moved the code for printing tables on screen to this function.
+Casino (game): generateDealerList: Returns a hardcoded list of dealers linking names and types of dealers. A call to this function to create the data object listDealers is in the main() function.
+
+12/2/17 11:25 Pushed to origin/pygame
+
+Casino (game): dieRoll: Created this routine to generate 'weighted' dice rolls to generate appropriate banks for dealers. It may be used for other purposes as well. This function takes a die type, min value, max value, and an adjustment and generates a sequence of outputs from it.
+
+12/5/17 08:10 Pushed to origin pygame
+
+Casino (game): generateDealerList: Calculates each dealer's bank, table color, and blackjack_multiplier and adds these to the dealer's dictionary. This will create more variety in game play, as the same dealer often will have different table setups.
+Casino (game): generateTable: Has an optional tableColor parameter to override the default color of OLIVE.
+
+12/12/17 03:00 Pushed to origin pygame
+
+Textbox: A class similar to the one Sean McKiernan (Mekire on GItHub) created as a tutorial. The class is needed to be able to filter acceptable characters, allowing for a numbers only textbox or an alphabetical only textbox. This ensures that the input is an acceptable content before the code has to check it. This class is new and untested. Consider it an alpha.
+Classes: ___init__: Added Textbox class to the import list.
+
+12/13/17 06:17 Pushed to origin pygame
+
+Libraries: __init__.py: Corrected a typo preventing PygameTextboxClass from importing.
+Libraries: Fixed a missing import for sys in Casino.py.
+Casino (game): terminate: Created a function to properly terminate pygame.
+Casino (game): Removed commented out fake dealer and players to test table print routines.
+Casino (game): findPlayers: Created a function to find and attempt to read a saved game file. It will return None if the file does not exist or is not in the right format.
+Casino (game): writeSavedGame: Created a function to write player data to a saved game file on disk. It uses a default filename, like findPlayers does. There is a text block that will need to be removed after testing this.
+Casino (game): Print statements: Many diagnostic statements will remain in place in their respective functions until testing is fully completed. These messages will (eventually) be put into a log file.
+PygameTextboxClass: Still working toward the point of being able to test the class.
+
+12/15/17 03:45 Pushed to origin pygame
+
+Casino (game): createPlayers: Created this function to interact with users to get blackjack player names. This is a purely pygame interaction using Textbox objects. Added command = setupPlayer() to kwargs.
+Casino (game): pressSpaceToContinue: Created this function to wait for a key press or mouse button press event to indicate the player is ready for the next screen or phase of play. It also acts as a game pause.
+Casino (game): main: Defined additional fonts, INSTRUCTFONT, an 18pt font, to make the instructions easier to read. Converted LINESPACING to LINESPACING12 and added LINESPACING18 to accommodate the 18pt INSTRUCTFONT. Clarified comments on the original and new fonts accordingly.
+Casino (game): Added constant STARTINGBANK for starter players. Made listPlayers and listDealers global to make some aspects of building players easier.
+Casino (game): getTextboxEvents: Created this function to create a temporary event loop so that a name could be captured.
+Casino (game): setupPlayer(name): Created this function to create a player dictionary from a name (string) received via Textbox. And it works in combination with getTextboxEvents to add players to listPlayers.
+
+12/16/17 Pushed to origin pygame
+
+Casino (game): createPlayers: Fleshed out player creation to all three starter players.
+Casino (game): setupPlayer: Randomly increases starter player's banks by up to 25000. Also cleaned up the main comment block.
+Casino (game): Renamed getTextboxEvents getTextboxNameEvents since it is only used for players' names.
+
+12/17/17 17:57 Pushed to origin pygame
+
+Casino (game): Create a new constant, SKILLS = ('starter', 'normal', 'special', 'high') used to denote the levels (0, 1, 2, 3).
+Casino (game): getTableSkillList: Uses SKILLS and listPlayers to generate a list of table types they are allowed to use.
+Casino (game): getTableSkillList: Takes the listPlayers and returns a set of skill levels use to filter the list of tables for the players.
+Casino (game): getPermittedTables: Takes set of playersLevel and listDealers and returns the tables they can play at.
+Casino (game): getTableChoice: Placeholder with comments in place.
+Special push to origin pygame after several instances of changes to this game were found reversed on the primary development system. This was discovered by checking an offline clone.
+
+12/18/17 04:00 Pushed to origin pygame
+
+Casino (game): Tested previous changes to make sure that everything still works. Some old debugging had to be repeated.
+Casino (game): Repurposed getTableChoice as the command executed by the Textbox object.
+Casino (game): Corrected bad comments in setupPlayer.
+Casino (game): offerTableChoices: Created this function to print out the data on the permitted tables that players may attend and create the Textbox object to get the user's answer.
+Casino (game): getTableChoiceEvents: This function captures user events to get the name chosen. It uses Textbox.getEvent's return value to end the event loop.
+Casino (game): getTextboxNameEvents: This function now uses the boolean return value from Textbox.getEvents to terminate the loop.
+Casino (game): Created tableChoice as a global variable to capture the user's choice of dealer for this game.
+Casino (game): createPlayers: Corrected a spacing problem with one line of instruction text.
+Casino (game): getTableSkillsList: Fixed a problem with function that had it returning a bad list of skill/type options.
+Casino (game): filterDealers: Filters listDealers for the dealers who match the skills of the players.
+PygameTextboxClass: Removed issueWarning() method because it flashes by too quickly. The filters actually keep bad characters out of the buffer without it.
+PygameTextboxClass: Updated the content of the main comments block on the methods updateBox() and drawBox().
+PygameTextboxClass: getEvent: Made this method return a boolean value, True only when ENTER or RETURN was pressed, False otherwise. This allows the class to communicate back to the calling event loop that it can stop watching for events.
+
+12/18/17 06:14 Pushed to origin pygame
+
+Casino (game): main(). Fixed typos that caused the loop that is supposed to keep spinning until tableChoice is set to be skipped or malfunction. Removed the initialization and that moved it into the global arena. Tested that the dealer choice loop also works for bad and good names.
+Casino (game); getTableChoice: Included global declaration for tableChoice. Now, main() sees it.
+
+12/18/17 09:07 Pushed to origin master
+
+Casino (game): main: Added a call to CasinoTable to generate a CasinoTable object.
+BlackjackClasses: CasinoTable.__init__: Fixing ordinal problem with the generic table creation.
+BlackjackClasses: CasinoTable.__init__: Dropping ordinals (since we can only fit 3 players around the current tables) and using 'left', 'middle', 'right' instead.
+Casino (game): main() and  diagnosticPrint: Added a required object, tableObject and used that variable to instantiate the CasinoTable object in main().
+HUGE BUG: diagnostic_print methods are not working in CasinoTable with the structural changes.
+
+12/19/17 05/:23 Pushed to origin pygame
+
+BlackjackClasses: diagnosticPrint: Updating it with the changes to the structure of the CasinoTable attributes.
+BlackjackClasses: Class Order Attributes: Moved tableSeats to TABLESEATS and table_size to TABLESIZE as a constants. Change has been propagated throughout the class.
+BlackjackClasses: Comment Block: Updated the comments to reflect new changes.
+BlackjackClasses: __init__: 'Seats' players counter clockwise up to the total number (which can be less than TABLESIZE of 3).
+BlackjackClasses: Changed table_index to numPlayers throughout the class.
+Casino (game): diagnosticPrint: Fixed bugs that caused Dealer objects to be misidentified.
+Casino (game): diagnosticPrint: Fixed a key mismatch bug on the playerObject print loop.
+BlackjackClasses: Due to TypeError, all __str__() in CardShoe, Player, and Dealer classes have been restored to their original form in branch master. This includes dealer_print.
+Casino (game): All print calls and dealer_print calls must be changed to the new methods, extract_data.
+Casino (game): diagnosticPrint: Debugged problems with the table output. Added back into that stanza printing Players some missing lines. To reduce clutter, the 'objects found' messages use the upper left corner instead of center (where the Dealer data prints out). It also prints the table with the correct color.
+Casino (game): printDealer: Now prints out the Dealer's bank with commas every 3 digits.
+Casino (game): printTablePlayer: Dropped the integer ordinal and made it the actual ordinal (left, middle, right) values. Now prints out Player's banks and bets with commas every 3 digits.
+Casino: Constants: Added color saddle brown to use as the table border.
+
+12/22/17 07:52 Pushed to origin pygame
+
+Casino (game): playBlackjack: This is the game playing function. It contains the actual game loop and event handler loop. This loop is incomplete until the notes say otherwise.
+Created a second rules file in main/etc describing the breaking the bank rules and how to navigate the playing screen GUI.
+Casino (game): checkForQuit: Created this function to watch for quit events. Unlike some other event checks, this one puts back any queues of events it scans. That keeps KEYUP and KEYDOWN events from being accidentally purged from the event lists. This function verifies that the user wants to terminate without saving.
+Casino (game): checkForYesNo: This function performs the event loop check for Y/N answers, returning True for Y, False for No.
+
+12/23/17 07:40 Pushed to origin pygame
+
+CasinoTable: rules: Updated the comments and error message it returns for a missing file. Updated main comment block as well.
+CasinoTable: rulesGUI: Created this method to return the rules for the pygame GUI version this game, including GUI navigation. Updated the main comments block for the class as well.
+Casino (game): scrollText: Created this function to slowly scroll text files, like the rules and GUI text files, for the user to read. It uses the new constant SCROLLSPEED to control how fast the lines scroll up.
+
+12/23/17 07:$5 Addendum Pushed to origin pygame
+
+Casino (game): playBlackjack: Still under construction. Currently, it is able to ask if the user wants to see the rules at the beginning of the game.
+
+12/24/17 11:21 Pushed to origin pygame
+
+Casino (game): checkForQuit: Added a new option to save remaining players before exiting.
+Casino (game): main: Added BUTTONFONT (24pt), BUTTONTEXTCOLOR (BLACK), BUTTONPASSIVEFILL and BUTTONSPACING to make the hit/stand buttons easier to see and read.
+Casino (game): playBlackjack: Considering dropping the event loop for most part. It could be allowed to check it once in a while, but almost all interaction takes place via specific Y/N or H/S, followed by Textbox for bets or bet increases.
+Casino (game): playBlackjack: Uses variables with following functions:
+	endGame: closes the main game loop
+	endRound : boolean, True tells the event while loop to exit
+	hitChosen : None or player's name, indicates the user wants the
+        current player to take a card, has to be reset between cards
+        requested by the players and between players in the round
+    standChosen : None or player's name, indicates the user wants the
+        player to 'stand', overrides hitChosen
+    insBet : None or player's name, indicates that the user wants the
+        player to make an insurance bet when offered
+    doubleDown : None or player's name, indicates that the users wants
+        the player to double down on a bet
+    splitHand : None or player's name, indicates that the user wants
+        the player split their hand
+    leaveTable : boolean, True indicates that the user wants to pull
+		all players and leave the game
+    pullPlayer : None or the player's name, indicates that user wants
+        the player to leave the table and "settle up", this removes
+        the player from the current game but not permanently eliminated
+	partOfRound : 'ante', 'deal', 'left', 'middle', 'right', 'dealer',
+        indicates which part of the round play is at turn it is
+	activeHitStand: boolean, tells Python that the hitButton and
+        standButton are active and to look for mouse click events
+    infoButtonPressed : boolean, tells Python that the user needs to
+        see the Break The Bank rules again.
+
+12/28/17 18:20 Pushed to origin pygame
+
+Casino (game): playBlackjack: Removed (and saved) the event loop and hit/stand button code. I have come to the conclusion that is is better to simply prompt the user for input when it is needed, since I already have checkForYesNo that looks for y/n answers.
+Casino (game): checkForHitStand: Created this function to watch for h/s key press events.
+Break-The-Bank-Rules.txt: Edited to reflect the removal of the pygame event loop.
+Casino (game): playBlackjack: Changed questionText, questionSurf, and questionRect to rulesText, rulesSurf, and rulesRect to avoid confusion with later question prompts.
+Casino (game): playBlackjack: Added leaveText, leaveSurf, and leaveRect to prompt the user to decide if they want to remove a player from the current game; <position>LeaveText, <position>LeaveSurf, and <position>LeaveRect for each player position to prompt the user about withdrawing a player between rounds.
+Casino (game): removeActivePlayer: Created this function to remove players from the game, but preserve their current bank and skill level in listPlayers. (Oddly, Python really did not like calling this one pullPlayer.)
+Casino (game): Moved leveling constants, STARTER, NORMAL, and SPECIAL, up to global constants.
+Casino (game): checkForYesNo: Added optional posX, posY, rectLocation arguments, with defaults set to the lower right corner along the game screen edge.
+CasinoTable: __str__: Changed attribute table_index to new numPlayers. Fixed print out problems with this method following some of major data object changes.
+Dealer: __str__: Added dealer's name to the print out.
+Casino (game): Converted tableObj into a global variable after it started coming back as a NoneType object in function calls. Changed all references to it in the code, including functions.
+Casino (game): diagnosticPrint: Fixed a comment that suggested there could be five players at a CasinoTable object.
+Casino (game): checkForQuit: Added check for an empty list of players as an added condition to verifyChoice. Removed the argument since tableObj and listPlayers are global variables.
+
+1/1/18 20:50 Pushed to origin pygame
+
+Casino (game): Constants: Added STATUSBLOCKWIDTH and STATUSBLOCKHEIGHT constants, used to create and print in the upper left corner when the player provides erroneous info. added PHASEBLOCKWIDTH and PHASEBLOCKHEIGHT to constants to clear and print in the upper right corner.
+Casino (game): main: Changed BASICFONT to FreeSerif, SCOREFONT to FreeSerifItalic, and INSTRUCTFONT to FreeSerifBold due to how badly FreeSans and FreeMonoBold are rendered at 12 and 18 point. Added PROMPTFONT set 14pt FreeSerif for Textbox prompts.
+PygameTextboxClass: __init__: Altered boxFont creation to look for a font file in ./etc before looking for system fonts. Also, removed the warning content since that is not needed with the character filters.
+CasinoTable: Attributes: Added phase and seat because it does not appear possible to pass it through the Textbox calls to the 'command' function of the Textbox. There are also problems keeping these updated as variables. These are accessed in Casino and assigned to partOfRound and playerPosition respectively.
+Casino (game): playBlackjack: Added stanzas calling for initial bets. Moved table printing routines to a new function to clean up the code. Corrected some comments on partOfRound variable.
+Casino (game): refreshTable: Refreshes the table printout with the cards in place, bet, bank, and other data. It calls other functions to perform these actions. The purpose is to reduce duplication of code. seat (for playerPosition), phase (for partOfRound), and rounds (for roundCounter) are used to avoid using global variables whenever possible.
+Casino (game): isPlayerStillThere: Created this function to check if a player occupies a particular seat. Return True, if so, False otherwise.
+Casino (game): getBet: Created this function to generate Textbox objects to take player initial bets as the round starts.
+Casino (game): getBetEvents: Created this function to handle the event loop required to capture Textbox-related events.
+Casino (game): handleBet: This function is called by other functions called by Textboxes that accept integer inputs to get initial or updated bets. The other functions actually pass a specific parameter, split, that the Textbox cannot directly pass to handleBet.
+Casino (game): handleRegBet: Wrapper function for handleBet() that passes it split = False.
+Casino (game): handleSplitBet: Wrapper function for handleBet() that passes it split = True.
+Casino (game): removeActivePlayer: Converted its internal checks for 'seated players' to use isPlayerStillThere.
+Casino (game): offerTableChoices: Added in printouts of the Dealer's min/max bet amounts.
+CasinoTable: __init__: Added optional attributes for min/max bets with defaults. These values are also added to the CasinoTable attributes as min_bet, max_bet.
+Casino (game): Reduced the minimum bet for starter tables to 5. Added an extra phase of each round, 'raise' for doubling down, to remove it from the 'deal' phase. This required changes to refreshTable, 
+Casino (game): pressSpaceToContinue: Added optional parameters to print the press spacebar message at another location besides the corner.
+Casino (game): getTableChoiceEvents: Renamed to getTextboxEvents since the code has proven to be reusable to collect bets.
+Player: extract_data: Fixed a bug that ensures that bets will appear in the extracted data even though hands do not exist yet.
+
+1/3/18 20:00 Pushed to origin pygame
+
+Casino (game): dealRound: Added this function to deal the initial round of cards to each player (including dealer). It checks for player and dealer blackjacks. It will also ask call getInsBet if a 10 point card or an ace is the dealer's visible card after the second card is dealt. For player blackjack's, it will playerBlackjack to deal with outcome and dispense their winnings. 
+Casino (game): dealRound: Added a try/except block in case int(betAmt) raises a ValueError. It can if the user hits return without entering numbers. It is now able to handle dealing both initial cards.
+Casino (game): printTableDealer: The CARDIMAGES dictionary needs a tuple, not a list of one tuple to find the image of a card. The Dealer's visible card is actually a list. Rather than change the underlying Dealer class, I opted to set visCard equal to the first element of a one length list.
+
+1/6/18 18:55 Pushed to origin pygame
+
+Casino (game): Constants: Created TABLESEATS = ('left', 'middle', 'right') and TABLESEATSALL = ('left', 'middle', 'right', 'dealer') to remove the cumbersome tuples that are used is almost every function to go through the list of players around the table. The required changes to playBlackjack, removeActivePlayer, refreshTable, checkForInsBets, and dealRound.
+Casino (game): clearStatusCorner: Created this function to clear the status block (left corner of the game screen). The code to keep clearing that corner shows up throughout the functions in this game. Making it a function makes the code more readable. The functions effected by this change are: getBet, checkForPairs, handleBet, and checkForInsBets (up to this point in the game development).
+Casino (game): checkForInsBets: Checks the Dealer.blackjack_flag and offers the players an option to make an insurance bet, including those who have already won a blackjack.
+Casino (game): handleBets: Now supports insurance bets as well. It uses handleInsBet as a wrapper function.
+Casino (game): handleBet, getBet, handleInsBet, handleRegBet, handleSplitBet: These functions now use betType = ('reg', 'split', 'ins') in place of the split boolean.
+Casino (game): getBet: Made the code easier to read. Corrected error that would have broken the double down functionality.
+Casino (game): playBlackjack: Updated the bet calls there to match the updated bet functions.
+Casino (game): checkforPairs: Scans the hands of the players looking for pairs. Any player with a pair will be offered the opportunity to split their hand.
+CasinoTable: Attributes: Added a dictionary object to the tableObj (tableObj.results) that stores that state of the player's hand after cards are added to it.
+CasinoTable: __init__: Added the new attribute, results to the tableObj.
+CasinoTable: diagnostic_print: Added the new attribute, results, to the printout.
+Casino (game): deal_round: Changed results into an attribute.
+Casino (game): getBet: Fixed errors setting rect objects equal to surf objects. This broke the double down and insurance bet Textboxes.
+Casino (game): Added an extra phase, 'end', that acts as a cleanup phase between rounds. The requires updating comments in main, and refreshTable.
+Casino (game): refreshTable: Added a full board clear to it to keep player data from stepping on itself as the game progresses.
+
+1/10/18 00:59 Pushed to origin pygame
+
+Casino (game): scrollText: Added a return with a comment indicating which function/method it closed. I realize that return is only needed if a method or function actually needs to return an object of some kind, but I like to know which function/method ended there when the code sprawls past a page.
+Player Class: Added two new attributes, raise_bet and raise_split_bet. These values are booleans that indicate if the player did opt to raise the bet, but raised it by $0 instead. These new attributes required changes to __init__, end_round, and diagnostic_print.
+Casino (game): getBet: Added flip of raise_bet and raise_split_bet to the double down stanzas. Rebuilt the 'raise bet' stanza since it was stuck in a loop presenting the wrong names and failing to update any bets. Changed the raise Error commands to error messages. Removed seat from the arguments since it was causing old values to supersede the tableObj.seat value, requiring changes to playBlackjack, checkForPairs, checkForInsBets, and doubleDown.
+CasinoTable: diagnostic_print: Added print out for player's seat.
+Casino (game): dealRound: Removed code used to generate pairs to test checkForPairs, getBet, and handleBet functionality for split hands. It has been there to test functionality.
+
+1/10/18 23:28 Pushed to origin pygame
+
+Casino (game): Constants: STATUSBLOCKWIDTH is now 400 to better erase split bet Textbox prompts to raise split bets. added ELIMINATIONCOLOR (red) and ELIMINATIONBGCOLOR (white) which is used when players bust their hand or their bank (are eliminated from the game).
+Casino (game): playBlackjack: Removed unused commented out stanzas of status variables. After fighting with weird globals behavior, removed both arguments (tableObj and listPlayers) from the function's arguments. This required minimal changes (except to my personal documentation).
+Casino (game): doubleDown: Updated the comment block to indicate that there are no return outputs. All output is to the game screen.
+Casino (game): hitOrStand: Created this function to handle the players' turns. It will also keep track of remaining hands and players and return these values when done. It calls eliminatePlayer for any player who breaks their bank during the game.
+Casino: checkForHitStand: Checks for the user pressing the keys Y/N or H/S. Returns True for Y/H or False for N/S.
+Casino (game): eliminatePlayer: Created this function to remove a player from the tableObj if their bank has busted.
+Casino (game): diagnosticPrint: Changed loop printing players from 'ordinals' to seats.
+Casino (game): dealSingleCard: Fixed a bug that was delivering cards intended for the split hand to the regular hand.
+
+1/14/18 06:43 Pushed to origin pygame
+
+Casino (game): checkForPairs: Put a stanza in to determine if a player has enough money in their bank to cover a split hand ante to prevent the function from looping when the player is unable to place even a table minimum split hand bet.
+Casino (game): checkForInsBet: This function had a similar looping flaw to checkForPairs. This function now checks to see if the player can cover all of their existing bets and the tableMin for an insurance bet.
+Casino (game): main: A saved player could create a similar looping flaw. Fixing this required adding analysis stanzas to warn the user about players unable to make the ante on the first round or only surviving a few rounds. This section allows the player to choose a different dealer if they wish. Fixing this flaw also required adding a call to a new function, checkPlayerViability, to playBlackjack that eliminates players who cannot meet their ante bet.
+Casino (game): checkPlayerViability: Created this function to make sure that all players can meet their ante. Those that cannot are eliminated using eliminatePlayer.
+Break-The-Bank-Rules: Updated the content to warn the user that players who cannot meet the table minimums for the ante will be eliminated.
+
+1/19/18 13:00 Pushed to origin pygame
+
+Casino (game): Constants: Added HANDLIST to store all of the keys to the tableObj.results dictionary.
+Casino (game): dealersTurn: Created this function to play out the dealer's turn. It includes the instance where the dealer does not have play their hand, dealer has blackjack, and the dealer has to play their hand per casino rules. THIS HAS NOT BEEN TESTED.
+Casino (game): resolveInsBets: Created this function to resolve all bets on dealer's blackjack. It uses a boolean value (True for dealer blackjack, False otherwise) and processes all of the insurance bets accordingly, running eliminatePlayer for any players that break their bank from losing this bet. It returns the number players remaining in the game. THIS HAS NOT BEEN TESTED.
+Casino (game): dealerHasBlackjack: Created this function to deal with playable hands that automatically lost to dealer blackjack. It calls eliminatePlayer whenever a player breaks their bank due to these losses. It returns the number of players remaining in the game.
+Casino (game): dealerBusts: Created this function to handle the dealer's losses and player wins for playable hands when the dealer's hand busts. It calls playersWinGame to handle winning this game (current a stub). THIS HAS NOT BEEN TESTED.
+Casino (game): findDefunctPlayer: Created this function to check at the end of a round for a player with a broken bank that might have been missed by the other functions. THIS HAS NOT BEEN TESTED.
+Casino (game): endOfRound: This is a stub for the function that will clear bets, hands, and results at the end of the round.
+Casino (game): playerWinGame: This is s stub for the function that will handle the case of the dealer breaking its bank (and the user and players winning).
+Casino (game): userLostGame: This a stub for the function that will handle the aftermath of all players being eliminated by breaking their banks.
+
+1/21/18 21:43 Pushed to origin pygame
+
+Casino (game): Constants: To fix bugs in dealersTurn and its related functions, changed HANDLIST to ('left reg', 'left split', 'middle reg', 'middle split', 'right reg', 'dealer reg'). The required changes to dealRound (references to regular hands), checkForPairs (references to regular hands), dealSingleCard (references to regular hands), doubleDown (references to regular hands), hitOrStand (references to regular hands), dealersTurn (references to regular hands), resolveInsBets (references to regular hands), CasinoTable comment block, CasinoTable.__init__ (changed how the results are initialized), and CasinoTable constant HANDLIST (created).
+Casino (game): dealRound: Removed code used to test checkInsBets.
+Casino (game): isPlayerStillThere: Fixed a bug that allowed this function to used to check the dealer's status. Fix affects dealersTurn.
+Casino (game): endOfRound: Changed the screen refresh after player analysis from clearStatusCorner to refreshTable to clear out wandering text.
+Casino (game): dealersTurn: Fixed a typo that caused all losing playable hands to print out as split hands. Also fixed a bug in the logic underlying the stanza regarding changing cardshoes to ask the player, perform the action or not as directed, clear the status corner, and print out a message confirming that the player's request had been performed.
+
+1/22/18 Pushed to origin pygame
+
+This update is not a 'release' but was made in response to several hard drive errors on my primary development machine.
+
+Casino (game): Constants: Adjusted STATUSBLOCKHEIGHT slightly to keep clearStatusCorner from erasing part of the dealer's station.
+Casino (game): refreshTable: Changed argument for printTableDealer from output = 'dealer turn' to 'dealer turn'. Added printouts for table min/max bets and blackjack multipliers, both the ratio and decimal equivalents.
+Casino (game): printTableDealer: Removed the turn banners for dealer's turn and player's turn, as they are inaccurate now and redundant with the phase and round banner in the upper right corner of the screen. Diagnostic banners have been left intact.
+Casino (game): Finished testing the routines that run when the dealer has blackjack. dealerHasBlackjack had a bad surface call that was corrected. No errors found in resolveInsBets.
+Casino (game): createPlayers: Added a return with a comment to the end of the function to make it easier to find.
+Casino (game): pressSpaceToContinue: Added a return with a comment to the end of the function to make it easier to find.
+Casino (game): writeSavedGame: Added a comment to the end of the function to make it easier to find.
+Casino (game): offerTableChoices: Added a comment to the end of the function to make it easier to find.
+Casino (game): getTextboxEvents: Added a comment to the end of the function to make it easier to find.
+Casino (game): checkForYesNo: Added a return and a comment to the end of the function to make it easier to find. Removed KEYDOWN from the pygame.get.event loop (and commented the change), then added a (commented) elif stanza that looks for MOUSEBUTTONDOWN events and reactivates the window if the mouse click occurred inside the game screen. Added a Rect object, displayRect, which is a get_rect() from DISPLAYSURF.
+Casino (game): checkForHitStand:  Removed KEYDOWN from the pygame.get.event loop (and commented the change), then added a (commented) elif stanza that looks for MOUSEBUTTONDOWN events and reactivates the window if the mouse click occurred inside the game screen. Added a Rect object, displayRect, which is a get_rect() from DISPLAYSURF.
+Casino (game): pressSpaceToContinue:  Removed KEYDOWN from the pygame.get.event loop (and commented the change), then added a (commented) elif stanza that looks for MOUSEBUTTONDOWN events and reactivates the window if the mouse click occurred inside the game screen. Added a Rect object, displayRect, which is a get_rect() from DISPLAYSURF.
+Casino (game): main: Added a comment to the end of the function to make it easier to find.
+CasinoTable: Added a new phase, 'postgame' to alert the game that the current game is over. This change required comment updates to Casino function main() and CasinoTable_init__() method comment block. This also necessitated a change to playBlackjack (see below).
+Casino (game): playBlackjack: Eliminated the round while loop. Removed endRound variable completely. At the end of the game loop, endGame is set to whether or not phase equals 'postgame'. The initialization of endGame as False was not altered.
+Casino (game): resolveInsBets: Added a line defining variable playerBank, eliminating a fatal bug.
+Casino (game): dealRound: Discovered a bug that allowed it to deal cards to players that no longer exist. It also drew cards before checking to see if a player is present in the seat.
+Casino (game): scrollText: A bug is causing this function's output to freeze on screen. Certain applications may interfere with it, but it also needs a stanza to capture events. That fixed the bug for the most part. Added the ability to escape out of the scrolling to a pressSpaceToContinue() prompt.
+Casino (game): playBlackjack, dealersTurn, hitOrStand: There is a bug that caused a crash while a single player was present in seat 'right'. Somehow, remainingHands = 0 is not propagating from hitOrStand through playBlackjack to dealersTurn. This bug shows up after two players have been eliminated from the left and middle seats. Several different possible triggers (low stand scores, player blackjack, busts, and winnable hands). However, multiples tries to replicate the error have been unsuccessful.
+Casino (game): dealersTurn: (bug fix) Added functionality to determine if any insurance bets had been placed, and to print out more appropriate messages around dealer blackjack and insurance bets.
+Casino (game): findDefunctPlayer: Tested this function and found that it needed a pressSpaceToContinue to keep the banner warning about player elimination on screen long enough to be read.
+
+1/29/18 01:55 Pushed to origin pygame
+
+Casino (game): Constants: Added a new text color for game win messages GAMEWINTEXTCOLOR. I added another  background color to make it easier to see, GAMEWINBGCOLOR.
+Casino (game): main: Added a comment block explaining how tableChoice is structured.
+Casino (game): playersWinGame: Created this function to award the players with extra winnings for break the bank, copy their new bank amounts to listPlayers, give the players a skill increase (if possible), save the data to the saved game, and end the game. This has a bug due to straggler output from refreshTable that still needs to be cleaned up.
+Casino (game): dealersTurn: Changed the wording of the message that the dealer lost the game.
+
+2/16/18 14:07 Pushed to origin pygame
+
+Casino (game): eliminatePlayer: Added reduction to tableObj.numPlayers.
+Casino (game): userLostGame: Created this function to handle the user losing the game to the house. It handles protecting saved games from deletion. It also handles saving a withdrawn player (which overwrites the saved game).
+Casino (game): printPlayers: Created this function to print player data from files or data in memory to the game screen. I should have created it earlier in the build process. This required moving an internal constant COLUMNSPACING in offerTableChoices to the status of global constant.
+Casino (game): removeSavedGame: Created this function to handle users wanting to remove a saved game.
+Casino (game): hitOrStand: Removed unnecessary check for successful or unsuccessful player removal.
+Casino (game): checkForQuit: Moved the verification from center screen to left margin for aesthetic reasons.
+Casino (game): pressSpaceToContinue: Added an optional argument to indicate where on the screen to put the text, making its behavior similar to checkForHitStand and checkForYesNo.
+Casino (game): checkForQuit: Moved all text and prompt to the left margin of the game screen for aesthetic reasons.
+Casino (game): findPlayers: Removed file handler testOpen that was not being used. Added a close() method call to ensure the savedGame file is closed properly.
+Bug Fixes:
+Casino (game): writeSavedGame: Discovered a bug that was causing problems with conversions of integer values for the bank when the file was read. It was adding a leading space after the comma in the saved game data. Removed this comma.
+Casino (game): dealersTurn: Found a bug that causes the game to crash while calculating max and min scores. This only occurs when all players have busted. Added a stanza to set minScore and maxScore to 0 if the playableScores is a zero length list.
+Casino (game): dealersTurn: Found a bug that causes the game to make the dealer play its hand when all players' hands busted. Fixing this bug required the following additional changes:
+Casino (game): hitOrStand, dealersTurn, resolveInsBets, findDefunctPlayer, dealerHasBlackjack: Eliminated the remainingPlayers variable because eliminatePlayer already adjusts tableObj.numPlayers. dealerHasBlackjack, resolveInsBets, and findDefunctPlayer no longer return a value. hitOrStand, dealersTurn, playBlackjack: To eliminate this and a couple of other bugs, hitOrStand no longer attempts to count playable hands. playBlackjack no longer carries that number to dealersTurn. dealersTurn must now determine if there are any playable hands left. Once this is done, the code stanza for noHandsRemain being true, originally at the beginning of the function, has been moved to directly before the stanza for the dealer playing its hand.
+Casino (game): Major bug that could cause an eliminated player to be saved back to disk or a withdrawn player to be deleted from saved games. Fixing this bug required the following changes:
+Casino (game): eliminatePlayer: Added a call to deletePlayer to remove the player from listPlayers.
+Casino (game): deletePlayer: Created this function to remove the player data for eliminated players.
+Still testing to make sure that this bug has been eliminated.
+
+2/17/18 16:15 Pushed to origin pygame
+
+Casino (game): playersWinGame: Added rounds as an argument for this function, so that the game can print out the round number for post-game.
+Bugs Fixed: 
+A bug that had userLostGame identify good saved games as corrupt ones.
+A bug that left Dealer data on screen after the dealer busts.  This was fixed by adding an output option to printTableDealer 'post-game' that skips the dealer completely. This output option was added to the refreshTable calls in playersWinGame. A 'post-game' option also had to be added to refreshTable.
+checkForQuit leaves the game without showing the user the player data in the saved game and in memory so the player can make an informed choice about saving the game or not saving it. Fixing this bug required removing checkForQuit and calling userLostGame instead. The flow shows the player data and allows the user to decide if they want to save or not.
+A bug that did not print out the contents of the saved game found by findPlayers, so that the user will know what they have in the saved game and can decide to use or ignore it. This required adding functionality to findPlayers to offer the user a choice. In findPlayers, changed listPlayers to tempListPlayers to clearly distinguish it from the global listPlayers. findPlayers now uses functionality similar to printPlayers to print out the player data (it cannot use printPlayers because listPlayers is not touched in this function). No changes were needed to main().
+
+2/17/18 14:10 Pushed to origin pygame
+
+Bugs fixed:
+A bug that caused a saved game deletion by userLostGame when the user requested that the saved game be preserved following elimination of all players in the saved game.
+A bug in checkForInsBet and checkForPairs caused players with banks right at the tableMin to be disqualified from splitting their hands or making insurance bets. This was due a greater than or equal to that should have been greater than.
+A bug that kept the insurance bets from printing out until the raise bets were being registered. This required added a refreshTable after checkForInsBet and checkForPairs in playBlackjack.
+A bug in resolveInsBets prevented the output of the results for individual players, except in the instance of being eliminated. This was resolved by creating a common printout block in resolveInsBets for all possible outcomes, but adding variable approColor and approBGColor to control the appearance of the output. Each iteration of the seat check for loop resets then to the default TEXTCOLOR and BGCOLOR, but it will be set to the elimination color scheme if a player is eliminated.

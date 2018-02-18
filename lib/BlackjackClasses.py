@@ -1,6 +1,8 @@
 from __future__ import print_function
-import random
-import os.path
+import random, os, pygame, inflection
+from pygame.locals import *
+import pdb
+
 # from abc import ABCMeta, abstractmethod
 
 class CardShoe(object):
@@ -8,12 +10,20 @@ class CardShoe(object):
     This class is used to simulate a six deck shoe.
         
     Class Order Attributes:
-        suits: a list of the suits used in normal playing card decks
+        suits: a tuple of the suits used in normal playing card decks
             S (spades), D (diamonds), H (hearts), and C (clubs). Tuple
             are used because these values are constants.
-        ranks: a list of the ranks of playing cards in ascending order Ace 
+        ranks: a tuple of the ranks of playing cards in ascending order Ace 
             through King, represented by A, 1, 2, 3,...., 9, 10, J, Q, K.
             Tuples are used here for the same reason.
+
+    Note: The "cards" themselves are tuples of (rank, suit). Six 52 card
+        decks of them are created for the Shoe. The first one is a sequential
+        order list. To increase the entropy of the randomizing process, a
+        randomly chosen single card is removed from the sequential "Shoe"
+        and inserted into the list shuffled_deck (see below). This process
+        continues until all 312 cards have been removed from the sequential
+        deck.
     
     Attributes
         shuffled_deck : a randomly shuffled shoe created from decks.
@@ -21,8 +31,10 @@ class CardShoe(object):
     
     Methods:
         __init__ : Initializes shuffled_deck to create a card shoe.
-        __str__: prints out the number of cards remaining in the shoe.
-        __del__: prints a message the deck show has been removed as it 
+        __len__: returns the number of cards remaining in the shoe.
+        __str__: returns a string listing the number of cards remaining
+            in the shoe.
+        __del__: returns a message the deck show has been removed as it 
             deletes the CardShoe object
         remove_top: removes the top card (index 0) from the shuffled deck
             and returns the tuple of the card (rank, suit)
@@ -34,13 +46,20 @@ class CardShoe(object):
     ranks = ('A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K')
     
     def __init__(self):
-        # decks is created as a set of indexes used to create a shuffled
-        # six deck shoe. It is a local variable, not an attribute. It is
-        # an ordered list of tuples of the form (rank, suit), where rank
-        # is taken from the list CardShoe.rank and suit from list 
-        # CardShoe.suits.
-        # To prevent cheating, __init__ takes no arguments. Instead,
-        # it creates an empty shuffled_deck itself.
+        """
+        __init__ creates the CardShoe object in the following manner:
+        A sequentially generate list of cards [tuples of the form (rank,
+        suit)] are generated for a list called decks. Decks is a local
+        variable. To increase the entropy in the randomization process,
+        the "cards" are randomly chosen one at a time, instead of randomizing
+        the entire Shoe at once. There is no other return value.
+
+        To help prevent cheating, __init__ takes no arguments.
+        """
+
+        # The following nested for loops generate 6 52 "card decks" of tuples
+        # (rank, suit). Each 52 card set is in sequential order by the tuples
+        # suits and ranks, starting with (A, S) and ending with (K, C).
         decks = []
         for i in xrange(0, 6):
             for s in CardShoe.suits:
@@ -49,7 +68,9 @@ class CardShoe(object):
         
         # To create a shuffled card shoe, we need to take a random card from
         # decks and move it into the shoe. We keep doing that until the deck
-        # is fully randomized.
+        # is fully randomized. It could have been done with a direct call
+        # random.shuffle(decks), but this process adds more entropy to the
+        # system without using much memory or CPU.
         self.shuffled_deck = []
         while len(decks) > 0:
             # card is another local variable. It is a tuple pulled using a
@@ -59,21 +80,32 @@ class CardShoe(object):
             self.shuffled_deck.append(decks[card_index])
             del decks[card_index]
         # Now, CardShoe.shuffled_deck contains a shuffled six deck shoe.
-        # This length is the number of cards in the initialized deck.
+        # This length is the number of cards in the initialized deck. It
+        # should be 312 cards (r, s).
         self.length = len(self.shuffled_deck)
     
     def __len__(self):
-        # This len method will print out the number of cards left in the shoe.
+        """
+        This method returns the number of cards left in the shoe. This is
+        used by other Classes to offer players the option to reshuffle earlier
+        in the game. It is also used by CasinoTable classes to determine when
+        the Shoe should be automatically reshuffled between rounds.
+        """
         return len(self.shuffled_deck)
     
     def __str__(self):
-        # This prints out a statement indicating that the deck has been
-        # initialized and the current entries remaining in it.
+        """
+        # This method returns a string indicating that the deck has been
+        # initialized and the current number of "cards" remaining in it.
+        """
         return "Deck: A shuffled shoe containing "+ str(len(self.shuffled_deck)) + " cards."
     
     def __del__(self):
-        print("The current deck shoe has been removed from the game.")
-        return True
+        """
+        This method removes a deck shoe from the game. It, then, returns a
+        string indicating that the deck shoe has been deleted.
+        """
+        return "The current deck shoe has been removed from the game."
     
     def remove_top(self):
         '''
@@ -87,9 +119,9 @@ class CardShoe(object):
 
     def diagnostic_print(self):
         '''
-        This method allows the programmer to print out all of the attributes, including
-        class order attributes, for the defined object to help debug code. It is not 
-        normally used with running program.
+        This method allows the programmer to print out all of the attributes,
+        including class order attributes, for the defined object to help debug
+        code. It is not normally used with running program.
         '''
         print("Class Order Attributes:")
         print("Ranks: ", self.ranks)
@@ -104,102 +136,170 @@ class Player(object):
     This class creates Hands for a Blackjack player.
     
     Terms related to game play:
-        players_turn: The part of a round of play in which players are playing their hands, in
-            rotation around the "table"
-        dealer_turn: The part of the round of play in which the dealer plays his/her hand
-        round: A deal, followed by players deciding bets and card draws, followed by dealer's turn,
-            and ending with settling wins and losses for the player hands
-        game: A series of rounds of play until either all players run out of money or decide to
-            stop playing and "cash out". After all players quit, a final tally of their money
-            determines the winner of the game.
+        players_turn: The part of a round of play in which players are playing
+            their hands in rotation around the "table"
+        dealer_turn: The part of the round of play in which the dealer plays
+            its hand. Dealer is a computer player.
+        round: Rounds have the following sequence of events:
+            Opening Bets and Deals
+                1) initial bets taken
+                2) hands are dealt to Dealer and Players
+                3) insurance bets are taken if dealer has a potential blackjack
+                4) initial player Blackjacks are paid out
+            Player Turn Begins
+            Going around the table for each of step below:
+                5) remaining players decide on additiaonl bets and splits
+                6) players decide on card draws, removing hands that bust
+            Dealer Turn Begins
+                7) Dealer reveals hold card. Blackjack beats all remaining
+                    players.
+            If any players remain after Blackjacks and busts, the game
+            continues:
+                8) Dealer stands if any of the following are true:
+                    a) Dealer has a hard 17 or greater
+                    b) Dealer has a hard score less than 17, but has a soft
+                        score (due to an Ace) of 17 or more that beats at
+                        least one player's hand
+                    c) Dealer busts at any point
+                9) Dealer must take a card while any of the following
+                    conditions exist:
+                    a) Dealer has a soft score under 17
+                    b) Dealer has a hard score under 17 with a soft score 17 or
+                        greater, but the soft score beats no other player's
+                        hand
+                10) Remaining players win if Dealer busts or stands at a score
+                    below their score
+                11) Ties result in returned bets
+                12) Dealer loses any bets if its score is lower than a player's
+                    score
+                        
+        game: A series of rounds of play until either all players run out of
+            money or decide to stop playing and "cash out".
     
     Class Order Attributes:
-        values: dictionary of the scoring for each rank of blackjack card (it was not in use
-            in CardShoe class). It is a COA because it is needed for every player object.
+        values: dictionary of the scoring for each rank of blackjack card
+            (it was not in use in CardShoe class). It is a COA because it is
+            needed for every player object.
         
     Attributes:
         name: stores the player's name
-        hand: tracks the card tuples (rank, suit) of the cards in the player's regular hand
-        soft_hand_score: integer value of the current "soft" score of the player's hand
-        hard_hand_score: integer value of the "hard" score of the player's hand
+        hand: tracks the card tuples (rank, suit) of the cards in the player's
+            regular hand
+        soft_hand_score: integer value of the current "soft" score of the
+            player's hand
+        hard_hand_score: integer value of the "hard" score of the player's
+            hand
         split_flag: boolean set to True if the player splits, False if not.
         split_hand: tracks a second hand created by a split
-        soft_split_score: integer value of the current "soft" score of the player's split hand,
-            if it exists
-        hard_split_score: integer value of the current "hard" score of the player's split hand,
-            if it exists
+        soft_split_score: integer value of the current "soft" score of the
+            player's split hand, if it exists
+        hard_split_score: integer value of the current "hard" score of the
+            player's split hand, if it exists
         bank: integer number of dollars the player currently has in chips
-        bet: current amount bet on the outcome of the hand vs dealer's hand
-        split_bet: tracks any bets applied to a card split hand
-        insurance: tracks the amount of any side bets taken on the dealer getting blackjack
+        bet: current amount bet on the outcome of their hand vs dealer's hand
+        raise_bet: boolean indicating if the player has attempted to raise
+            there bet
+        split_bet: tracks any bets applied to a split hand
+        raise_split_bet: boolean indicating if the player has attempted to
+            raise their split bet
+        insurance: tracks the amount of any side bets taken on the dealer
+            getting blackjack (requires Dealer shows an Ace or 10 value card
+            for its visible card)
     
     Methods:
-        __init__: Creates the player object, initializing all of the attributes. The bank has a
-            default value of 1000 dollars.
-        __str__: This method prints the player's name, the player's bank, bets, and primary hand.
-            If the split_flag is True, it will print that data as well.
-        __del__: prints a message while removing the player object
-        __len__: prints out the len of the player's regular hand (This is used to determine
-            player blackjack)
-        print_split: This method does the same thing as __str__ except that it prints only the data
-            for the split hand
-        score_hand: takes a hand and returns the soft and hard scores for the hand as a tuple
-            (soft, hard)
-        add_card_to_hand: akes a card, adds it to the hand, calls score_hand to get the new hard 
-            and soft scores, and returns 'blackjack', 'bust', or 'playable'
-        add_card_to_split: takes a card, adds it to the split hand, calls score_hand to get a 
-            new hard and soft scores for it, and returns 'bust' or 'playable'
-        blackjack: takes the player's regular bet, mulitplies it by the Blackjack multiplier
-            (supplied via argument)
+        __init__: Creates the player object, initializing all of the
+            attributes. The bank has a default value of 10,000 dollars.
+        __str__: this prints out the full data on a Player in a readable
+            format. If the split_flag is True, it adds split hand data.
+        extract_data: This method originally printed out the basic data on a
+            Player's bets, hands, and scores. This is new in the pygame
+            conversion. It returns a dict object containing the following:
+                'name'            : player's name
+                'bank'            : player's bank
+                'hand'            : player's regular hand or None
+                'split hand'      : player's split hand or None
+                'soft score'      : soft score for player's hand or None
+                'hard score'      : hard score for player's hand or None
+                'soft score split hand' : soft score for split hand or None
+                'hard score split hand' : hard score for split hand or None
+                'regular bet'     : bet amount on regular hand or None
+                'split hand bet'  : bet amount on split hand or None
+                'insurance bet'   : bet amount on dealer blackjack or None
+        __del__: removes the player object and returns a string indicating that
+        __len__: prints out the len of the player's regular hand (This is
+            used to determine player blackjack and splits)
+        print_split: This method originally printed out player data and split
+            hand data and bets. It now returns the same dict object as the
+            __str__ method.
+        score_hand: takes a hand and returns the soft and hard scores for
+            the hand as a tuple (soft, hard)
+        add_card_to_hand: takes a card as an argument, adds it to the hand,
+            calls score_hand to get the new hard and soft scores, and returns
+            'blackjack', 'bust', or 'playable'
+        add_card_to_split: takes a card as an argument, adds it to the hand,
+            calls score_hand to get the new hard and soft scores, and returns
+            'bust' or 'playable'
+        blackjack: takes the player's regular bet, mulitplies it by the
+            Blackjack multiplier (supplied via argument) and adds it to their
+            bank
         win: adds the player's bet to their bank
         split_win: add the player's split bet to the bank
-        reg_loss: subtracts the player's bet from the bank. Returns False if the player's bank
-            is now empty, ending their game.
-        split_loss: subtracts the player's split bet from the bank. Returns False if the 
-            player's bank is now empty, ending their game.
-        tie: clears bet without deduction from the bank. This is needed for Dealer methods.
-        split_tie: clears the bet on the split hand without deduction from the bank. This is
-            needed for Dealer methods.
-        ins: tracks a side bet taken on the dealer getting blackjack. It takes a boolean for
-            the Dealer's blackjack. It returns True for a positive bank, False if the Player's
-            bank is zero or negative.
-        split_pair: moves one card over to the split_hand, prompts for a initial
-            split_bet, and sets the split_flag to True. Adjusts the scores accordingly.
-        split_check: checks for a pair in the initial deal. Returns True if so, False otherwise.
-        end_round: verifies that all hands are empty, the split_flag has been reset, and all bets
-            have been reset to zero (including insurance). This method is used to clean up after
-            the Dealer's turn.
-        update_bet: this method makes sure that the player has the money to cover the new amount
-            of their regular bet and all other bets. If so, it returns 'success'. If not, it 
-            returns an error code. The argument is the amount to increase the bet.
-        update_split_bet: this method makes sure that the player has the money to cover the new
-            amount of their split bet and all other bets. If so, it returns 'success'. If not,
-            it returns an error code. The argument is the amount to increase the bet.
-        update_ins: this method makes sure that the player has the money to cover the new amount
-            of their insurance bet and all other bets. If so, it return 'success'. If not, it
-            returns an error code.  The argument is the amount to increase it.
-        total_bets: the calculates the total of all bets currently accepted for the player, 
-            including an insurance bet.
-        double_down: checks to see if the hand has 2 cards. if so, it offers an update to the 
-            bet of up to double the original amount. A 0 amount will be considered an change of 
-            heart. it loops until a valid amount is entered. it calls the appropriate bet method
-            for the type of hand.
-        diagnostic_print: This method prints out all of the attributes and object stored in this
-            object. Normally, this is used for code diagnostics only.
+        reg_loss: subtracts the player's bet from the bank. Returns False
+            if the player's bank is now empty.
+        split_loss: subtracts the player's split bet from the bank. Returns
+            False if the player's bank is now empty, ending their game.
+        tie: clears self.bet without deduction from the bank. This is needed
+            for Dealer methods.
+        split_tie: clears the bet on the split hand without deduction from
+            the bank. This is needed for Dealer methods.
+        ins: tracks a side bet taken on the dealer getting blackjack. It
+            takes a boolean for the Dealer's blackjack. It returns True for
+            a positive bank, False if the Player's bank is zero or negative.
+        split_pair: moves one card over to the split_hand, prompts for a
+            initial split_bet, and sets the split_flag to True. Adjusts the
+            scores accordingly.
+        split_check: checks for a pair in the initial deal. Returns True if
+            so, False otherwise.
+        end_round: resets all hands to empty, the split_flag to False, and all
+            bets to zero (including insurance). This method is used to clean
+            up after the Dealer's turn ends the round.
+        update_bet: This method requires an integer for the new bet amount.
+            It makes certain the player has the money in their bank to cover
+            the new amount of their regular bet and all other bets. If so,
+            it returns 'success'. If not, it returns an error code.
+            The argument is the amount to increase the bet.
+        update_split_bet: This method performs the same operation as
+            update_bet, only on the split hand bets.
+        update_ins: This method requires an integer amount of the insurance
+            bet to be made. It verifies that the player has enough money in
+            their bank to cover all of their bets, including the insurance
+            bet. It returns 'success' if the player can cover the new bet,
+            an error code if not.
+        total_bets: This method calculates the total of all bets currently
+            accepted for the player, including an insurance bet.
+        double_down: This method takes a bet amount (integer) and split
+            (boolean). Based on split (boolean), it calls either update_bet or
+            update_split_bet with  whatever 'bet_amt' contains (with 0 as min
+            and current bet as max arguments). It returns the string that the
+            bet update methods return for each action.
+        diagnostic_print: This method prints out all of the attributes and
+            object stored in this object. Normally, this is used for code
+            diagnostics only.
         
       
     """
-    values = {'A': 1, '2' : 2, '3' : 3, '4' : 4, '5' : 5, '6' : 6, \
-              '7' : 7, '8' : 8, '9' : 9, '10' : 10, 'J' : 10, 'Q' : 10,\
-              'K' : 10 }
+    values = {'A' : 1,  '2' : 2,  '3' : 3, '4' : 4, '5' : 5, \
+              '6' : 6,  '7' : 7,  '8' : 8, '9' : 9, '10' : 10, \
+              'J' : 10, 'Q' : 10, 'K' : 10 }
     
     
-    def __init__(self, name, bank=1000):
+    def __init__(self, name, bank=10000):
         '''
         This method intializes all of the following attributes:
             name: takes a string to initialize the player's name
-            bank: takes a non-negative integer and stores it (even for Dealer). This attribute
-                has a default of $1000 dollars if not specified
+            bank: takes a non-negative integer and stores it (even for
+                Dealer). This attribute has a default of $10000 dollars
+                if not specified in the call.
             hand: creates an empty list
             soft_hand_score: integer set to 0
             hard_hand_score: integer set to 0
@@ -222,7 +322,9 @@ class Player(object):
         self.soft_split_score = 0
         self.hard_split_score = 0
         self.bet = 0
+        self.raise_bet = False
         self.split_bet = 0
+        self.raise_split_bet = False
         self.insurance = 0
         return
     
@@ -252,20 +354,91 @@ class Player(object):
             print("\n\tBet on this hand: $", self.split_bet)
         print("\nInsurance against Dealer Blackjack: $", self.insurance)
         return "Player " + self.name + '\n'
+
+    def extract_data(self):
+        '''
+        This method has been created for the pygame conversion. All other
+        print functions remain intact. Where a print(object) would be used
+        in a text-based game, use this method to extract the data that
+        needs to be printed out.
+        The layout of the data is:
+            'name'            : player's name
+            'bank'            : player's bank
+            'hand'            : player's regular hand or None
+            'split hand'      : player's split hand or None
+            'soft score'      : soft score for player's hand or None
+            'hard score'      : hard score for player's hand or None
+            'soft score split hand' : soft score for split hand or None
+            'hard score split hand' : hard score for split hand or None
+            'regular bet'     : bet amount on regular hand or None
+            'split hand bet'  : bet amount on split hand or None
+            'insurance bet'   : bet amount on dealer blackjack or None
+            
+        "hands" are set to None if they do not exist, including split_hand.
+        The split_flag is used to check for the latter. Bets and scores are
+        set to None if they are zero.
+        '''
+
+        playerData = {}
+        playerData['name'] = self.name
+        playerData['bank'] = self.bank
+
+        # Determine if a hand was dealt to the player or still exists.
+        if len(self.hand) != 0:
+            playerData['hand']        = self.hand
+            playerData['soft score']  = self.soft_hand_score
+            playerData['hard score']  = self.hard_hand_score
+            playerData['regular bet'] = self.bet
+        else:
+            # The regular hand has not been dealt or has been removed already.
+            playerData['hand']        = None
+            playerData['soft score']  = None
+            playerData['hard score']  = None
+            playerData['regular bet'] = None
+
+        # Determine if a split hand was dealt to the player or still exists.   
+        if (self.split_flag == True) and (len(self.split_hand) != 0):
+            playerData['split hand']            = self.split_hand
+            playerData['soft score split hand'] = self.soft_split_score
+            playerData['hard score split hand'] = self.hard_split_score
+            playerData['split hand bet']        = self.split_bet
+        else:
+            # A split hand has not been dealt or has been removed already.
+            playerData['split hand']            = None
+            playerData['soft score split hand'] = None
+            playerData['hard score split hand'] = None
+            playerData['split hand bet']        = None
+
+        # Checking on bets requires a second test. They can exist before 
+        # the hand is dealt. For split hands, the flag will be set before
+        # the cards are separated and the hand created. So, a non-zero bet
+        # needs to be carried over to playerData. It should also happen if
+        # the split flag is True while the hand is in the process of being
+        # separated.
+        if self.bet != 0:
+            playerData['regular bet'] = self.bet
+        if (self.split_flag == True) or (self.split_bet != 0):
+            playerData['split bet'] = self.split_bet
+        
+        # Check for an insurance bet.
+        if self.insurance != 0:
+            playerData['insurance bet'] = self.insurance
+        else:
+            playerData['insurance bet'] = None
+        return playerData
     
     def __del__(self):
         '''
-        This method removes a player from the game. After deleting it, it prints a message
-        and returns True.
+        This method removes a player from the game. After deleting the player,
+        it returns a string indicating that the player object has been deleted.
         '''
         name = self.name
-        print("{0} has been removed from the game.".format(name))
-        return True
+        return "{0} has been removed from the game.".format(name)
     
     def __len__(self):
         '''
-        This method prints out the length of the player's regular hand. This is used to help
-        determine a possible blackjack.
+        This method prints out the length of the player's regular hand. This
+        is used to help determine a possible blackjack.
         '''
         return len(self.hand)
     
@@ -286,7 +459,7 @@ class Player(object):
         print("\tHard score for this hand: ", self.hard_split_score)
         print("\n\tBet on this hand: $", self.split_bet)
         return
-    
+
     def total_bets(self):
         '''
         This method returns a total of all bets placed by the player. It
@@ -296,28 +469,42 @@ class Player(object):
     
     def score_hand(self, card_hand):
         '''
-        This method accepts a card hand and returns the hard and soft scores for the hand.
-        This is in the form of a tuple (soft, hard).
+        This method accepts a card hand and returns the hard and soft scores
+        for the hand. This is in the form of a tuple (soft, hard).
+        Normally, soft and hard scores are equal, but Aces have two possible
+        scores. The hard score always treats Aces as 1 point card. That means
+        that soft scores >= hard scores.
+        Note: This method makes no attempt to determine if a hand is still
+        playable. It only checks to see if Aces allow for more than one playable
+        score. If so, it will try to find the highest playable score. Keep in
+        mind that blackjacks have a soft score of 21 and a hard score of 11.
         '''
+        # We need to track Aces and both scores. They start out equal.
         soft_score = hard_score = 0
         aces = 0
         for (rank, suit) in card_hand:
             card_score = Player.values[rank]
-            # The soft score will always be lower score because values treats Aces as a 1
-            # point card. We increment both in case an each score in case an Ace occurred 
-            # earlier in the hand. The values dictionary considers A = 1 score.
+            # We increment both scores by the value in values, which treats
+            # Aces as a 1 point card. If no aces are present, the scores will
+            # remain equal.
             soft_score += card_score
             hard_score += card_score
             if rank == 'A':
                 # Increment the number of aces.
                 aces += 1
-        # Now, the hard_score is the minimum value that the hand can have. They will be
-        # equal if there are no aces in the hand. They also have no meaning if the
-        # hard_score exceeds 21 already. In both cases, they will be equal. For each Ace,
-        # we add 10 to the soft_score, and check to see if it busts. If not, we increase
-        # the soft_score. 
+        
+        # The hard_score is the minimum value that the hand can have, but it
+        # may not be the only playable value. If there is at least one Ace, we
+        # we have to determine if scoring one or more Aces as 11 will result in
+        # a playable score. The only case we care about is a playable hard score
+        # with at least one Ace.
         if hard_score < 21 and aces != 0:
             for i in xrange(1, aces + 1):
+                # This for loop takes the soft score and adds 10 to it, tests
+                # it to see if it is still playable. If so, it changes the soft
+                # score to match it. It does this until all Aces are exhausted.
+                # The largest playable score will be containted in soft_score
+                # after it completes its run.
                 test_score = soft_score + 10
                 if test_score <= 21:
                     soft_score = test_score
@@ -327,37 +514,45 @@ class Player(object):
     
     def add_card_to_hand(self, card):
         '''
-        This method accepts a card tuple (rank, suit) as argument. It places this card into
-        the Player.hand list. It calls the internal method score_hand to rescore the hard
-        and soft scores of the hand. The hard score for a hand will be equal to the soft
-        score if there are no aces in the hand. The soft_score can be greater than the hard
-        score if scoring any ace in the hand as an 11 would result in a playable hand. In
-        fact, blackjack (a natural 21) has a hard score of 11, while the soft score is 21.
+        This method accepts a card tuple (rank, suit) as argument. It places
+        this card into the Player.hand list. It calls the internal method
+        score_hand to rescore the hard and soft scores of the hand. The hard
+        score for a hand will be equal to the soft score if there are no aces
+        in the hand. The soft_score can be greater than the hard score if
+        scoring any ace in the hand as an 11 would result in a playable hand.
+        In fact, blackjack (a natural 21) has a hard score of 11, while the
+        soft score is 21 with the first two cards that were dealt.
         INPUT: card, a tuple of (rank, suit)
         OUTPUT: This function returns the following:
-            'blackjack'  = the soft score is 21, the hard score is 11, and the len(hand)
-                           is 2 (meaning the starting deal was a blackjack)
+            'blackjack'  = the soft score is 21, the hard score is 11, and the
+                           len(hand) is 2 (meaning the starting deal was a
+                           blackjack).
             'bust'       = the hard_score is greater than 21
-            'playable'   = at least one score is less than or equal to 21. If one is 21,
-                           the hand is "longer" than 2 cards
+            'playable'   = at least one score is less than or equal to 21.
+                           If one is 21, the hand is "longer" than 2 cards,
+                           making it ineligible for blackjack.
         '''
         self.hand.append(card)
         (self.soft_hand_score, self.hard_hand_score) = self.score_hand(self.hand)
         if self.hard_hand_score > 21:
             return 'bust'
-        elif (self.hard_hand_score == 11) and (self.soft_hand_score == 21) and (len(self) == 2):
+        elif (self.hard_hand_score == 11) and \
+             (self.soft_hand_score == 21) and \
+             (len(self) == 2):
             return 'blackjack'
         else:
             return 'playable'
     
     def add_card_to_split(self, card):
         '''
-        This method accepts a card tuple (rank, suit) as argument. It places this card into
-        the Player.hand list. It calls the internal method score_hand to rescore the hard
-        and soft scores of the hand. The hard score for a hand will be equal to the soft
-        score if there are no aces in the hand. The soft_score can be greater than the hard
-        score if scoring any ace in the hand as an 11 would result in a playable hand. This
-        hand cannot have a blackjack result.
+        This method accepts a card tuple (rank, suit) as argument. It places
+        this card into the Player.split_hand list. It calls the internal
+        method score_hand to rescore the hard and soft scores of the split
+        hand. The hard score for a hand will be equal to the soft score if
+        there are no aces in the hand. The soft_score can be greater than the
+        hard score if scoring any ace in the hand as an 11 would result in
+        a playable hand. This hand cannot have a blackjack result because it
+        it created from the second card dealt.
         INPUT: card, a tuple of (rank, suit)
         OUTPUT: This function returns the following:
             'bust'       = the hard_score is greater than 21
@@ -372,17 +567,21 @@ class Player(object):
         
     def blackjack(self, multiplier):
         '''
-        This method handles the player's winnings for a blackjack (natural 21 on the first
-        two cards dealt). Casinos always has a better payout ratio for a player winning a
-        blackjack (assuming the Dealer doesn't tie with the player).
+        This method handles the player's winnings for a blackjack (natural 21
+        on the first two cards dealt). Casinos always have a better payout
+        ratio for a player winning a blackjack.
+        Note: This is an automatic player win, regardless of whether or not
+        Dealer has a blackjack as well.
         
-        This method erases the original bet and clears the hand since this result is handled
-        immediately after the second card deal takes place.
+        This method erases the original bet and clears the hand since this
+        part of the round takes place immediately after the second card was
+        dealt and before the Player Turn begins.
         
-        This method does not return a value. The multiplier needs to be a decimal or an
-        integer, not a fraction.
+        This method does not return a value. The multiplier needs to be a
+        decimal or an integer, not a fraction.
         
-        Nothing is done to the split result because no split can occur with a natural 21.
+        Nothing is done to the split result because no split can occur with
+        a natural 21. (Splits are offered when a pair is dealt to a player.)
         '''
         winnings = int(multiplier * self.bet)
         self.bank += winnings
@@ -393,8 +592,8 @@ class Player(object):
     
     def win(self):
         '''
-        This method handles the player's winngings wins with their regular hand. The split_hand
-        has a separate method for this purpose.
+        This method handles the player's winnings after a win with their
+        regular hand. The split_hand has a separate method for this purpose.
         
         This method does not accept arguments nor return values.
         '''
@@ -404,25 +603,28 @@ class Player(object):
     
     def split_win(self):
         '''
-        This method cleans up a split hand after the split hand wins. The regular hand is dealt
-        with in other methods.
+        This method handles the player's winnings after a win with their
+        split hand. The regular hand has a separate method for this purpose.
         
         This method does not accept arguments nor return values.
         '''
-        # There is no multiplier for a regular win with a split hand either.
+        # There is no multiplier for a win with a split hand.
         self.bank += self.split_bet
         return
     
     def reg_loss(self):
         '''
-        This method deducts player's losses from bets on their regular hand, either to a bust
-        or a lower hand score during the round than the dealer.
+        This method deducts player's losses from bets on their regular hand,
+        either to a bust or a lower hand score during the round than the
+        dealer.
         
-        This method takes no arguments. It returns True while the players has a positive
-        balance in the bank. A zero or negative balance returns False.
+        This method takes no arguments. It returns True while the players has
+        a positive balance in the bank. A zero or negative balance returns
+        False.
         
-        Note: This method is predicated on the idea that other methods or functions have made
-        certain that the player had enough in their bank to cover bets made.
+        Note: This method is predicated on the idea that other methods or
+        functions have made certain that the player had enough in their bank
+        to cover any bets made.
         '''
         self.bank -= self.bet
         self.hand = []
@@ -433,14 +635,16 @@ class Player(object):
        
     def split_loss(self):
         '''
-        This method deducts the player's losses on the split hand, either to a bust or a lower
-        score during the round than the dealer.
+        This method deducts the player's losses on the split hand, either
+        to a bust or a lower score during the round than the dealer.
         
-        This method takes no arguments. It returns True while the players has a positive
-        balance in the bank. A zero or negative balance returns False.
+        This method takes no arguments. It returns True while the players
+        has a positive balance in the bank. A zero or negative balance
+        returns False.
         
-        Note: This method is predicated on the idea that other methods or functions have made
-        certain that the player had enough in their bank to cover bets made.
+        Note: This method is predicated on the idea that other methods or
+        functions have made certain that the player had enough in their
+        bank to cover any bets made.
         '''
         self.bank -= self.split_bet
         self.split_hand = []
@@ -451,46 +655,59 @@ class Player(object):
     
     def tie(self):
         '''
-        This method clears the regular bet if the hand ties with the Dealer. Ties do not
-        normally result in casino wins.
+        This method clears the regular bet if the hand ties with the Dealer.
+        Ties do not normally result in casino wins. This is due to the
+        realization by gaming commissions and club owners that coming away
+        richer than you started at Blackjack tables is hard enough without
+        the Dealer winning ties.
         
-        This method accepts no arguments and returns no values. The reason for the latter is that
-        there is no deduction from the bank, nor gain in a tie.
+        This method accepts no arguments and returns no values. The reason
+        for the latter is that there is no deduction from the bank, nor gain
+        in a tie.
         '''
         self.bet = 0
         return
     
     def split_tie(self):
         '''
-        This method clears the bet on the split hand if it ties with the Dealer. Ties do not
-        normally result in casino wins.
+        This method clears the split bet if the split hand ties with the
+        Dealer. Ties do not normally result in casino wins. This is due to the
+        realization by gaming commissions and club owners that coming away
+        richer than you started at Blackjack tables is hard enough without
+        the Dealer winning ties.
         
-        This method accepts no arguments and returns no values. The reason for the latter is that
-        there is no deduction from the bank, nor gain in a tie.
+        This method accepts no arguments and returns no values. The reason
+        for the latter is that there is no deduction from the bank, nor gain
+        in a tie.
         '''
         self.split_bet = 0
         return
     
     def ins(self, dealer_blackjack):
         '''
-        This method handles bets taken on the Dealer getting a blackjack. This bet only happens
-        when the Dealer's face up card is an Ace, 10, or face card. Other methods or functions will
-        handle creating this bet when the conditions for it are met.
+        This method handles bets taken on the Dealer getting a blackjack.
+        This bet only happens when the Dealer's face up card is an Ace, 10,
+        or face card. Other methods or functions handle creating this bet
+        when the conditions for it are met.
         
-        This method takes a boolean indicating if the Dealer has a blackjack. If True, the player
-        wins their insurance bet. If False, the player lost the insurance bet.
+        This method takes a boolean indicating if the Dealer has a blackjack.
+        If True, the player wins their insurance bet. If False, the player
+        lost the insurance bet.
         
-        This method returns a boolean. True indicates that the player still has money in the bank.
-        False means they have zero or a negative balance and have to be eliminated from the game.
+        This method returns a boolean. True indicates that the player still
+        has money in the bank. False means they have zero or a negative
+        balance.
         
-        Note: This method does not care if the insurance bet is zero. In that case, it has no
-        effect on their bank balance.
+        Note: This method does not care if the insurance bet is zero. In that
+        case, it has no effect on their bank balance.
         '''
         if dealer_blackjack == True:
-            # The Dealer got blackjack. The player who has a non-zero insurance bet wins the bet.
+            # The Dealer got blackjack. The player who has a non-zero
+            # insurance bet wins the bet. Otherwise, self.insurance = 0.
             self.bank += self.insurance
         else:
-            # The Dealer did not get blackjack. The insurance bet is deducted from the player's bank.
+            # The Dealer did not get blackjack. The insurance bet is
+            # deducted from the player's bank.
             self.bank -= self.insurance
 
         # In case the bet was deducted from the bank, we need to check it.
@@ -513,82 +730,85 @@ class Player(object):
         self.soft_split_score = 0
         self.hard_split_score = 0
         self.bet = 0
+        self.raise_bet = False
         self.split_bet = 0
+        self.raise_split_bet = False
         self.insurance = 0
         return
     
     def update_bet(self, new_increase, min_bet=1, max_bet=100):
         '''
-        This method increases the regular bet by the amount of the increase. It will add up all the
-        other bets to make sure that player has enough money in the bank to cover it.
+        This method increases the regular bet by the amount of the increase.
+        It will add up all the other bets to make sure that player has enough
+        money in the bank to cover it.
         INPUT: integer new_increase (or a float that will be truncated)
-        OPTIONAL: min_bet and max_bet are not required (because of defaults), but a casino could
-            override the value by including it.
+        OPTIONAL: min_bet and max_bet are not required (because of defaults),
+            but a casino could override the value by including it.
         OUTPUT: string with the following meanings
             'success'   = the bet could be increased
             'bust'      = the bet exceeds the money in the bank
-            'size'      = the bet is not allowed because it exceeds double the original bet
+            'size'      = the bet is not allowed because it exceeds double the
+                        original bet
             'min'       = the bet is not enough to meet the casino minimums
             'max'       = the bet exceeds the max allowed initial bet
-            'TypeError' = at least one numerical argument supplied was not a number
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
             'Unknown'   = an unknown error occurred
         
         Note: A zero max_bet means that there is no maximum initial bet amount.
         '''
-        # The first step is to convert a possible floating point number into an integer.
+        # The first step is to convert a possible floating point number into an
+        # integer.
         try:
             amt_to_increase = int(new_increase)
         except TypeError:
-            print("The value supplied is not a number")
             return 'TypeError'
         except:
-            print("An unknown error has occurred")
             return 'Unknown'
         else:
-            # If it could be converted, the sign needs to be stripped off the value.
+            # If it could be converted, the sign needs to be stripped off the
+            # value.
             amt_to_increase = abs(amt_to_increase)
         
-        # Next, the new amount needs to be checked to see against min and max bets.
-        # Note, min and max bets only apply to the bets laid before the cards are 
-        # dealt. So, Player.bet = 0 then.
+        # Next, the new amount needs to be checked against min and max bets.
+        # Note: min and max bets only apply to the bets laid before the cards
+        # are dealt. So, Player.bet = 0 then.
         if self.bet == 0:
             if amt_to_increase < min_bet:
-                print("The bet amount is too small.")
                 return 'min'
-            # A max_bet of zero means there is no maximum (besides the implicit all in).
+            # A max_bet of zero means there is no maximum (besides the implicit
+            # all in).
             if (max_bet != 0) and (amt_to_increase > max_bet):
-                print("The bet amount is too large.")
                 return 'max'
-        # A non-zero bet automatically is subject to the double down rule. A player
-        # may not exceed twice their original bet on a "great" hand.
+        # A non-zero bet automatically is subject to the double down rule. A
+        # player may not exceed twice their original bet on a "great" hand.
         elif self.bet < amt_to_increase:
-            print("Double down exceeds casino allowed amount.")
-            print("Players may not increase their bets by more than their original bet.")
             return 'size'
                 
-        # Now, the total amount of all bets needs be checked against the bank balance.
-        # total_bets = self.bet + self.split_bet + self.insurance
+        # Now, the total amount of all bets needs be checked against the bank
+        # balance. total_bets() = self.bet + self.split_bet + self.insurance
         if (self.total_bets() + amt_to_increase) > self.bank:
-            print("{0}'s total bets will exceed the bank of {1}".format(self.name, self.bank))
             return 'bust'
         self.bet += amt_to_increase
-        print("{0} accepted. New bet amount on this hand is {1}.".format(amt_to_increase, self.bet))
         return 'success'
     
     def update_split_bet(self, new_increase, min_bet=1, max_bet=100):
         '''
-        This method increases the regular bet by the amount of the increase. It will add up all the
-        other bets to make sure that player has enough money in the bank to cover it.
+        This method increases the split bet by the amount of the increase. It
+        will add up all the other bets to make sure that player has enough
+        money in the bank to cover it.
         INPUT: integer new_increase (or a float that will be truncated)
-        OPTIONAL: min_bet and max_bet are not required (because of defaults), but a casino could
-            override the value by including it.
+        OPTIONAL: min_bet and max_bet are not required (because of defaults),
+            but a casino could override the value by including it.
         OUTPUT: string with the following meanings
             'success'   = the bet could be increased
             'bust'      = the bet exceeds the money in the bank
-            'size'      = the bet is not allowed because it exceeds double the original bet
+            'size'      = the bet is not allowed because it exceeds double the
+                        original bet
             'min'       = the bet is not enough to meet the casino minimums
             'max'       = the bet exceeds the max allowed initial bet
-            'TypeError' = at least one numerical argument supplied was not a number
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
             'Unknown'   = an unknown error occurred
         
         Note: A zero max_bet means that there is no maximum initial bet amount.
@@ -597,7 +817,6 @@ class Player(object):
         try:
             amt_to_increase = int(new_increase)
         except TypeError:
-            print("The value supplied is not a number")
             return 'TypeError'
         except:
             return 'Unknown'
@@ -610,82 +829,76 @@ class Player(object):
         # dealt. So, Player.bet = 0 then.
         if self.split_bet == 0:
             if amt_to_increase < min_bet:
-                print("The bet amount is too small.")
                 return 'min'
             # A max_bet of zero means there is no maximum (besides the implicit all in).
             if (max_bet != 0) and (amt_to_increase > max_bet):
-                print("The bet amount is too large.")
                 return 'max'
         # A non-zero bet automatically is subject to the double down rule. A player
         # may not exceed twice their original bet on a "great" hand.
         elif self.split_bet < amt_to_increase:
-            print("Double down exceeds casino allowed amount.")
-            print("Players may not increase their bets by more than their original bet.")
             return 'size'
                 
         # Now, the total amount of all bets needs be checked against the bank balance.
         # total_bets = self.bet + self.split_bet + self.insurance
         if (self.total_bets() + amt_to_increase) > self.bank:
-            print("{0}'s total bets will exceed the bank of {1}".format(self.name, self.bank))
             return 'bust'
         self.split_bet += amt_to_increase
-        print("{0} accepted. New bet amount on this hand is {1}.".format(amt_to_increase, self.split_bet))
         return 'success'
     
     def update_ins(self, ins_bet, min_bet=0, max_bet=200):
         '''
-        This method accepts an insurance bet. This type of bet is a bet that the Dealer will
-        have a blackjack if an Ace or a 10-score card is visible. This is a way for the player
-        to win money even when the Dealer has a blackjack. There is generally no mininum bet,
-        but there is often a maxiumum allowed bet. There are no opportunities to raise this bet
-        not can the player place a second such bet if they split their hand.
+        This method accepts an integer insurance bet. This is a bet that the
+        Dealer has a hidden blackjack. It can only be made if the Dealer's
+        visible card is an Ace or a 10-score card. This is a way for the player
+        to win money even when the Dealer has a blackjack. There is generally
+        no mininum bet, but there is often a maxiumum allowed bet. There are no
+        opportunities to raise this bet nor can the player place a second such
+        bet if they split their hand.
         INPUT: integer ins_bet (or a float that will be truncated)
-        OPTIONAL: min_bet and max_bet are not required (because of defaults), but a casino could
-            override the value by including it.
+        OPTIONAL: min_bet and max_bet are not required (because of defaults),
+            but a casino could override the value by including it.
         OUTPUT: string with the following meanings
             'success'   = the insurance bet was acceptable and applied
             'exists'    = the insurance bet has already been made
             'bust'      = the bet exceeds the money in the bank
             'min'       = the bet is not enough to meet the casino minimums
             'max'       = the bet exceeds the max allowed for an insurance bet
-            'TypeError' = at least one numerical argument supplied was not a number
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
             'Unknown'   = an unknown error occurred
         '''
-        # The first step is to convert a possible floating point number into an integer.
+        # The first step is to convert a possible floating point number into an
+        # integer.
         try:
             ins_amt = int(ins_bet)
         except TypeError:
-            print("The values is not a number")
             return 'TypeError'
         except:
             return 'Unknown'
         else:
-            # If it could be converted, the sign needs to be stripped off the value.
+            # If it could be converted, the sign needs to be stripped off the
+            # value.
             ins_amt = abs(ins_amt)
-        
-        # Next, we need to check for an existing insurance bet. If it exists already, no
-        # changes are permitted.
+        print("update_ins: Min Bet is ${0}. Max Bet is ${1}.".format(min_bet, max_bet))
+        # Next, we need to check for an existing insurance bet. If it exists
+        # already, no changes are permitted.
         if (self.insurance != 0):
-            print("An insurance bet has already been made.")
             return 'exists'
         if (ins_amt < min_bet):
-            print("The bet amount is below the casino minimum for an insurance bet.")
             return 'min'
         if (ins_amt > max_bet):
-            print("The bet amount exceeds the casino maximum for an insurance bet.")
             return 'max'
-        # Now, the total amount of all bets needs be checked against the bank balance.
+        # Now, the total amount of all bets needs be checked against the bank
+        # balance.
         if (self.total_bets() + ins_amt) > self.bank:
-            print("{0}'s total bets will exceed the bank of {1}".format(self.name, self.bank))
             return 'bust'
         self.insurance += ins_amt
-        print("{0} has been accepted as an insurance bet.".format(self.insurance))
         return 'success'
     
     def split_check(self):
         '''
-        This method verifies that the player's initial deal supports a split. It returns True
-        if the cards are a pair, False otherwise.
+        This method verifies that the player's initial deal supports a split.
+        It returns True if the cards are a pair, False otherwise.
         '''
         if (self.hand[0][0] != self.hand[1][0]):
             return False
@@ -694,8 +907,9 @@ class Player(object):
         
     def split_pair(self):
         '''
-        This method moves the second card in the player's initial hand to the split_hand, sets
-        the split_flag to True, and recalculates the hand scores.
+        This method moves the second card in the player's initial hand to the
+        split_hand, sets the split_flag to True, and recalculates the hand
+        scores.
         '''
         self.split_flag = True
         self.add_card_to_split(self.hand[1])
@@ -704,53 +918,38 @@ class Player(object):
         (self.soft_split_score, self.hard_split_score) = self.score_hand(self.split_hand)
         return
     
-    def double_down(self, card_hand, split):
+    def double_down(self, bet_amt, split):
         '''
-        This method determines if the second card has been dealt to a hand. If so, it allows the
-        player to "double down", the playe can add to their original bet up to an equal amount, 
-        doubling the original bet. They do not have to make an additional bet, however. 0 is an
-        acceptable amount.
-        INPUT: card_hand, a list of card tuples (rank,suit), and split, boolean indicating if this
-            is a split hand, True = split hand, False = normal hand
+        Originally, this method actually asked the player if they wanted to
+        double down, then recorded their bet amount. The bet was checked to
+        see if it exceeded their ante bet at the beginning of the round or the
+        initial bet on their split hand. With Pygame, this method tests takes
+        a bet amount (integer) and a split flag (boolean) and determines if
+        the bet is a valid amount using update_bet or update_split_bet
+        methods. Return values are below.
+        INPUT: bet_amt: integer, split: boolean
+        OUTPUT: string with one of the following messages:
+            'success'   = the bet was a valid amount and was applied
+            'bust'      = the bet exceeds the money in the bank
+            'size'      = the bet is not allowed because it exceeds double the
+                        original bet
+            'TypeError' = at least one 'numerical' argument supplied was not a
+                        number
+            'Unknown'   = an unknown error occurred
+        Note: double_down will not return 'min' or 'max' because the table
+        min and max do not apply to this bet. Only 'size' matters. Neither
+        bets can be more than double the original bet.
         '''
-        (soft_score, hard_score) = self.score_hand(card_hand)
-        if len(card_hand) == 2:
-            if soft_score == hard_score:
-                print("Player {0}: You have a hard {1} showing.".format(self.name, hard_score))
-            else:
-                print("Player {0}: You have a hard {1} or a soft {2} showing.".format(self.name, hard_score, soft_score))
-            answer = raw_input("Would like to double down now? y/n")
-            if answer[0].lower() == 'y':
-                if split == True:
-                    print("The bet on your split hand was {0}. You may increase the bet up to that amount.".format(self.split_bet))
-                    while True:
-                        try:
-                            new_bet = raw_input("Enter an amount between 0 and {0}. 0 indicates you changed your mind.".format(self.split_bet))
-                        except:
-                            continue
-                        else:
-                            bet_check = self.update_split_bet(new_bet,0)
-                            if bet_check != 'success':
-                                print("Please try again.")
-                                continue
-                        break
-                else:
-                    print("The bet on your original hand was {0}. You may increase the bet up to that amount.".format(self.bet))
-                    while True:
-                        try:
-                            new_bet = raw_input("Enter an amount between 0 and {0}. 0 indicates you changed your mind.".format(self.bet))
-                        except:
-                            continue
-                        else:
-                            bet_check = self.update_bet(new_bet,0)
-                            if bet_check != 'success':
-                                print("Please try again.")
-                                continue
-                        break
-            else:
-                print("The bet will remain unchanged.")
-            print(self)
-        return
+        # First, we check the split boolean to see if this is the split hand.
+        # Regular and split hands use different methods because their
+        # attributes have to be handled differently.
+        if split:
+            # It is a split hand.
+            bet_check = self.update_split_bet(bet_amt, 0, self.bet)
+        else:
+            # It is a regular hand.
+            bet_check = self.update_bet(bet_amt, 0, self.bet)
+        return bet_check
     
     def diagnostic_print(self):
         '''
@@ -770,16 +969,19 @@ class Player(object):
         print("Hard Score for Split Hand: ", self.hard_split_score)
         print("Remaining Bank: ", self.bank)
         print("Bet on Hand: ", self.bet)
+        print("Raise Flag on Regular Bet: ", self.raise_bet)
         print("Bet on Split Hand: ", self.split_bet)
+        print("Raise Flag on Split Bet: ", self.raise_split_bet)
         print("Insurance Bet: ", self.insurance)
         return
 
 
 class Dealer(Player):
     """
-    This is a derived class from base clase Player. The purpose of this class is to create a special type
-    of player, called the Dealer. The dealer has no split hands, has rules about taking cards after reaching
-    a hard score of 17, and places no actual bets.
+    This is a derived class from base clase Player. The purpose of this class
+    is to create a special type of player, called the Dealer. The dealer has
+    no split hands, has rules about taking cards after reaching a hard score
+    of 17, and places no actual bets.
     
     Class Order Attributes:
         name = 'Dealer'
@@ -788,15 +990,19 @@ class Dealer(Player):
         values
         
     Attributes:
-        hand: tracks the card tuples (rank, suit) of the cards in the Dealer's hand
+        hand: tracks the card tuples (rank, suit) of the cards in the Dealer's
+            hand (a list)
         bank: tracks dealers bank (integer)
-        soft_hand_score: integer value of the current "soft" score of the Dealer's hand
-        hard_hand_score: integer value of the "hard" score of the player's hand
-        visible_card: single tuple showing hand[0]
+        soft_hand_score: integer value of the current "soft" score of the
+            Dealer's hand
+        hard_hand_score: integer value of the "hard" score of the player's
+            hand
+        visible_card: single tuple showing hand[1] once it is dealt
         visible_soft_score: integer soft score of the visible card
-        visible_hard_score: integer hard score of the visible card (only differs on Aces)
-        blackjack_flag: True if the dealer's visible card is an Ace or a 10 value card,
-            False otherwise
+        visible_hard_score: integer hard score of the visible card (only
+            differs on Aces)
+        blackjack_flag: True if the dealer's visible card is an Ace or a 10
+            value card, False otherwise
     
     Inherited Attributes (from Player class):
         hand, soft_hand_score, hard_hand_score
@@ -805,40 +1011,54 @@ class Dealer(Player):
         __init__: initializes the attributes specific to dealer objects. Will 
             accept an integer to set dealer's starting bank to a value other
             than 100,000 default.
-        __str__: Prints Dealer (self.name), dealer's visible_card, and the 
-            score for the visible card. Used during player turns.
-        dealer_print: prints the actual hand and score in a format similar
-            to the print(Player) function. Used during dealer's turn.
+        __str__: This method prints out the Dealer's info, concealing the
+            facedown card and its score.
+        extract_data: This method was created for the pygame conversion and
+            should be used whenever a print(object) is needed. That includes
+            dealer_print.
+            It extracts the following data as a dict object:
+                'name'               : dealer's name (aka "Dealer")
+                'bank'               : dealer's bank
+                'hand'               : dealer's hand or None (a list)
+                'visible card'       : a tuple of the hand[1]
+                'visible soft score  : soft score of the visible card
+                'visible hard score  : hard score of the visible card
+                'soft score'         : soft score for dealers's hand or None
+                'hard score'         : hard score for dealers's hand or None
+                'dealer turn'        : set to None
+            'dealer turn' set to True is a way to see that it is the dealer's
+            turn, changing the GUI printout.
+        dealer_print: This method is used during the dealer's turn to print
+            out the full hand and hand scores.
         add_card_to_hand: adds a card to the dealer's hand, updates 
             visible_card (a hand) and its scores on second deal, updates
             the actual hand scores,  sets the blackjack_flag for the right
             ranks of visible_card, and returns 'playable', 'blackjack', 
             or 'bust' when finished. Like the Player version, it uses the
-            inherited score_hand() method for scoring visible and actual hands.
-        end_round: resets to start hand data and flags
-            dealer_bust: This method accepts accepts an integer of the total bets
-            of players not eliminated during the player turns in this round. The
-            method deducts this total bet from the dealer's bank.
-        dealer_lost: The parameter is total of all bets that the dealer lost 
-            this round, including insurance and player blackjacks. If the losses
-            break the bank, it returns False. Otherwise, it returns True.
-        dealer_wins: The parameter is the total of all bets the dealer won this round,
-            including insurance bets. It is added to the dealer's bank.
-        diagnostic_print: This method prints out all attributes of the Dealer object,
-            including class order attributes. It is intended to help debug coding
-            errors.
+            inherited score_hand() method for scoring visible and actual
+            hands.
+        end_round: resets hand data and flags at the end of a round
+        dealer_lost: The argument is the total of all bets that the dealer lost 
+            this round, including insurance and player blackjacks. If the
+            losses break the bank, it returns False. Otherwise, it returns
+            True.
+        dealer_wins: The argument is the total of all bets the dealer won
+            this round, including insurance bets. It is added to the dealer's
+            bank.
+        diagnostic_print: This method prints out all attributes of the Dealer
+            object, including class order attributes. It is intended to help
+            debug coding errors.
         
     Inherited Methods (from Player class):
         __len__, __del__, score_hand
 
     """
-    name = 'Dealer'
-    
-    def __init__(self, bank=100000):
+    def __init__(self, name='Dealer', bank=100000):
         '''
         This method creates the following attributes for Dealers:
             hand: creates an empty list
-            bank: set to 100,000 (by default, but can be changed via an argument)
+            bank: set to 100,000 (by default, but can be changed via an
+                optional argument)
             soft_hand_score: set to 0
             hard_hand_score: set to 0
             visible_card: empty list
@@ -846,24 +1066,28 @@ class Dealer(Player):
             visible_hard_scort: set to 0
             blackjack_flag: set to False
         
-        INPUT: integer dealer starting bank, defaults to 100,000
+        INPUT: bank, integer, defaults to 100,000 (dealer's starting bank)
+               name, string, defaults to 'Dealer' (dealer's name)
         '''
+        self.name = name
         self.hand = []
         self.bank = bank
         self.soft_hand_score = self.hard_hand_score = 0
         self.visible_card = []
         self.visible_soft_score = self.visible_hard_score = 0
         self.blackjack_flag = False
-        return        
-    
+        return
+
     def __str__(self):
         '''
-        This method prints out the Dealer's info, concealing the facebown card and its score.
-        It is used to show this derived class during the player turns so that a separate
-        method would not be needed to print the table out. Another method,
-        Dealer.dealer_print() prints out the full Dealer data during the dealer's turn.
+        This method prints out the Dealer's info, concealing the facedown
+        card and its score. It is used to show this derived class during
+        the player turns so that a separate method would not be needed to
+        print the table out. Another method, Dealer.dealer_print() prints
+        out the full Dealer data during the dealer's turn. Note: These
+        methods are for text-only games and for diagnostic purposes in GUIs.
         '''
-        print("Dealer")
+        print("Dealer:\t", self.name)
         print("Dealer's Bank:\t${0}".format(self.bank))
         
         if self.hard_hand_score != 0:
@@ -880,12 +1104,67 @@ class Dealer(Player):
                 print("\n\tDealer has a hard {0} or a soft {1} showing".format(self.visible_hard_score, self.visible_soft_score))
         return "Dealer"
     
+    def extract_data(self, dealer_turn = False):
+        '''
+        This method has been created for the pygame conversion. All other
+        print functions remain intact. Where a print(object) would be used
+        in a text-based game, use this method to extract the data that
+        needs to be printed out.
+        This method returns the following dict object:
+                'name'               : dealer's name (aka "Dealer")
+                'bank'               : dealer's bank
+                'hand'               : dealer's hand or None (a list)
+                'soft score'         : soft score for dealer's hand or None
+                'hard score'         : hard score for dealer's hand or None
+                'visible card'       : a tuple of the hand[1] or None
+                'visible soft score  : soft score of the visible card
+                'visible hard score  : hard score of the visible card
+                'dealer turn'        : set to None, unless dealer_turn is True
+
+        The method dealer_print also calls this method to create the dict
+        object, but then changes 'dealer turn' before returning the object.        
+
+        'hand' and 'visible card' are set to None if the Dealer has an empty
+        hand, as are the scores. (Note, Dealers have no split_hand, nor any
+        bets.)
+        '''
+
+        dealerData = {}
+        dealerData['name'] = self.name
+        dealerData['bank'] = self.bank
+
+        # Determine if a hand was dealt to the Dealer or still exists.
+        if len(self.hand) != 0:
+            dealerData['hand']        = self.hand
+            dealerData['soft score']  = self.soft_hand_score
+            dealerData['hard score']  = self.hard_hand_score
+            dealerData['visible card']       = self.visible_card
+            dealerData['visible soft score'] = self.visible_soft_score
+            dealerData['visible hard score'] = self.visible_hard_score
+        else:
+            # The Dealer has not been dealt a hand or it has already been
+            # removed by another method.
+            dealerData['hand']        = None
+            dealerData['soft score']  = None
+            dealerData['hard score']  = None
+            dealerData['visible card']       = None
+            dealerData['visible soft score'] = None
+            dealerData['visible hard score'] = None
+
+        # The value of dealer's turn depends on the optional argument,
+        # dealer's turn.
+        if dealer_turn == True:
+            dealerData['dealer turn'] = True
+        else:
+            dealerData['dealer turn'] = None
+        return dealerData
+
     def dealer_print(self):
         '''
         This method is used during the dealer's turn to print out the full hand and
         hand scores.
         '''
-        print("Player:\t", self.name)
+        print("Dealer:\t", self.name)
         print("Bank:\t${0}".format(self.bank))
         print("\n\tCurrent Hand: ", end='')
         # This suppresses the linefeed and flushes the buffer to make the ouput
@@ -896,41 +1175,52 @@ class Dealer(Player):
         print("\n\tSoft score for this hand: ", self.soft_hand_score)
         print("\tHard score for this hand: ", self.hard_hand_score)
         return "Data on "+ self.name + " is complete"
-    
+     
     def add_card_to_hand(self, card):
         '''
         Functionality carried over from Player.add_card_to_hand():
         
-        This method accepts a card tuple (rank, suit) as argument. It places this card into
-        the Dealer.hand list. It calls the internal method score_hand to rescore the hard
-        and soft scores of the hand. The hard score for a hand will be equal to the soft
-        score if there are no aces in the hand. The soft_score can be greater than the hard
-        score if scoring any ace in the hand as an 11 would result in a playable hand. In
-        fact, blackjack (a natural 21) has a hard score of 11, while the soft score is 21.
+        This method accepts a card tuple (rank, suit) as argument. It places
+        this card into the Dealer.hand list. It calls the internal method
+        score_hand() to rescore the hard and soft scores of the hand with the
+        new card. The hard score for a hand will be equal to the soft score
+        if there are no aces in the hand. The soft_score can be greater than
+        the hard score if scoring any ace in the hand as an 11 would result
+        in a playable hand. Note: Blackjack (a natural 21) has a hard score
+        of 11 and a soft score of 21.
         
         New functionality specific to Dealer class:
         
-        On second deal, assign the second card to visible_card and run score_hand on this
-        card to get soft and hard visible scores. Sets the blackjack_flag to True if 
-        visible_card is an Ace, a face card, or a 10.
+        On second deal, assign the second card to attribute visible_card and
+        run score_hand on this card to get soft and hard visible scores.
+        This method sets the blackjack_flag to True if the visible_card is an
+        Ace, a face card, or a 10. This condition allows players to place an
+        'insurance bet' on whether or not the Dealer might have Blackjack
+        based on the visible card.
         
         INPUT: card, a tuple of (rank, suit)
         OUTPUT: This function returns the following:
-            'blackjack'  = the soft score is 21, the hard score is 11, and the len(hand)
-                           is 2 (meaning the starting deal was a blackjack)
+            'blackjack'  = the soft score is 21, the hard score is 11, and the
+                           len(hand) is 2 (meaning the starting deal was a
+                           blackjack)
             'bust'       = the hard_score is greater than 21
-            'playable'   = at least one score is less than or equal to 21. If one is 21,
-                           the hand is "longer" than 2 cards
+            'playable'   = at least one score is less than or equal to 21.
+                           If either score is 21, the hand must be contain
+                           more than 2 cards since it is not a blackjack.
+
+        With the Pygame conversion, no functionality changes were required.
         '''
         self.hand.append(card)
         (self.soft_hand_score, self.hard_hand_score) = self.score_hand(self.hand)
-        # If this is the second card dealt to the Dealer, add it to the visible card
-        # and score it.
-        if len(self) == 2:
+        # If this is the second card dealt to the Dealer, add it to the
+        # visible card and score it.
+        if len(self.hand) == 2:
             self.visible_card.append(card)
             (self.visible_soft_score, self.visible_hard_score) = self.score_hand(self.visible_card)
-            # For a visible Ace, face card, or 10, the blackjack flag needs to be set to
-            # True so that insurance bets can be placed on it.
+            # For a visible Ace, face card, or 10, the blackjack flag must
+            # to be set to True so that insurance bets can be placed on it.
+            # self.values is a dict constant with the values of all of the
+            # card ranks in it. Aces are listed as a score of 1 there.
             (rank, suit) = card
             if (Dealer.values[rank] == 1) or (Dealer.values[rank] == 10):
                 self.blackjack_flag = True
@@ -943,8 +1233,10 @@ class Dealer(Player):
         
     def end_round(self):
         '''
-        This method resets all data, except Dealer.name, and Dealer.bank. This method takes no
-        arguments and returns no values. It may not be needed in the game.
+        This method resets all data, except Dealer.name, and Dealer.bank. This
+        method takes no arguments and returns no values. It servers the same
+        purpose as Player.end_round(), ensuring all flags, hands, and scores
+        are reset between rounds.
         '''
         self.hand = []
         self.soft_hand_score = 0
@@ -957,23 +1249,25 @@ class Dealer(Player):
 
     def dealer_lost(self, remaining_bets):
         '''
-        This method accepts an integer of the total of all player winnings this round.
-        The method deducts this total bet from the dealer's bank. If the losses break the
-        bank, it returns False. Otherwise, it returns True.
+        This method requires an integer of the total of all player winnings
+        this round. The method deducts this total bet from the dealer's bank.
+        If the losses break the bank, it returns False. Otherwise, it returns
+        True.
+
+        With Pygame conversion, all print statements have been removed.
         '''
         losses = remaining_bets
         self.bank -= losses
         if self.bank <= 0:
-            print("The Dealer's bank has been broken. The player with highest bank wins the game.")
             return False
         else:
-            print("The Dealer remains solvent. The game may continue.")
             return True
     
     def dealer_won(self, player_bets):
         '''
-        This method accepts an integer of the total of all player losses for this round.
-        This method adds the wins to the dealer's bank. There is no return value.
+        This method accepts an integer of the total of all player losses for
+        this round. This method adds the wins to the dealer's bank. There is
+        no return value.
         '''
         wins = player_bets
         self.bank += wins
@@ -981,8 +1275,8 @@ class Dealer(Player):
     
     def diagnostic_print(self):
         '''
-        This method prints out all of the Dealer object attributes to help debud code. It is 
-        not intended for use outside of debugging programs.
+        This method prints out all of the Dealer object attributes to help
+        debug code. It is not intended for use outside of debugging programs.
         '''
         print("Class Order Attribute: ")
         print("Name: ", Dealer.name)
@@ -1004,36 +1298,81 @@ class CasinoTable(object):
     This class simulates an actual casino table.
     
     Class Order Attributes:
-        None currently
+        TABLESEATS: maps players number to a table seat.
+        TABLESIZE:  TABLESIZE: integer, max number of players seatable at
+            the table, currently 3 at 1024x768 resolution
+        HANDLIST: lists all possible hands players and dealer might have
+
     
     Attributes:
         blackjack_multiplier: tuple storing ('ratio', float multiplier)
-            ratio is a string that prints out a ratio, like 3:2, or 6:5 which represents
-                the payout ratio for a player blackjack
-            multiplier is a floating point two decimal approximation of the ratio used to
-                calculate the actual winnings
-            This tuple is used to storage and manage the table mulitiplier
-        starting_bank: integer overrides the default of 100,000 if the bank is larger or
-            smaller, if non-zero
-        table_size: integer indicating the max number of players (other than dealer) for
-            this table object (3 or 5, normally)
-        table_index: the actual max index for the players list
-        deck: a CardShoe object that can be recreated via replace_cardshoe method
-        players: list of players associated with the table.
-            players[0]: a Dealer object initialized with starting bank, if non-zero, or the
-                default of 100,000 otherwise
-            players[1+]: Player objects up to the max number the table allows (table_size)
+            ratio is a string that prints out a ratio, like 3:2, or 6:5
+                which represents the payout ratio for a player blackjack
+            multiplier is a floating point two decimal approximation of the
+                ratio used to calculate the actual winnings
+            This tuple is used to store and manage the table mulitiplier
+        deck: a CardShoe object that can be recreated via replace_cardshoe()
+            method
+        tableDealer: a Dealer object, initialized by a name and starting
+            bank amount
+        min_bet: The minimum acceptable ante bet for the Dealer's Table.
+        max_bet: The maximum acceptable ante bet for the Dealer's Table.
+        dealerLosses: helps track losses during a round
+        players: a dict object of the form {'seat ordinal': playerObj},
+            where seat ordinal is 'left', 'middle', or 'right' and 
+            playerObject is the player object created from a name and bank
+        numPlayers: the actual number of players the user has for this game.
+        phase: This is the current phase of the game round. There are several
+            values for this variable:
+               'pregame' : indicates that the game has not started.
+               'start'   : allows the user to withdraw players before ante
+               'ante'    : collecting initial bets from players
+               'deal'    : dealing the cards, split hands and insurance bets
+               'raise'   : option to raise bets
+               'left'    : left player's turn (must be one)
+               'middle'  : middle player's turn (if there is one)
+               'right'   : right player's turn (if there is one)
+               'dealer'  : dealer's turn
+               'end'     : end of round
+               'postgame': ends the current game
+        seat: This is the current player position, indicating which player is
+            the focus of the game. Valid values are: None, 'left', middle',
+            'right', or 'dealer'
+        results: This dictionary stores the status of the player's hand after
+            a card has been added to it or the hands split. It also stores
+            dealer's hand status. The key set maps as follows:
+                'left reg'     : player in left seat, regular hand
+                'left split'   : player in left seat, split hand
+                'middle reg'   : player in middle seat, regular hand
+                'middle split' : player in middle seat, split hand
+                'right reg'    : player in right seat, regular hand
+                'right split'  : player in right seat, split hand
+                'dealer reg'   : dealer's hand
+            The statuses for these hands are:
+                'blackjack'    : natural 21
+                'playable'     : the hand is still playable
+                'bust'         : the hand busted
+                'none'         : this hand does not exist
+
+        NOTE: The user loses when all the players bust their banks. The 
+            user wins when the players break the dealer's bank.
     
     Methods:
-        __init__: Creats a table, initializing the attributes. It will generate a CardShoe,
-            a Dealer, and prompt for players up to table_size. It accepts an integer for
-            dealer's starting bank, but has a default of 100,000. Starting bank can be
-            overridden in a derived class.
-        __str__: Prints out the table for the players to see. Normally, used after a full
-            deal has been done.
-        diagnostic_print: prints out all attributes to assist with code debugging
-        rules: this announces the general rules of play, including using 'Break the bank'
-            to defeat the house
+        __init__: Accepts several arguments that have defaults (playerNames,
+            blackjack_multiplier, dealer's name, and dealer's bank. From this
+            data, it creates a CasinoTable object: generates a tableDealer
+            object, a CardShoe object (312 card random deck), and generates
+            playerObjects for the user's players.
+        __str__: calls the print methods for the CardShoe, Player, and Dealer
+            objects.
+        extract_data: Returns the CasinoTable object. Assumes an upstream function
+            or method will render the contents in Pygame.
+        diagnostic_print: prints out all attributes to assist with code
+            debugging (unchanged in Pygame version)
+        rules: Returns the contents of the Blackjack-rules.txt file or an
+            error message if the file is not found.
+        rulesGUI: Returns the contents of the rules file for the pygame GUI
+            version of Blackjack, Break-The-Bank-Rules.txt.
         deal_round: Deals a round of cards to each player, printing out the table when 
             completed. It checks for player blackjacks and pays them out. it also checks
             the dealer's blackjack_flag and offers insurance bets.
@@ -1080,73 +1419,181 @@ class CasinoTable(object):
             least one player remains, False otherwise.
         
     """
-    def __init__(self, starting_bank = 100000):
+    # Class Order Attributes:
+    # The TABLESEATS CAO handles a conversion of a number to a left, middle,
+    # or right seating. This seating limitation has to do with the game
+    # resolution limiting it to three players per table currently.
+    TABLESEATS = { '1' : 'left', '2' : 'middle', '3' : 'right'}
+
+    # This resolution restriction also restricts the TABLESIZE to 3 as well.
+    TABLESIZE = 3
+
+    # This constant lists all of the possible hand types.
+    HANDLIST = ('left reg', 'left split', 'middle reg', 'middle split', 'right reg', 'right split', 'dealer reg')
+    
+    def __init__(self,
+                 playerNames          = list({'name' : 'Fred', 'bank' : 50000}),
+                 blackjack_multiplier = ('3:2', 1.50),
+                 dealerName = 'Sarah',
+                 dealerBank = 100000,
+                 min_bet = 5,
+                 max_bet = 100):
         '''
-        This method creates several objects and attributes.
-        
-        For initial testing:
-            blackjack multiplier will be set to ('3:2', 1.50)
-            starting bank will be 10,000
-            table_size will be 3 for testing and 5 for normal play.
+        This method requires several arguments from the calling program, even
+        though it has clear defaults for each one. These inputs are:
+        INPUT:
+            playerNames: a list of dict objects of the form {'name': string,
+                'bank': amount} for each player. This list will be accepted
+                as the seating order of the players.
+                Default: one player {'name' : 'Fred', 'bank' : 50000}
+            blackjack_multiplier: a tuple ('string', float), the 'string' is a
+                text ratio equivalent to the value of the float (the value used
+                calculate player blackjack instant wins.
+                Default: ('3:2', 1.50)
+            dealerName: string, the name of the dealer for this table
+                Default: 'Sarah'
+            dealerBank: integer, the initial bank for this table's dealer
+                Default: 100,000
+            min_bet: integer, the minimum allowed ante bet
+                Default: 5
+            max_bet: integer, the maximum allowed ante bet
+                Default: 100
+
+        This method will generate the following attributes from its input:
+            tableDealer  a Dealer class object
+            numPlayers   number of actual players (which can be less than 3)
+            players      a dictionary of playerObjects from inputs
+            deck         a CardShoe object (6 full 52 card decks shuffled
+                         together) 
+            min_bet      min bet players can make
+            max_bet      max bet players can make
+            results: This dictionary stores the status of the player's hand
+                after a card has been added to it or the hands split. It also
+                stores dealer's hand status. The key set maps as follows:
+                    'left reg'     : player in left seat, regular hand
+                    'left split'   : player in left seat, split hand
+                    'middle reg'   : player in middle seat, regular hand
+                    'middle split' : player in middle seat, split hand
+                    'right reg'    : player in right seat, regular hand
+                    'right split'  : player in right seat, split hand
+                    'dealer reg'   : dealer's hand
+                The statuses for these hands are:
+                    'blackjack'    : natural 21
+                    'playable'     : the hand is still playable
+                    'bust'         : the hand busted
+                    'none'         : this hand does not exist
             
         '''
-        self.blackjack_multiplier = ('3:2', 1.50)
-        print("This table has a blackjack payout of ", self.blackjack_multiplier[0])
-        self.starting_bank = starting_bank
-        self.table_size = 3
-        print("This table allows {0} player(s).".format(self.table_size))
-        self.table_index = self.table_size + 1
-        self.players = []
+        # self.TABLESIZE  and self.TABLESEATS are constants in this library,
+        # but the number of players depends on whether or not any of the
+        # user's players washed out.
+        self.numPlayers = len(playerNames)
+
+        # The Dealer object is created by calling the class with the name and
+        # bank amount provided in the arguments.
+        self.tableDealer = Dealer(dealerName, dealerBank)
+        self.min_bet = min_bet
+        self.max_bet = max_bet
+        self.dealerLosses  = 0
+
+        self.blackjack_multiplier = blackjack_multiplier
+
+        # We are limited to 3 seats, but there can be fewer players in the
+        # user's team. TABLESEATS still allows us to use numbers when we
+        # need to by converting the ordinal into a string. The comment
+        # below this loop shows where we want the players situated.
+        # Note: playerNames is a list with an index [0, 1, 2], but the seats
+        # map 1, 2, 3 to left, middle, right. So we need the ordinals for 
+        # i + 1, not i.
+        self.players = {}
+        for i in xrange(0, self.numPlayers):
+            ordinal = self.TABLESEATS[str(i + 1)]
+            self.players[ordinal] = Player(playerNames[i]['name'], playerNames[i]['bank'])
+        # self.players = {'left'   : Player(playerNames[0]['name'], playerNames[0]['bank']),
+                        # 'middle' : Player(playerNames[1]['name'], playerNames[1]['bank']),
+                        # 'right'  : Player(playerNames[2]['name'], playerNames[2]['bank'])}
+        
+        # Now, we need to set two attributes used to manage player positions
+        # and phase of rounds:
+        self.phase = 'pregame'
+        self.seat  = None
+
+        # Now, we prepare a new attribute, results, which stores the current
+        # status of any hands a player or dealer has.
+        self.results = {}
+        for hand in self.HANDLIST:
+            self.results[hand] = None
+
+        # Finally, we need to create a deck using the CardShoe class.
         self.deck = CardShoe()
-        self.players.append(Dealer(self.starting_bank))
-        for i in xrange(1, self.table_index):
-            player_num = i
-            name = raw_input("Please give the name for Player {0}. Type 'none' when finished.".format(player_num))
-            if name != 'none':
-                self.players.append(Player(name))
-                
-            else:
-                self.table_index = i
         return
     
     def __str__(self):
         '''
-        This method prints out the table. It is used after deals; so, all players can 
-        see their cards as they receive them.
+        This method prints out the table. It is used after deals; so, all
+        players can see their cards as they receive them. print(object)
+        in a GUI environment shoud use the extract_data() method instead.
         '''
         print(self.deck)
-        for i in xrange(0, self.table_index):
-            print(self.players[i])
+        for player in self.players:
+            print(self.players[player])
+        print(self.tableDealer)
         return 'Table complete'
+
+    def extract_data(self):
+        '''
+        This method returns the CasinoTable object.
+        '''
+        return self
     
     def diagnostic_print(self):
         '''
-        This method prints out every attribute for debugging purposes, calling the same
-        named method in the classes for each object.
+        This method prints out every attribute for debugging purposes, calling
+        the same named method in the classes for each object.
         '''
+        print("Table Attributes:")
+        print("Dealer's Name: ", self.tableDealer.name)
         print("Blackjack multiplier: ", self.blackjack_multiplier)
-        print("Starting bank: ", self.starting_bank)
-        print("Maximum Number of Human Players (table size): ", self.table_size)
-        print("Actual Number of Players (table index): ", self.table_index)
+        print("Dealer's Bank: ", self.tableDealer.bank)
+        print("Table seating (TABLESIZE): ", self.TABLESIZE)
+        print("Dealer's Hand Status: ", self.results['dealer'])
+        print("Actual Number of Players (numPlayers): ", self.numPlayers)
         self.deck.diagnostic_print()
-        for i in xrange(0, self.table_index):
-            self.players[i].diagnostic_print()
+        for i in xrange(1, self.numPlayers + 1):
+            ordinal = self.TABLESEATS[str(i)]
+            print("Player's Seat: ", ordinal)
+            self.players[ordinal].diagnostic_print()
+            print("Hand Status of Player: ", self.results[ordinal])
+            print("Split Hand Status of Player: ", self.results[ordinal + ' split'])
         print("Completed diagnostic print of CasinoTable.")
         return
     
     def rules(self):
         '''
-        This prints out a quick list of the rules, including table rules, for the current
-        game. Most people do not know that full rules of Blackjack. Make sure that the 
-        file, BlackJack-Rules.txt is the etc directory under the main directory.
+        Pulls a copy of the rules from Blackjack-Rules.txt and returns the
+        copy. If this file is not found, it returns an error message.
         '''
         if os.path.exists('./etc/BlackJack-Rules.txt'):
             f = open('./etc/BlackJack-Rules.txt', 'r')
             contents = f.read()
             f.close()
-            print(contents)
+            return contents
         else:
-            print('File, BlackJack-Rules.txt, was not found. Check installation of Blackjack.')
+            return 'rules: BlackJack-Rules.txt, was not found. Check installation of Blackjack.'
+        return
+
+    def rulesGUI(self):
+        '''
+        Pulls a copy of the rules from Break-The-Bank-Rules.txt and returns the
+        copy. If this file is not found, it returns an error message.
+        '''
+        if os.path.exists('./etc/Break-The-Bank-Rules.txt'):
+            f = open('./etc/Break-The-Bank-Rules.txt', 'r')
+            contents = f.read()
+            f.close()
+            return contents
+        else:
+            return 'rulesGUI: Break-The-Bank-Rules.txt, was not found. Check installation of Blackjack.'
         return
 
     def deal_round(self):
@@ -1158,7 +1605,7 @@ class CasinoTable(object):
         
         There is no return value from this method.
         '''
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             print("Dealing a card to ", self.players[i].name)
             card = self.deck.remove_top()
             # These blocks were used to test the player blackjack payout or splitting hands.
@@ -1185,7 +1632,7 @@ class CasinoTable(object):
             rank, suit = card
             print("Dealer received a {0}-{1}".format(rank, suit))
             print("Players wishing to place an insurance bet for a Dealer Blackjack may do so now.")
-            for i in xrange(1, self.table_index):
+            for i in xrange(1, self.numPlayers):
                 answer = raw_input("{0}, would you like to make an insurance bet? (y/n)".format(self.players[i].name))
                 if answer[0].lower() == 'y':
                     while True:
@@ -1216,7 +1663,7 @@ class CasinoTable(object):
         '''
         print("Please place your initial bet. This will serve as a maximum raise amount after")
         print("the cards have been dealt.")
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # The CasinoTable.end_round() method checks to see if any player's bank busted
             # or if they have insufficient funds to meet the table minimum. They should be
             # eliminated already.
@@ -1244,7 +1691,7 @@ class CasinoTable(object):
         
         This method also needs arguments for min_bet and max_bet.
         '''
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # This conditional covers the  possibility of a player blackjack. Blackjack methods
             # clear up the player's hand as a signal to other methods that nothing needs to be
             # done with that player.
@@ -1297,7 +1744,7 @@ class CasinoTable(object):
         
         After all player's bets have been updated, it prints the CasinoTable again.
         '''
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # This checks the regular hand and offers a double down bet.
             self.players[i].double_down(self.players[i].hand, False)
             if self.players[i].split_flag == True:
@@ -1334,7 +1781,7 @@ class CasinoTable(object):
         '''
         # This will increment as playable hands survive the players turn.
         playable_hands = 0
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # First, we need to check the hand. An non-empty hand will be playable after being dealt two
             # cards. Empty hands already collected their blackjack winnings. A blackjack has no split
             # hand either.
@@ -1416,7 +1863,7 @@ class CasinoTable(object):
         # This ends the players turn.
         print("The player turn is complete. The table stands at:")
         print(self)
-        if self.table_index == 0:
+        if self.numPlayers == 0:
             print("No players remain in the game. The house wins.")
             return 'none'
         if playable_hands == 0:
@@ -1443,18 +1890,18 @@ class CasinoTable(object):
         ignores any removed hands. It looks at the soft_hand_score, which is the highest playable score a
         hand of Blackjack can have.
         
-        If self.table_index < 2, no human players remain in the game. It will return (0,0) as an error.
+        If self.numPlayers < 2, no human players remain in the game. It will return (0,0) as an error.
         
         It returns a tuple in the form (max, min).
         '''
         max_score = min_score = 0
-        if self.table_index < 2 :
+        if self.numPlayers < 2 :
             # No human players remain in the game.
             return (max_score, min_score)
         # At least one human player remains in the game. We need the scores off of one of their hands.
         
         # print("Max: {0}.   Min: {1}".format(max_score, min_score))
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             # print(self.players[i])
             if (len(self.players[i]) != 0):
                 if self.players[i].soft_hand_score > max_score:
@@ -1530,7 +1977,7 @@ class CasinoTable(object):
             # their hand.
             dealer_stand = True
             print("Dealer has a blackjack. All remaning hands lose, regardless of score.")
-            for i in xrange(1, self.table_index):
+            for i in xrange(1, self.numPlayers):
                 # Skip resolved hands and non-existent hands.
                 if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
                     continue
@@ -1551,7 +1998,7 @@ class CasinoTable(object):
                 print("Dealer busted with a hard score of {0}".format(self.players[0].hard_hand_score))
                 dealer_bust = True
                 dealer_stand = True
-                for i in xrange(1, self.table_index):
+                for i in xrange(1, self.numPlayers):
                     # Skip resolved hands and non-existent hands.
                     if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
                         continue
@@ -1585,7 +2032,7 @@ class CasinoTable(object):
         # Remember also that soft scores are always the highest playable score that a hand can have,
         # regardless of the cards dealt.
         if (dealer_blackjack == False) and (dealer_bust == False):
-            for i in xrange(1, self.table_index):
+            for i in xrange(1, self.numPlayers):
                 # Again, skip resolved and non-existent hands.
                 if (len(self.players[i]) == 0) and (len(self.players[i].split_hand) == 0):
                     continue
@@ -1616,7 +2063,7 @@ class CasinoTable(object):
         # automatically returns the right results. True means the player is still in the game, False,
         # they broke their bank and will be eliminated in the end_round.
         if self.players[0].blackjack_flag == True:
-            for i in xrange(1, self.table_index):
+            for i in xrange(1, self.numPlayers):
                 if dealer_blackjack == False:
                     dealer_winnings += self.players[i].insurance
                     print("Player {0}: You have lost your insurance bet of {1}.".format(self.players[i].name, self.players[i].insurance))
@@ -1688,7 +2135,7 @@ class CasinoTable(object):
         conditions end the game. It uses the end_game boolean to signal that.
         '''
         end_game = False
-        for i in xrange(0, self.table_index):
+        for i in xrange(0, self.numPlayers):
             self.players[i].end_round()
             
         if self.players[0].bank <= min_bet:
@@ -1696,7 +2143,7 @@ class CasinoTable(object):
             print("The Dealer has been eliminated from the game. The player with the highest bank wins.")
             name = self.players[0].name
             high_bank = self.players[0].bank
-            for i in xrange(1, self.table_index - 1):
+            for i in xrange(1, self.numPlayers - 1):
                 if high_bank < self.players[i].bank:
                     name = self.players[i].name
                     high_bank = self.players[i].bank
@@ -1709,11 +2156,11 @@ class CasinoTable(object):
                 if self.players[i].bank <= min_bet:
                     print("Eliminating Player {0} because their bank is unable to make the minimum bet.".format(self.players[i].name))
                     del(self.players[i])
-                    self.table_index -= 1
+                    self.numPlayers -= 1
                 else:
                     print("Player {0} is still solvent with ${1} remaining in their bank.".format(self.players[i].name, self.players[i].bank))
                     i += 1
-                if i == self.table_index:
+                if i == self.numPlayers:
                     # The index has reached the end of the players list.
                     break
                 else:
@@ -1774,13 +2221,13 @@ class CasinoTable(object):
         False if not.
         '''
         print("Now, each player needs to decide if they want to stay or cash out.")
-        for i in xrange(1, self.table_index):
+        for i in xrange(1, self.numPlayers):
             failsafe = 0
             while True:
                 # The following statements ensure that this does not become a continuous loop should input errors
                 # persist.
                 failsafe += 1
-                if failsafe > self.table_size :
+                if failsafe > self.TABLESIZE :
                     break
                 try:
                     answer = raw_input("Player {0}, would you like to stay in the game? (y/n)".format(self.players[i].name))
@@ -1794,11 +2241,11 @@ class CasinoTable(object):
                     elif answer[0].lower() == 'n':
                         print("It was a pleasure. Please stop by the bank windows to cash out.")
                         del(self.players[i])
-                        self.table_index -= 1
+                        self.numPlayers -= 1
                     else:
                         print("Thank you.")
                     break
-        if self.table_index <= 1:
+        if self.numPlayers <= 1:
             print("That ends the game. Thank you for playing.")
             return False
         else:

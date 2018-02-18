@@ -1,0 +1,47 @@
+This game adheres to the casino rules for Blackjack. It also has a few
+extra rules, since it is a video game. The primary purpose of the game is to
+pit your three 'players' against the Casino's dealers and break the bank at
+a table in the Casino. Succeeding in doing so or at least having a player
+survive enough rounds without breaking their own bank by losing too often
+will open up playing against tables with larger banks, and often, with much
+better player Blackjack payouts.
+
+There are four types of tables which are also the names player skill levels.
+These are:
+	STARTER(or beginner): lowest stakes, better blackjack payouts,
+	NORMAL: moderate stakes, bigger banks, good blackjack payouts,
+	SPECIAL EVENTS: higher stakes, bigger banks, very good blackjack payouts,
+	HIGH ROLLER: highest stakes, largest banks, best blackjack payouts.
+A player must survive enough rounds in a single game at a particular table
+type to 'level up' their skill to the next table type. The number increases
+with each higher graduation. A second way to advance is for the player to
+be playing at the table when the 'team' of players breaks the dealer's bank.
+
+At the end of any round of play, the user can pull the player from the table.
+The best reason is to keep them from losing their bank and/or being eliminated
+from the game. Players who 'leave the table' will be saved when the game ends
+just like any other surviving players. The caveat is that they cannot return
+to play until the next game. NOTE: While the game in later phases of a round
+prevents players from splitting hands or making insurance bets without enough
+in their bank to cover them, at the START of a round, any player who cannot
+cover the table minimum ante bet WILL BE ELIMINATED IF THE USER DOES NOT
+REMOVE THEM.
+
+All players must ante up at the beginning of each round. A dialog box
+will appear for you to enter the player's initial bet (or ante). It must be
+sufficient for table minimum, but not exceed the maximum. It also sets the
+maximum bet for the hand (see Casino Rules as well).
+
+When prompted to 'Hit' or 'Stand', hit the 'H' or 'S' key. That will answer
+the request. This will happen for the player's normal hand and for a split
+hand if the player has one.
+
+If you are asked a Yes or No question, the YES and NO buttons will light up.
+Mouse click your choice of button or the 'Y' or 'N' key. The Y/N questions
+are:
+	1) splitting your hand into two hands when you have a pair
+	2) pulling the player from the table at the end of a round
+	3) making an insurance bet because the Dealer has a ten or an ace
+	
+If you need help, mouse click the 'INFO' button or press the 'I' key. You
+will see this text again.
